@@ -37,15 +37,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          HAS_GEMINI_KEY: ${{ secrets.GEMINI_API_KEY != '' }}
         run: |
-          # 키가 없으면 실패 대신 경고로 끝내고, 이 HEAD의 AI 리뷰를 미완료로 남긴다 (.claude/docs/git-workflow.md)
-          if [ "$HAS_GEMINI_KEY" != "true" ]; then
-            echo "::warning::GEMINI_API_KEY가 없어 Gemini 리뷰를 건너뜁니다. $HEAD_SHA 의 AI 리뷰는 미완료입니다."
-            printf '## Gemini Code Review\n\nGEMINI_API_KEY 미설정: %s 리뷰 미완료\n' "$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
-            echo "skip_review=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
           git fetch origin "$BASE_SHA" "$HEAD_SHA"
           git -c core.quotePath=false diff "$BASE_SHA...$HEAD_SHA" -- '*.kt' '*.kts' '.github/workflows/*.yml' '.github/workflows/*.yaml' > diff.txt
           if [ ! -s diff.txt ]; then

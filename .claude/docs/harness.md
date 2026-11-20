@@ -133,7 +133,8 @@ python3 -m unittest discover -s .claude/hooks/tests
 | Gemini 리뷰 | `.github/workflows/gemini-code-review.yml` (`GEMINI_API_KEY`, `*.kt` · `*.kts` · 워크플로 diff) | 줄 단위 P1 · P2 댓글 |
 | 로컬 교차 검토 | Codex CLI `exec -s read-only` | 계획 · 구현을 다른 쪽이 검토 |
 
-- 두 워크플로는 `continue-on-error`라 키가 없거나 할당량을 넘으면 경고로 끝난다. 그때는 해당 HEAD의 AI 리뷰를 미완료로 적는다(`.claude/docs/git-workflow.md`).
+- 두 워크플로는 프롬프트 · diff 대상만 빼고 iOS 저장소와 같게 둔다. 키(`OPENAI_API_KEY` · `GEMINI_API_KEY`)는 iOS와 같은 값을 쓴다.
+- 리뷰가 실패하거나 할당량을 넘으면 해당 HEAD의 AI 리뷰를 미완료로 적는다(`.claude/docs/git-workflow.md`).
 - 리뷰어 의견은 실제 코드로 확인한 뒤 반영한다. 여러 리뷰어가 같은 말을 했다는 것만으로 맞다고 보지 않는다.
 
 ## 하네스 관리

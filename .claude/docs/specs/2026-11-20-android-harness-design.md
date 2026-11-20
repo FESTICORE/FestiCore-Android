@@ -2,13 +2,13 @@
 
 ## 목표
 
-FestiCore-iOS를 Android로 옮기기 전에, 에이전트가 일하는 환경(하네스)을 먼저 만든다. CIRQLE-Native-Mobile(`/Users/suhwonji/Desktop/SideProject/CirQle/CIRQLE-Native-Mobile`)이 기능 코드 전에 하네스 → 버전 고정 → Gradle 골격 순서로 쌓은 방식을 따른다.
+FestiCore-iOS를 Android로 옮기기 전에, 에이전트가 일하는 환경(하네스)을 먼저 만든다. CIRQLE-Native-Mobile(`~/Desktop/SideProject/CirQle/CIRQLE-Native-Mobile`)이 기능 코드 전에 하네스 → 버전 고정 → Gradle 골격 순서로 쌓은 방식을 따른다.
 
 이 문서의 범위는 하네스(H0~H2)까지다. 화면 이식(스플래시 → 온보딩 → Google 로그인 → 메인 탭)은 H2 머지 후 별도 설계 문서로 진행한다.
 
 ## 수용 기준 (관찰 가능한 결과)
 
-1. GitHub `FESTICORE/FestiCore-Android`가 private로 있고 `main` · `develop` 브랜치가 있다.
+1. GitHub `FESTICORE/FestiCore-Android`가 있고(H0 private 생성 → H1 public 전환) `main` · `develop` 브랜치가 있다.
 2. `develop`에 H1 · H2 PR이 squash merge되어 있다. 각 PR은 이슈에서 시작했고 담당자는 `Roy-wonji`다.
 3. 훅이 실제 Claude 세션에서 동작한다.
    - `develop`에서 `git commit` → 차단(exit 2)
@@ -18,13 +18,13 @@ FestiCore-iOS를 Android로 옮기기 전에, 에이전트가 일하는 환경(�
 4. `python3 -m unittest discover -s .claude/hooks/tests` 통과.
 5. H2 후 `.claude/scripts/verify --all` 통과(경계 검사 · ktlint · `./gradlew testStageDebugUnitTest assembleStageDebug`).
 6. PR CI(`pr-rules` · `android-pr`)가 H2 PR에서 성공한다.
-7. H1 · H2 PR에서 Codex · Gemini 리뷰 워크플로가 실행된다(같은 저장소 PR의 `pull_request` 이벤트는 PR의 워크플로 파일로 돈다. H1의 `pr-rules.yml`이 PR #2에서 실행된 것으로 확인). 시크릿이 등록돼 있으면 리뷰 댓글이 달리고, 없으면 Gemini는 경고 · 요약으로, Codex는 실패 요약으로 끝난 것을 확인해 미완료로 기록한다.
+7. H1 · H2 PR에서 Codex · Gemini 리뷰 워크플로가 실행된다(같은 저장소 PR의 `pull_request` 이벤트는 PR의 워크플로 파일로 돈다. H1의 `pr-rules.yml`이 PR #2에서 실행된 것으로 확인). 키가 닿으면 리뷰 댓글이 달리고, 실패하면 원인을 확인해 미완료로 기록한다.
 
 ## 결정 사항
 
 | 항목 | 결정 | 근거 |
 |------|------|------|
-| 저장소 | `FESTICORE/FestiCore-Android` private, 기본 `main`, 작업 기준 `develop` | 사용자 선택 |
+| 저장소 | `FESTICORE/FestiCore-Android`, 기본 `main`, 작업 기준 `develop`. private로 만들고 H1에서 AI 리뷰 키 공유를 위해 public으로 전환 | 사용자 선택 |
 | 스택 | Kotlin · Jetpack Compose · Orbit MVI · Navigation 3 + 기능별 Coordinator · Koin · Ktor · kotlinx.serialization · build-logic convention plugin | 사용자 선택(CIRQLE 스택). TCA Action ↔ Orbit intent, TCAFlow ↔ Nav3 Coordinator로 대응 |
 | 버전 | CIRQLE `gradle/libs.versions.toml` · wrapper(Gradle 9.9.1, AGP 9.5.1, Kotlin 2.4.21)를 기준으로 시작 | 이미 빌드가 검증된 조합 |
 | 모듈 배치 | 루트에 `app/`, `feature/{기능}/{interface,sources}`, `domain/{기능}/{interface,sources}`, `service/*`, `core/*`, `ui/*`. 이름은 iOS 모듈과 맞춘다(`Feature/Auth` ↔ `feature/auth`) | Android 단독 저장소라 `android/` 상위 폴더가 필요 없다. iOS 대응 추적 |
@@ -64,7 +64,7 @@ CIRQLE 하네스를 가져오고 FestiCore 규칙으로 바꾼다. KMP · iOS ·
 | `.github/pull_request_template.md` · `ISSUE_TEMPLATE/{feature,bug,task}.md` | CIRQLE | FestiCore 형식 |
 | `.github/workflows/pr-rules.yml` | CIRQLE | PR 제목 · 커밋 제목 규칙을 FestiCore 형식으로, 커밋 · PR 본문의 `Co-Authored-By`(작성자 무관) · 세션 링크 검사 |
 | `.github/workflows/assign-pr-owner.yml` | FestiCore-iOS | 같음 |
-| `.github/workflows/codex-pr-review.yml` · `gemini-code-review.yml` | FestiCore-iOS | 리뷰 프롬프트를 Kotlin · Compose · Orbit · 이 저장소 규칙으로, Gemini diff 대상을 `*.kt` · `*.kts`로. `OPENAI_API_KEY` · `GEMINI_API_KEY`는 저장소 시크릿이 필요하다(값은 사용자가 등록). Gemini는 iOS 원본에 키 확인이 없어 diff 단계에서 키가 없으면 경고 · 요약을 남기고 건너뛴다. 일일 무료 할당량 초과는 iOS와 같이 경고, 그 밖의 API 오류는 재시도 후 작업 실패로 드러낸다. Codex는 iOS와 같이 `continue-on-error` + 실패 요약. 어느 경우든 해당 HEAD의 AI 리뷰는 미완료로 기록한다 |
+| `.github/workflows/codex-pr-review.yml` · `gemini-code-review.yml` | FestiCore-iOS | 리뷰 프롬프트를 Kotlin · Compose · Orbit · 이 저장소 규칙으로, Gemini diff 대상을 `*.kt` · `*.kts`로. `OPENAI_API_KEY` · `GEMINI_API_KEY`는 저장소 시크릿이 필요하다(값은 사용자가 등록). 워크플로는 프롬프트 · diff 대상 외에는 iOS와 같게 둔다(사용자 결정). 키는 iOS와 같은 값을 쓰고, 조직이 Free라 조직 시크릿이 private 저장소에 닿지 않아 저장소를 public으로 바꾼다(사용자 결정). 키가 없거나 리뷰가 실패하면 해당 HEAD의 AI 리뷰는 미완료로 기록한다 |
 | `.editorconfig` · `.gitignore` · `.mise.toml` | CIRQLE | `.mise.toml`은 `java = "temurin-21"` · `ktlint`만 |
 
 H1 문서(각 200줄 미만, 코드에서 알 수 있는 내용은 쓰지 않는다):
