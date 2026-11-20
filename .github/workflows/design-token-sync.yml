@@ -28,6 +28,8 @@ jobs:
 
       - name: DesignSystem main 커밋 고정
         id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           SHA="$(git ls-remote https://github.com/FESTICORE/FestiCore-DesignSystem.git refs/heads/main | cut -f1)"
@@ -37,9 +39,13 @@ jobs:
           if [ "$(cat ui/designkit/tokens.source-sha)" = "$SHA" ]; then
             echo "current=true" >> "$GITHUB_OUTPUT"
             echo "디자인 토큰이 이미 $SHA 와 같다" >> "$GITHUB_STEP_SUMMARY"
-          elif git ls-remote --exit-code --heads origin "feature/design-tokens-${SHA:0:7}" > /dev/null; then
-            echo "current=true" >> "$GITHUB_OUTPUT"
-            echo "feature/design-tokens-${SHA:0:7} 브랜치가 이미 있다" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # 같은 SHA의 열린 PR이 있을 때만 건너뛴다. 브랜치만 남은 경우(PR 생성 실패 · 닫힘)는 다시 만든다. 조회 실패는 set -e로 실패 처리
+            OPEN="$(gh pr list --head "feature/design-tokens-${SHA:0:7}" --state open --json number --jq 'length')"
+            if [ "$OPEN" != "0" ]; then
+              echo "current=true" >> "$GITHUB_OUTPUT"
+              echo "feature/design-tokens-${SHA:0:7}의 열린 PR이 이미 있다" >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
 
       - uses: actions/setup-node@v4
@@ -95,10 +101,11 @@ jobs:
           BRANCH="feature/design-tokens-${SHORT}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
+          git checkout -B "$BRANCH"
           git add ui/designkit
           git commit -m "${TITLE} #${ISSUE}" -m "FestiCore-DesignSystem ${SHA}의 Android 토큰 생성물을 가져온다."
-          git push origin "$BRANCH"
+          # 열린 PR 없이 남은 같은 이름의 브랜치는 이번 결과로 덮어쓴다(위 단계에서 열린 PR이 없음을 확인함)
+          git push --force origin "$BRANCH"
           printf '%s\n' \
             "## What" "" "FestiCore-DesignSystem \`${SHA}\`의 \`generated/android/tokens\`를 \`ui/designkit\`으로 가져온다." "" \
             "Closes #${ISSUE}" "" \

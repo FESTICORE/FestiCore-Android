@@ -1,18 +1,30 @@
 #!/bin/sh
 # DesignSystem의 generated/android/tokens를 ui/designkit으로 가져온다. 규칙: .claude/docs/design-system.md
 # 사용: gradle/sync-design-tokens <FestiCore-DesignSystem checkout 경로>
-# 원천의 생성물은 커밋된 상태여야 하고, 가져온 커밋 SHA를 ui/designkit/tokens.source-sha에 남긴다.
+# 원천의 생성물은 커밋된 상태여야 한다. 기대한 파일이 모두 있을 때만 교체하고, 실패하면 기존 토큰 · SHA를 그대로 둔다.
 set -eu
 cd "$(dirname "$0")/.."
 src="${1:?사용: gradle/sync-design-tokens <FestiCore-DesignSystem 경로>}"
+files="FestiCoreLayout.kt FestiCoreSemanticColor.kt FestiCoreTypography.kt"
+dest=ui/designkit/src/main/kotlin/io/festicore/ui/designkit/tokens
+
 if [ -n "$(git -C "$src" status --porcelain -- generated/android)" ]; then
   echo "원천의 generated/android에 커밋되지 않은 변경이 있습니다: $src" >&2
   exit 1
 fi
+actual=$(cd "$src/generated/android/tokens" && ls -1 | sort | tr '\n' ' ')
+if [ "$actual" != "$files " ]; then
+  echo "원천 토큰 파일 목록이 다릅니다. 기대: $files / 실제: $actual" >&2
+  exit 1
+fi
 sha=$(git -C "$src" rev-parse HEAD)
-dest=ui/designkit/src/main/kotlin/io/festicore/ui/designkit/tokens
+
+staging=$(mktemp -d "${TMPDIR:-/tmp}/design-tokens.XXXXXX")
+trap 'rm -rf "$staging"' EXIT
+for f in $files; do cp "$src/generated/android/tokens/$f" "$staging/$f"; done
+printf '%s\n' "$sha" > "$staging/tokens.source-sha"
+
 mkdir -p "$dest"
-rm -f "$dest"/*.kt
-cp "$src"/generated/android/tokens/*.kt "$dest"/
-printf '%s\n' "$sha" > ui/designkit/tokens.source-sha
+for f in $files; do mv "$staging/$f" "$dest/$f"; done
+mv "$staging/tokens.source-sha" ui/designkit/tokens.source-sha
 echo "디자인 토큰 동기화: $sha"
