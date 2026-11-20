@@ -40,6 +40,11 @@ class SvgToVectorTests(unittest.TestCase):
         self.assertIn('android:fillColor="#111113"', xml)
         self.assertIn('android:pathData="M0 0H16V16Z"', xml)
 
+    def test_rgba_hex_becomes_android_argb(self):
+        result = self.convert('<path d="M0 0H16V16Z" fill="#11223380"/>')
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn('android:fillColor="#80112233"', (self.tmp / "out" / "ic_x.xml").read_text())
+
     def test_full_canvas_clip_is_dropped(self):
         result = self.convert('<g clip-path="url(#c)"><path d="M0 0H16V16Z" fill="black"/></g>'
                               '<defs><clipPath id="c"><rect width="16" height="16" fill="white"/></clipPath></defs>')
