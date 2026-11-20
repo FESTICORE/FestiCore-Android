@@ -21,9 +21,13 @@ private val Size = 24.dp
 private val DefaultIconSize = 16.dp
 private val BorderWidth = 1.5.dp
 
-/** 원형 체크(iOS Selection `FCCheckCircle`). C5 `FCNotificationRow` 편집 모드가 쓰려고 C6보다 먼저 `internal`로 옮겼다. */
+/**
+ * 원형 체크. 편집 모드 선택, 신고 사유, 약관 체크에 쓰며 checked는 Static/Lime 바탕과 Static/Ink 체크다.
+ *
+ * @param iconSize 체크 아이콘 크기(iOS `iconSize(_:)`). 체크리스트는 14를 쓴다.
+ */
 @Composable
-internal fun FCCheckCircle(
+fun FCCheckCircle(
     isChecked: Boolean,
     modifier: Modifier = Modifier,
     iconSize: Dp = DefaultIconSize,

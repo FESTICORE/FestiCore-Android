@@ -32,11 +32,11 @@ private const val SHADOW_OPACITY = 0.15f
 private const val ANIMATION_MILLIS = 200
 
 /**
- * 켜기/끄기 스위치(iOS Selection `FCToggle`). C5 `FCListRow` 토글 줄이 쓰려고 C6보다 먼저 `internal`로 옮겼다.
+ * 켜기/끄기 스위치. 알림, 잠금화면 표시 같은 설정에 쓴다. iOS `isOn` 바인딩은 `isOn` + `onIsOnChange`로 받는다.
  * iOS 그림자(radius 2 · y 2 · 15%)는 Compose 그림자 높이 2로 그린다.
  */
 @Composable
-internal fun FCToggle(
+fun FCToggle(
     isOn: Boolean,
     onIsOnChange: (Boolean) -> Unit,
     accessibilityLabel: String,
