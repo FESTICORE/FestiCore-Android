@@ -30,6 +30,13 @@ import io.festicore.ui.designkit.component.label.FCStatusChipStatus
 import io.festicore.ui.designkit.component.label.FCTag
 import io.festicore.ui.designkit.component.label.FCZoneChip
 import io.festicore.ui.designkit.component.navigation.FCTabItem
+import io.festicore.ui.designkit.component.selection.FCChecklistRow
+import io.festicore.ui.designkit.component.selection.FCConsentAll
+import io.festicore.ui.designkit.component.selection.FCFieldLabel
+import io.festicore.ui.designkit.component.selection.FCPhotoPicker
+import io.festicore.ui.designkit.component.selection.FCPhotoPickerState
+import io.festicore.ui.designkit.component.selection.FCRecentKeyword
+import io.festicore.ui.designkit.component.selection.FCSetSelectRow
 import io.festicore.ui.designkit.font.FestiCoreFontFamily
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
@@ -45,7 +52,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** iOS `FestiCoreDesignKitFigmaSizeTests`의 `FigmaHeightCase.all` 중 C1 · C2 · C3 컴포넌트 케이스와 배지 · 존 칩 크기 검사. 기대값 · 허용 오차는 iOS와 같다. */
+/** iOS `FestiCoreDesignKitFigmaSizeTests`의 `FigmaHeightCase.all` 중 C1 · C2 · C3 · C6 컴포넌트 케이스와 배지 · 존 칩 크기 검사. 기대값 · 허용 오차는 iOS와 같다. */
 // 글자 높이를 실제로 재려면 NATIVE 그래픽이 필요하다. SDK 36 이상에서는 Espresso가 없어진 InputManager.getInstance()를 불러 실패하므로 35로 고정한다.
 // Robolectric 기본 화면 폭(320dp)보다 넓은 Figma 폭(375 · 393)도 그대로 재도록 requiredWidth로 둔다.
 // 기본 mdpi(1x)에서는 행간 18.005sp가 픽셀 올림으로 19dp가 되므로 실제 기기에 가까운 xxhdpi에서 잰다.
@@ -114,6 +121,40 @@ class FigmaSizeTest {
     @Test
     fun `Tab Item 비선택은 Figma 심볼 높이 46이다`() {
         assertFigmaHeight(figmaHeight = 46.dp, width = null) { FCTabItem("예매 완료", isSelected = false) }
+    }
+
+    @Test
+    fun `Set Select Row는 Figma 심볼 높이 68이다`() {
+        assertFigmaHeight(figmaHeight = 68.dp, width = 343.dp) {
+            FCSetSelectRow(artist = "coldrain", stage = "WONDER STAGE", start = "16:40", end = "17:30", isSelected = false) {}
+        }
+    }
+
+    @Test
+    fun `Photo Picker는 Figma 심볼 높이 98이다`() {
+        assertFigmaHeight(figmaHeight = 98.dp, width = 361.dp) { FCPhotoPicker(FCPhotoPickerState.Empty) {} }
+    }
+
+    @Test
+    fun `Recent Keyword는 Figma 심볼 높이 30이다`() {
+        assertFigmaHeight(figmaHeight = 30.dp, width = null) { FCRecentKeyword("펜타포트", onSelect = {}, onDelete = {}) }
+    }
+
+    @Test
+    fun `Field Label은 Figma 심볼 높이 18이다`() {
+        assertFigmaHeight(figmaHeight = 18.dp, width = 361.dp) { FCFieldLabel("성향 태그") }
+    }
+
+    // Figma 49 중 구분선 1은 화면이 그린다.
+    @Test
+    fun `Checklist Row는 Figma 심볼 높이 48이다`() {
+        assertFigmaHeight(figmaHeight = 48.dp, width = 343.dp) { FCChecklistRow("보조배터리", isChecked = false) {} }
+    }
+
+    // Figma 57 중 구분선 1은 화면이 그린다.
+    @Test
+    fun `Consent All은 Figma 심볼 높이 56이다`() {
+        assertFigmaHeight(figmaHeight = 56.dp, width = 343.dp) { FCConsentAll(isChecked = true) {} }
     }
 
     @Test
