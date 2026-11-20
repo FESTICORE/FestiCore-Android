@@ -1,0 +1,63 @@
+name: PR Rules
+
+# 브랜치 이름 · PR 제목 · 커밋 제목 · 본문 AI 표시를 에이전트 훅과 같은 스크립트로 검사한다.
+# 규칙: .claude/docs/git-workflow.md
+on:
+  pull_request:
+    branches: [develop, main]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-rules-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    name: 브랜치 · 제목 · 커밋 규칙
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CHECK: python3 .claude/hooks/check_git_rules.py
+      HEAD_REF: ${{ github.head_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 배포 흐름 PR 여부
+        id: flow
+        run: |
+          # develop → main 배포 PR은 이미 검사한 커밋을 옮기는 것이라 건너뛴다
+          case "$HEAD_REF" in
+            develop) echo "release=true" >> "$GITHUB_OUTPUT"; echo "배포 흐름 PR: 검사 생략" ;;
+            *) echo "release=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: 브랜치 이름
+        if: steps.flow.outputs.release == 'false'
+        run: $CHECK --check-branch "$HEAD_REF"
+
+      - name: PR 제목 · 본문
+        if: steps.flow.outputs.release == 'false'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          $CHECK --check-message "$PR_TITLE"
+          printf '%s' "$PR_BODY" | $CHECK --check-body
+
+      - name: 커밋 제목 · 본문
+        if: steps.flow.outputs.release == 'false'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            $CHECK --check-message "$(git log -1 --format=%s "$sha")" > /dev/null || status=1
+            git log -1 --format=%B "$sha" | $CHECK --check-body > /dev/null || status=1
+          done
+          exit $status

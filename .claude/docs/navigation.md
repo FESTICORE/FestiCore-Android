@@ -1,0 +1,106 @@
+# 화면 전환 (Navigation 3 · 기능별 Coordinator)
+
+iOS TCAFlow와 같이 **기능마다 Coordinator 하나가 화면 스택(routes)을 State로 갖고**, 자식 화면은 "무슨 일이 일어났는지"만 알린다.
+어디로 이동할지는 Coordinator가 정한다. 화면끼리 서로를 직접 열지 않는다.
+
+| 개념 | iOS (TCAFlow) | Android (Navigation 3 + Orbit) |
+|------|---------------|--------------------------------|
+| 기능 흐름 담당 | `@FlowCoordinator` `{기능}Coordinator` | `{기능}Coordinator` (Orbit `ContainerHost`) |
+| 화면 스택 | `State.routes: [Route<{기능}Screen.State>]` | `CoordinatorState.routes: List<NavKey>` |
+| 화면 목록 | `@Reducer enum {기능}Screen` | `@Serializable sealed interface {기능}Route : NavKey` |
+| 이동 | `routes.push` · `presentSheet` · `presentCover` · `goBack` · `goBackToRoot` | Coordinator `push` · `goBack` · `goBackToRoot` (+ Android만 `replaceCurrent`) |
+| 자식 → 부모 | `delegate` Action | 화면 SideEffect → Coordinator 함수 호출 |
+| 그리기 | TCAFlow 뷰 | `NavDisplay(backStack = state.routes, ...)` |
+| 다른 기능으로 | 부모 Coordinator로 `delegate` | 부모 Coordinator로 콜백 |
+
+
+## Android: Navigation 3 + Orbit Coordinator
+
+참고: Android 공식 문서 Navigation 3 (`developer.android.com/guide/navigation/navigation-3`).
+Navigation 3는 백스택을 앱이 소유하는 리스트로 다룬다. TCAFlow의 `routes`와 같은 개념이다.
+버전은 도입 PR에서 최신 안정판을 확인해 `libs.versions.toml`에 고정한다.
+
+### 경로 (feature `interface`)
+
+```kotlin
+// feature/auth/interface/.../AuthRoute.kt
+@Serializable
+sealed interface AuthRoute : NavKey {
+    @Serializable data object Login : AuthRoute
+    @Serializable data class SignUp(val inviteCode: String? = null) : AuthRoute
+}
+```
+
+- 경로는 `interface` 모듈에 둔다. 다른 기능이 이 기능 화면으로 들어올 때 이 타입만 쓴다.
+- 경로에 넘기는 값은 id 같은 작은 값만 둔다. 큰 객체는 UseCase로 다시 조회한다.
+
+### Coordinator (feature `sources`)
+
+```kotlin
+// feature/auth/sources/.../AuthCoordinator.kt
+data class AuthCoordinatorState(val routes: List<NavKey> = listOf(AuthRoute.Login))
+
+sealed interface AuthCoordinatorSideEffect {
+    data object Finished : AuthCoordinatorSideEffect   // 부모 Coordinator에 알림 (iOS delegate)
+}
+
+class AuthCoordinator : OrbitContainerHost<AuthCoordinatorState, AuthCoordinatorState, AuthCoordinatorSideEffect>, ViewModel() {
+    override val container = orbitContainer<AuthCoordinatorState, AuthCoordinatorSideEffect>(AuthCoordinatorState())
+
+    fun push(route: AuthRoute) = intent { reduce { state.copy(routes = state.routes + route) } }
+    fun goBack() = intent { reduce { state.copy(routes = state.routes.dropLast(1).ifEmpty { state.routes }) } }
+    fun goBackToRoot() = intent { reduce { state.copy(routes = state.routes.take(1)) } }
+    fun replaceCurrent(route: AuthRoute) = intent { reduce { state.copy(routes = state.routes.dropLast(1) + route) } }
+
+    // 자식 화면 이벤트 → 이동 결정 (iOS handleRouterAction과 같은 자리)
+    fun onSignUpRequested() = push(AuthRoute.SignUp())
+    fun onLoggedIn() = intent { postSideEffect(AuthCoordinatorSideEffect.Finished) }
+}
+```
+
+### 그리기
+
+```kotlin
+@Composable
+fun AuthFlow(coordinator: AuthCoordinator = koinViewModel(), onFinished: () -> Unit) {
+    val state by coordinator.collectAsState()
+    coordinator.collectSideEffect { if (it == AuthCoordinatorSideEffect.Finished) onFinished() }
+
+    NavDisplay(
+        backStack = state.routes,
+        onBack = coordinator::goBack,
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),   // 화면마다 ViewModel 범위를 나눈다
+        ),
+        entryProvider = entryProvider {
+            entry<AuthRoute.Login> {
+                LoginScreen(
+                    onSignUpRequested = coordinator::onSignUpRequested,
+                    onLoggedIn = coordinator::onLoggedIn,
+                )
+            }
+            entry<AuthRoute.SignUp> { key -> SignUpScreen(inviteCode = key.inviteCode, onDone = coordinator::goBack) }
+        },
+    )
+}
+```
+
+- 화면(`LoginScreen`)은 자기 ViewModel의 SideEffect를 받아 콜백(`onSignUpRequested`)만 부른다. 백스택을 직접 바꾸지 않는다.
+- `rememberViewModelStoreNavEntryDecorator()`를 반드시 넣는다. 없으면 화면 ViewModel이 Activity 범위로 공유된다.
+- Coordinator 이동 함수 이름은 iOS TCAFlow와 같게 둔다(`push` · `goBack` · `goBackToRoot`). `replaceCurrent`는 iOS에 없어 Android만 쓴다(iOS는 `goBack()` + `push`).
+
+## 앱 단위 흐름
+
+- iOS `AppCoordinator`처럼 `app`의 루트 Coordinator가 기능 흐름(스플래시 → 온보딩 → `AuthFlow` → 메인 탭)을 전환한다.
+- 기능 밖으로 나가는 이동은 항상 부모 Coordinator가 정한다.
+
+## 테스트
+
+- `orbit-test`로 Coordinator 함수 호출 → `routes` State와 `Finished` SideEffect를 검증한다.
+
+## 금지
+
+- 화면(Feature · Screen)에서 다른 화면을 직접 열기 금지. Coordinator를 거친다.
+- Navigation Compose 2(`NavHost` · `NavController`)와 Navigation 3 섞어 쓰기 금지.
+- 경로(`NavKey`)를 `sources`에 두기 금지. 다른 기능이 볼 수 있게 `interface`에 둔다.

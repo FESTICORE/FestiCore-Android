@@ -1,0 +1,4 @@
+# 도구 버전 고정. 기준: .claude/docs/gradle.md
+[tools]
+java = "temurin-21"
+ktlint = "1.8.0"
