@@ -16,12 +16,22 @@
 - 다른 작업자의 수정이 섞여 있을 수 있으므로 `git status`와 `git diff`를 확인하고 소유 파일만 stage한다.
 - PR 줄 수 제한은 두지 않는다. 함께 검증할 큰 묶음은 2,000줄을 넘어도 한 PR로 올리고 억지로 쪼개지 않는다. 검증이 끝난 PR은 squash merge한다.
 
-## 스쿼시 머지 메시지
+## 스쿼시 머지
 
-- 최종 커밋 제목은 변경 의도를 간결한 한국어로 적고 해당 작업 이슈 번호를 끝에 붙인다.
-- 본문에는 변경 요약 한두 문장만 남긴다. 세부 항목 목록, 확인·검증 내역, GitHub가 자동으로 채운 개별 커밋 제목과 본문 목록은 머지 전에 모두 삭제한다. 세부 내용은 PR 설명에만 남긴다.
-- CLI에서는 `gh pr merge <PR 번호> --squash --subject '<한국어 제목 #이슈번호>' --body-file <요약 파일>`처럼 제목과 본문을 모두 명시한다. 요약 파일에도 개별 커밋 내역을 넣지 않는다.
-- 머지 후 `gh pr view <PR 번호> --json mergeCommit -q .mergeCommit.oid`로 해당 PR의 머지 커밋을 찾고, `gh api repos/FESTICORE/FestiCore-Android/commits/<OID> --jq '.commit.message'`로 최종 메시지를 확인한다. 자동 생성 커밋 목록이 남았다면 기록하고 다음 머지부터 규칙을 적용한다. 메시지 수정을 위해 `develop` 이력을 다시 쓰지 않는다.
+- 머지는 **squash merge만** 쓴다. 저장소에서 merge commit · rebase merge는 꺼 두었다.
+- 스쿼시 커밋은 **제목 한 줄만** 남긴다. 제목은 PR 제목에 GitHub가 ` (#PR번호)`를 붙인 것이다(예: `하네스 규칙과 훅을 추가한다 #1 (#2)`). 본문은 비운다. 작업 내용 · 검증은 PR 본문에 남긴다.
+- 저장소 설정으로 강제한다: squash 제목 `PR_TITLE`, 본문 `BLANK`, 머지 시 원격 브랜치 삭제. 확인:
+  `gh api repos/FESTICORE/FestiCore-Android --jq '.squash_merge_commit_title, .squash_merge_commit_message'` → `PR_TITLE` · `BLANK`
+
+```bash
+gh pr checks {PR번호} --watch                   # CI가 모두 통과할 때까지 기다린다
+gh pr merge {PR번호} --squash --delete-branch --body ""
+git switch develop && git pull --ff-only
+git fetch --prune
+test "$(gh pr view {PR번호} --json state -q .state)" = MERGED && git branch -D feature/{작업명}
+```
+
+- 스쿼시 머지는 기록이 달라 `git branch -d`가 거부하므로, PR이 `MERGED`인지 확인하고 `-D`로 지운다.
 
 ## PR 검증
 
