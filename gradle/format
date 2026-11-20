@@ -1,0 +1,12 @@
+#!/bin/sh
+# Kotlin 포맷(ktlint). 사용: gradle/format [--check]   규칙: .editorconfig · .claude/docs/code-convention.md
+set -eu
+cd "$(dirname "$0")/.."
+
+fix="-F"
+if [ "${1:-}" = "--check" ]; then fix=""; fi
+
+exec mise exec -- ktlint $fix --relative \
+  "app/**/*.kt" "feature/**/*.kt" "domain/**/*.kt" "service/**/*.kt" "core/**/*.kt" "ui/**/*.kt" "build-logic/**/*.kt" \
+  "*.kts" "app/**/*.kts" "feature/**/*.kts" "domain/**/*.kts" "service/**/*.kts" "core/**/*.kts" "ui/**/*.kts" "build-logic/**/*.kts" \
+  "!**/build/**" "!ui/designkit/src/main/kotlin/**/tokens/**"
