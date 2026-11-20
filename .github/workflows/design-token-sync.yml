@@ -1,7 +1,8 @@
 name: Sync design tokens
 
-# FestiCore-DesignSystem main의 generated/android/tokens를 ui/designkit으로 가져와 draft PR을 연다.
-# GITHUB_TOKEN으로 만든 PR은 다른 워크플로를 깨우지 않으므로, 머지 전 절차를 PR 본문에 적는다. 규칙: .claude/docs/design-system.md
+# FestiCore-DesignSystem main의 generated/android/tokens를 ui/designkit으로 가져와 검증된 브랜치와 이슈를 만든다.
+# FESTICORE 조직 정책상 Actions는 PR을 만들 수 없다. PR은 이슈의 링크로 사람이(또는 사용자 토큰으로) 열어 CI · AI 리뷰를 정상 실행한다.
+# 규칙: .claude/docs/design-system.md
 on:
   schedule:
     - cron: '41 */6 * * *'
@@ -20,7 +21,7 @@ jobs:
     permissions:
       contents: write
       issues: write
-      pull-requests: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,11 +41,17 @@ jobs:
             echo "current=true" >> "$GITHUB_OUTPUT"
             echo "디자인 토큰이 이미 $SHA 와 같다" >> "$GITHUB_STEP_SUMMARY"
           else
-            # 같은 SHA의 열린 PR이 있을 때만 건너뛴다. 브랜치만 남은 경우(PR 생성 실패 · 닫힘)는 다시 만든다. 조회 실패는 set -e로 실패 처리
-            OPEN="$(gh pr list --head "feature/design-tokens-${SHA:0:7}" --state open --json number --jq 'length')"
-            if [ "$OPEN" != "0" ]; then
+            # 같은 SHA의 열린 PR, 또는 브랜치와 열린 동기화 이슈가 이미 있으면(사람이 PR을 열기를 기다리는 중) 건너뛴다. 조회 실패는 set -e로 실패 처리
+            BRANCH="feature/design-tokens-${SHA:0:7}"
+            TITLE="디자인 토큰을 ${SHA:0:7}로 동기화한다"
+            OPEN_PR="$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')"
+            OPEN_ISSUE="$(gh issue list --state open --search "\"$TITLE\" in:title" --json title --jq "map(select(.title == \"$TITLE\")) | length")"
+            if [ "$OPEN_PR" != "0" ]; then
               echo "current=true" >> "$GITHUB_OUTPUT"
-              echo "feature/design-tokens-${SHA:0:7}의 열린 PR이 이미 있다" >> "$GITHUB_STEP_SUMMARY"
+              echo "$BRANCH의 열린 PR이 이미 있다" >> "$GITHUB_STEP_SUMMARY"
+            elif [ "$OPEN_ISSUE" != "0" ] && git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+              echo "current=true" >> "$GITHUB_OUTPUT"
+              echo "$BRANCH 브랜치와 동기화 이슈가 이미 있다. 이슈의 링크로 PR을 연다" >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
 
@@ -87,7 +94,7 @@ jobs:
           gradle/format --check
           mise exec -- ./gradlew --console=plain testDebugUnitTest testStageDebugUnitTest :app:assembleStageDebug
 
-      - name: 이슈 · draft PR 만들기
+      - name: 이슈 · 브랜치 만들기
         if: steps.sync.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -96,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
           TITLE="디자인 토큰을 ${SHORT}로 동기화한다"
-          # 앞선 실행이 PR 생성 전에 실패했으면 그때 만든 이슈를 다시 쓴다
+          # 앞선 실행이 중간에 실패했으면 그때 만든 이슈를 다시 쓴다
           ISSUE="$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title --jq "map(select(.title == \"$TITLE\")) | .[0].number // empty")"
           if [ -z "$ISSUE" ]; then
             ISSUE_URL="$(gh issue create --title "$TITLE" --body "FestiCore-DesignSystem ${SHA}의 generated/android/tokens를 ui/designkit으로 가져온다." --assignee Roy-wonji)"
@@ -110,12 +117,14 @@ jobs:
           git commit -m "${TITLE} #${ISSUE}" -m "FestiCore-DesignSystem ${SHA}의 Android 토큰 생성물을 가져온다."
           # 열린 PR 없이 남은 같은 이름의 브랜치는 이번 결과로 덮어쓴다(위 단계에서 열린 PR이 없음을 확인함)
           git push --force origin "$BRANCH"
+          COMPARE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/develop...$BRANCH?expand=1"
           printf '%s\n' \
-            "## What" "" "FestiCore-DesignSystem \`${SHA}\`의 \`generated/android/tokens\`를 \`ui/designkit\`으로 가져온다." "" \
-            "Closes #${ISSUE}" "" \
-            "## 머지 전 절차" "" \
-            "이 PR은 GITHUB_TOKEN으로 만들어 CI · AI 리뷰가 돌지 않았다. 워크플로 안에서 check-boundaries · ktlint · 단위 테스트 · stage 빌드는 통과했다." \
-            "1. Ready for review로 바꾼다." \
-            "2. PR을 닫았다가 다시 열어 Android PR · PR Rules · Gemini · Codex 리뷰를 실행한다." \
-            "3. CI 통과와 AI 리뷰 결과(또는 미완료 사유)를 확인한 뒤 squash merge한다." > "$RUNNER_TEMP/pr-body.md"
-          gh pr create --draft --base develop --head "$BRANCH" --title "${TITLE} #${ISSUE}" --body-file "$RUNNER_TEMP/pr-body.md" --assignee Roy-wonji
+            "검증된 브랜치 \`$BRANCH\`를 만들었다(원천 \`${SHA}\`, check-boundaries · ktlint · 단위 테스트 · stage 빌드 통과)." "" \
+            "## PR 열기" "" \
+            "- 링크: $COMPARE" \
+            "- 또는: \`gh pr create --base develop --head $BRANCH --title \"${TITLE} #${ISSUE}\" --assignee Roy-wonji\`" \
+            "- PR 본문에 \`Closes #${ISSUE}\`를 넣는다. 사용자가 연 PR이라 Android PR · PR Rules · Gemini · Codex 리뷰가 그대로 돈다." \
+            "- CI 통과와 AI 리뷰 결과(또는 미완료 사유)를 확인한 뒤 squash merge한다." \
+            "" "실행: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$RUNNER_TEMP/issue-comment.md"
+          gh issue comment "$ISSUE" --body-file "$RUNNER_TEMP/issue-comment.md"
+          echo "브랜치 $BRANCH · 이슈 #$ISSUE. PR은 이슈의 링크로 연다: $COMPARE" >> "$GITHUB_STEP_SUMMARY"

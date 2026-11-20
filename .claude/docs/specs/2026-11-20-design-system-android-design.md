@@ -13,7 +13,7 @@ FestiCore-DesignSystem 토큰을 iOS와 같은 원천 · 같은 이름으로 And
 5. `FestiCoreTheme`과 `FestiCoreTextStyle.textStyle`로 앱 화면이 토큰을 쓴다(MainActivity가 사용).
 6. 토큰 밖 색 하드코딩(`Color(0x…)`)을 `check-boundaries`가 막는다(`ui/designkit` tokens 폴더만 허용). `android-pr` CI에도 `check-boundaries` 단계를 넣어 PR에서 같은 검사를 한다.
 7. Android `.claude/scripts/verify --all` · PR CI(`android-pr` · `pr-rules`) 통과. Gemini 리뷰가 `.kt` 변경 PR에서 실행된다(Codex 리뷰는 OpenAI 할당량 초과로 실패 중 — 결과를 PR에 기록).
-8. `.github/workflows/design-token-sync.yml`(일정 · 수동)이 DesignSystem `main` 최신 커밋을 고정해 `npm run check` 후 토큰을 동기화하고, 바뀌었으면 PR을 연다. 로컬에서는 `gradle/sync-design-tokens <DesignSystem 경로>`로 같은 동기화를 한다. 자동 PR은 `GITHUB_TOKEN`으로 만들어 다른 워크플로가 돌지 않으므로, 워크플로가 PR을 draft로 열고 본문에 "CI · AI 리뷰 미실행: Ready for review로 바꾼 뒤 닫았다 다시 열어 CI · Gemini · Codex를 실행하고 결과를 확인한 뒤 머지"를 적는다. 사람이 그 절차로 CI와 AI 리뷰를 돌린 뒤에만 머지한다(`.claude/docs/design-system.md`에 같은 절차).
+8. (2026-11-20 사용자 결정으로 변경: 조직 정책이 Actions의 PR 생성을 막아, 워크플로는 검증된 브랜치와 이슈 + PR 열기 링크까지 만들고 PR은 사람이 연다. 자세한 절차는 `.claude/docs/design-system.md`) `.github/workflows/design-token-sync.yml`(일정 · 수동)이 DesignSystem `main` 최신 커밋을 고정해 `npm run check` 후 토큰을 동기화하고, 바뀌었으면 PR을 연다. 로컬에서는 `gradle/sync-design-tokens <DesignSystem 경로>`로 같은 동기화를 한다. 자동 PR은 `GITHUB_TOKEN`으로 만들어 다른 워크플로가 돌지 않으므로, 워크플로가 PR을 draft로 열고 본문에 "CI · AI 리뷰 미실행: Ready for review로 바꾼 뒤 닫았다 다시 열어 CI · Gemini · Codex를 실행하고 결과를 확인한 뒤 머지"를 적는다. 사람이 그 절차로 CI와 AI 리뷰를 돌린 뒤에만 머지한다(`.claude/docs/design-system.md`에 같은 절차).
 
 ## 결정
 
