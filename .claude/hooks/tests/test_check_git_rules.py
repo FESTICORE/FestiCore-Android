@@ -100,6 +100,14 @@ class GitRulesHookTests(unittest.TestCase):
         self.assertBlocked(self.hook('gh pr create --title "하네스를 추가한다 #1" --body "https://claude.ai/code/session_x"'),
                            "AI 표시")
 
+    def test_session_links_blocked_for_any_tool(self):
+        for link in ("https://claude.ai/code/session_x", "https://claude.ai/share/abc", "https://chatgpt.com/c/abc",
+                     "https://chatgpt.com/codex/tasks/task_e_1", "https://chat.openai.com/c/abc",
+                     "https://gemini.google.com/app/abc", "https://g.co/gemini/share/abc"):
+            self.assertBlocked(self.direct("--check-body", stdin=f"제목 #1\n\n{link}\n"), "AI 표시")
+            self.assertBlocked(self.hook(f'git commit -m "하네스를 추가한다 #1" -m "{link}"'), "AI 표시")
+        self.assertEqual(0, self.direct("--check-body", stdin="제목 #1\n\nhttps://github.com/FESTICORE/FestiCore-iOS\n").returncode)
+
     def test_check_body_for_ci(self):
         self.assertEqual(0, self.direct("--check-body", stdin="하네스를 추가한다 #1\n\n본문\n").returncode)
         self.assertBlocked(self.direct("--check-body", stdin="제목 #1\n\nCo-Authored-By: Gemini <g@example.com>\n"),
