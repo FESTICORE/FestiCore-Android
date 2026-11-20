@@ -18,6 +18,7 @@ FestiCore-iOS를 Android로 옮기기 전에, 에이전트가 일하는 환경(�
 4. `python3 -m unittest discover -s .claude/hooks/tests` 통과.
 5. H2 후 `.claude/scripts/verify --all` 통과(경계 검사 · ktlint · `./gradlew testStageDebugUnitTest assembleStageDebug`).
 6. PR CI(`pr-rules` · `android-pr`)가 H2 PR에서 성공한다.
+7. H1 · H2 PR에서 Codex · Gemini 리뷰 워크플로가 실행된다(같은 저장소 PR의 `pull_request` 이벤트는 PR의 워크플로 파일로 돈다. H1의 `pr-rules.yml`이 PR #2에서 실행된 것으로 확인). 시크릿이 등록돼 있으면 리뷰 댓글이 달리고, 없으면 Gemini는 경고 · 요약으로, Codex는 실패 요약으로 끝난 것을 확인해 미완료로 기록한다.
 
 ## 결정 사항
 
@@ -63,6 +64,7 @@ CIRQLE 하네스를 가져오고 FestiCore 규칙으로 바꾼다. KMP · iOS ·
 | `.github/pull_request_template.md` · `ISSUE_TEMPLATE/{feature,bug,task}.md` | CIRQLE | FestiCore 형식 |
 | `.github/workflows/pr-rules.yml` | CIRQLE | PR 제목 · 커밋 제목 규칙을 FestiCore 형식으로, 커밋 · PR 본문의 `Co-Authored-By`(작성자 무관) · 세션 링크 검사 |
 | `.github/workflows/assign-pr-owner.yml` | FestiCore-iOS | 같음 |
+| `.github/workflows/codex-pr-review.yml` · `gemini-code-review.yml` | FestiCore-iOS | 리뷰 프롬프트를 Kotlin · Compose · Orbit · 이 저장소 규칙으로, Gemini diff 대상을 `*.kt` · `*.kts`로. `OPENAI_API_KEY` · `GEMINI_API_KEY`는 저장소 시크릿이 필요하다(값은 사용자가 등록). Gemini는 iOS 원본에 키 확인이 없어 diff 단계에서 키가 없으면 경고 · 요약을 남기고 건너뛴다. 일일 무료 할당량 초과는 iOS와 같이 경고, 그 밖의 API 오류는 재시도 후 작업 실패로 드러낸다. Codex는 iOS와 같이 `continue-on-error` + 실패 요약. 어느 경우든 해당 HEAD의 AI 리뷰는 미완료로 기록한다 |
 | `.editorconfig` · `.gitignore` · `.mise.toml` | CIRQLE | `.mise.toml`은 `java = "temurin-21"` · `ktlint`만 |
 
 H1 문서(각 200줄 미만, 코드에서 알 수 있는 내용은 쓰지 않는다):
@@ -91,7 +93,7 @@ H1 문서(각 200줄 미만, 코드에서 알 수 있는 내용은 쓰지 않는
 
 - 화면 · 도메인 · 네트워크 이식(다음 설계 문서)
 - 브랜치 보호 규칙(private 저장소 무료 플랜에서 불가할 수 있음. 훅으로 대신한다)
-- AI PR 리뷰 워크플로(Codex · Gemini · Claude Code Review). 비밀 값이 필요해 별도 이슈로 둔다
+- Claude Code Review(GitHub App). iOS 저장소에도 없다
 - 서명 · 배포(fastlane · Play Console)
 - Live Activity · 위젯 대응
 
