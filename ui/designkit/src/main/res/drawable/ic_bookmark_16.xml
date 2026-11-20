@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 원본: FestiCore-iOS FestiCoreDesignKit/Resources/ImageAssets.xcassets/Icon/bookmark-16.imageset/bookmark-16.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#111113"
+        android:pathData="M3 2.58301V14.0335C3 14.3825 3.28385 14.6663 3.63281 14.6663C3.76302 14.6663 3.89062 14.6273 3.9974 14.5518L8 11.7497L12.0026 14.5518C12.1094 14.6273 12.237 14.6663 12.3672 14.6663C12.7161 14.6663 13 14.3825 13 14.0335V2.58301C13 1.8929 12.4401 1.33301 11.75 1.33301H4.25C3.5599 1.33301 3 1.8929 3 2.58301Z" />
+</vector>

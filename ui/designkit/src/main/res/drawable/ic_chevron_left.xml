@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 원본: FestiCore-iOS FestiCoreDesignKit/Resources/ImageAssets.xcassets/Icon/chevron-left.imageset/chevron-left.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <path
+        android:fillColor="#111113"
+        android:pathData="M6.13763 9.26462C5.73072 9.67153 5.73072 10.3323 6.13763 10.7393L12.3878 16.9894C12.7947 17.3963 13.4555 17.3963 13.8624 16.9894C14.2693 16.5825 14.2693 15.9217 13.8624 15.5147L8.34796 10.0003L13.8591 4.48588C14.266 4.07897 14.266 3.41815 13.8591 3.01124C13.4522 2.60433 12.7914 2.60433 12.3845 3.01124L6.13437 9.26136L6.13763 9.26462Z" />
+</vector>

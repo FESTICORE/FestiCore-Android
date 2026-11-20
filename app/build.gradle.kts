@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     implementation(project(":core:logger"))
+    implementation(project(":ui:designkit"))
 }
