@@ -39,7 +39,7 @@
 
 | 이벤트 | 스크립트 | 검사 내용 |
 |--------|----------|-----------|
-| `PreToolUse` (Bash) | `check-git-rules.sh` → `check_git_rules.py` | 보호 브랜치(`main` · `develop`) 커밋 · 푸시 금지, 브랜치 이름, 커밋 제목(한국어 · 끝에 ` #이슈`), `.DS_Store` 금지, 커밋 · PR 본문 AI 표시(작성자 무관 `Co-Authored-By` 트레일러 · 세션 링크) 금지, 훅 건너뛰기 · `core.hooksPath` 변경 금지, **검증 안 된 코드 커밋 금지** |
+| `PreToolUse` (Bash) | `check-git-rules.sh` → `check_git_rules.py` | 보호 브랜치(`main` · `develop`) 커밋 · 푸시 금지, 브랜치 이름, 커밋 제목(한국어 · 끝에 ` #이슈`), `.DS_Store` 금지, 커밋 · PR 본문 AI 표시(작성자 무관 `Co-Authored-By` 트레일러 · Claude · ChatGPT/Codex · Gemini 세션 링크) 금지, 훅 건너뛰기 · `core.hooksPath` 변경 금지, **검증 안 된 코드 커밋 금지** |
 | `PostToolUse` (Read · Skill) | `usage_log.py` | 하네스 문서 · 규칙 · 스킬 · `.spec` 사용을 `.claude/state/usage.jsonl`에 기록 |
 | git `pre-commit` | `.githooks/pre-commit` → `pre_commit_gate.py` | 커밋될 index(`commit -a`의 임시 index 포함)의 코드가 verify 통과 시점과 다르면 커밋 금지 |
 | `Stop` | `stop_guard.py` | 검증 안 된 코드 변경이 있으면 응답 종료를 한 번 막고 verify를 안내 |

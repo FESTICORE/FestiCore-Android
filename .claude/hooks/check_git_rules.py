@@ -49,7 +49,11 @@ NO_VERIFY = "--no-" + "verify"
 VALUE_OPTS = {"-m", "--message", "-F", "--file", "-C", "-c", "--reuse-message", "--reedit-message",
               "-t", "--template", "--author", "--date", "--fixup", "--squash", "--cleanup"}
 # Co-Authored-By 트레일러는 작성자 이름과 관계없이 막는다(Claude · Codex · Gemini · 사람 모두).
-AI_MARK_RE = re.compile(r"claude\.ai/code/session|Claude-Session:|Co-Authored-By\s*:|Generated with \[?Claude|noreply@anthropic\.com", re.I)
+# 세션 링크는 도구와 관계없이 막는다(Claude · ChatGPT/Codex · Gemini).
+AI_MARK_RE = re.compile(
+    r"claude\.ai/(?:code/session|chat/|share/)|Claude-Session:|chatgpt\.com/(?:c|codex|share)/|chat\.openai\.com/"
+    r"|gemini\.google\.com/(?:app|share)/|g\.co/gemini/share/"
+    r"|Co-Authored-By\s*:|Generated with \[?Claude|noreply@anthropic\.com", re.I)
 
 
 def check_ai_mark(text, where):
