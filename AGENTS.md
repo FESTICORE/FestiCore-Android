@@ -5,6 +5,7 @@
 
 ## 작업 시작 전
 
+0. clone 직후 한 번 `git config core.hooksPath .githooks`를 실행한다. git은 clone 때 훅을 켜지 않아, 이 설정(또는 첫 `.claude/scripts/verify`) 전에는 pre-commit 검증 게이트가 걸리지 않는다.
 1. `CLAUDE.md`를 읽는다.
 2. `CLAUDE.md`의 문서 색인에서 이번 작업에 해당하는 `.claude/docs/*.md`를 읽는다.
 3. 수정할 경로에 맞는 경로별 규칙을 읽는다. Claude는 자동으로 적용하지만 Codex는 직접 읽어야 한다.
@@ -20,7 +21,7 @@
 ## Codex가 직접 지켜야 하는 것
 
 Claude는 `.claude/hooks/check-git-rules.sh` 훅이 아래 규칙을 강제한다. Codex에는 이 훅이 걸리지 않으니 직접 지킨다.
-git `pre-commit` 검증 게이트(`.githooks`)는 Codex에도 걸린다.
+git `pre-commit` 검증 게이트(`.githooks`)는 위 0번으로 훅을 켠 뒤부터 Codex에도 걸린다.
 
 - `main`, `develop`에 직접 커밋 · 푸시하지 않는다.
 - 브랜치 이름은 `feature/<작업명>`(영문 소문자 kebab-case)으로 짓는다.

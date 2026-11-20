@@ -47,7 +47,8 @@
 공용 판정(코드 변경 · 지문 · 검증 기록)은 `harness_state.py` 하나에 둔다. 코드 경로는 `CODE_DIRS` · `CODE_FILES`다. Gradle 모듈 폴더와 함께 하네스 훅 · 스크립트 · 워크플로(`.claude/hooks` · `.claude/scripts` · `.githooks` · `.github/workflows` · `.claude/settings.json`)도 코드로 본다. `*.md`만 바뀌면 검증하지 않는다.
 
 - PreToolUse 훅은 명령이 실행되기 **전** 작업 트리를 본다. 같은 명령 안에서 고친 뒤 커밋하면 놓친다. 그래서 실제 차단은 git `pre-commit` 훅이 커밋 직전 index로 한다.
-- `core.hooksPath=.githooks`는 verify · 커밋 게이트가 켠다. 사람이 터미널에서 커밋해도 같은 검사를 받는다.
+- `core.hooksPath=.githooks`는 verify · Claude 커밋 게이트가 켠다. 켠 뒤에는 사람이 터미널에서 커밋해도 같은 검사를 받는다.
+- git은 clone 때 훅을 자동으로 켜지 않는다. 새 clone에서는 `git config core.hooksPath .githooks`(또는 `.claude/scripts/verify`)를 먼저 실행한다. 그 전의 Codex · 터미널 커밋은 게이트를 거치지 않는다(PR CI가 규칙 검사를 한 번 더 한다).
 - 훅은 빨라야 한다. git commit · push · `gh pr`가 아니면 bash 문자열 비교만 하고 끝낸다. 검사가 필요할 때만 python을 한 번(`-I -S`) 실행한다.
 - `$( … )` 안에 heredoc으로 스크립트를 넘기지 않는다. 스크립트는 파일로 둔다.
 - 알려진 한계: 문자열 안의 git 명령은 실제 명령 위치(명령 시작)에 올 때만 검사한다.
@@ -120,7 +121,7 @@ python3 -m unittest discover -s .claude/hooks/tests
 ## Claude와 Codex
 
 - 규칙 원본은 `CLAUDE.md`와 `.claude/docs/` 하나다. `AGENTS.md`에는 규칙을 복사하지 않고 읽을 위치만 적는다.
-- Codex에는 Claude 훅이 걸리지 않는다. Codex는 커밋 전에 위 직접 검사와 `.claude/scripts/verify`를 실행한다. git `pre-commit` 게이트는 Codex에도 걸린다.
+- Codex에는 Claude 훅이 걸리지 않는다. Codex는 커밋 전에 위 직접 검사와 `.claude/scripts/verify`를 실행한다. git `pre-commit` 게이트는 `core.hooksPath`를 켠 뒤부터 Codex에도 걸린다.
 - 교차 검토: 한쪽이 계획하거나 구현하면 다른 쪽이 같은 문서를 기준으로 검토한다.
 
 ## 코드 리뷰
