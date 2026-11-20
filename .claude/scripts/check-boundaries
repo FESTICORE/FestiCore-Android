@@ -23,7 +23,7 @@ RULES = [
      "DB 접근은 core:database의 DAO를 주입받아 쓴다"),
     ("색은 디자인 토큰만 쓴다", "**/src/**/*.kt",
      ["ui/designkit/src/main/kotlin/io/festicore/ui/designkit/tokens/**", "**/src/test/**", "**/src/androidTest/**"],
-     r"\bColor\(\s*0x[0-9A-Fa-f]",
+     r"\bColor\(\s*0[xX][0-9A-Fa-f]",
      "FestiCoreSemanticColor(ui/designkit 생성 토큰)를 쓴다. 새 색은 FestiCore-DesignSystem 토큰에 추가한다"),
     ("feature는 다른 모듈의 sources를 의존하지 않는다", "feature/**/build.gradle.kts",
      [], r"projects\.\w+(\.\w+)*\.sources\b|project\(\s*\"[^\"]*:sources\"\s*\)",

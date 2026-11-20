@@ -25,10 +25,13 @@ def fail(message):
 
 
 def color(value, src):
+    """SVG #RRGGBB(AA) → Android #RRGGBB / #AARRGGBB."""
     value = COLORS.get(value, value)
-    if not (value.startswith("#") and len(value) in (7, 9)):
+    hexpart = value[1:]
+    if not (value.startswith("#") and len(hexpart) in (6, 8) and all(c in "0123456789abcdefABCDEF" for c in hexpart)):
         fail(f"지원하지 않는 색 {value}: {src}")
-    return value.upper()
+    hexpart = hexpart.upper()
+    return f"#{hexpart}" if len(hexpart) == 6 else f"#{hexpart[6:]}{hexpart[:6]}"
 
 
 def check_attributes(el, tag, src):
