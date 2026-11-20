@@ -39,6 +39,7 @@ gradle/sync-design-tokens ../FestiCore-DesignSystem   # 원천의 커밋된 생�
 
 - `.github/workflows/design-token-sync.yml`이 6시간마다(또는 수동) DesignSystem `main`을 확인해, 바뀌었으면 원천 `npm run check` → 동기화 → check-boundaries · ktlint · 단위 테스트 · stage 빌드 → 이슈 · draft PR을 만든다.
 - 같은 SHA의 열린 PR이 있으면 건너뛴다. 브랜치만 남고 PR이 없으면(생성 실패 · 닫힘) 다시 검증해 브랜치를 덮어쓰고 PR을 만든다.
+- PR 생성은 저장소 설정 Settings → Actions → General → Workflow permissions의 "Allow GitHub Actions to create and approve pull requests"가 켜져 있어야 한다. 실패 뒤 재실행은 같은 제목의 열린 이슈를 재사용한다.
 - 이 PR은 `GITHUB_TOKEN`으로 만들어 CI · AI 리뷰가 돌지 않는다. Ready for review로 바꾸고 닫았다 다시 열어 Android PR · PR Rules · Gemini · Codex를 실행한 뒤, 결과를 확인하고 머지한다.
 
 ## 아이콘 추가

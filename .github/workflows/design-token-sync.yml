@@ -96,8 +96,12 @@ jobs:
         run: |
           set -euo pipefail
           TITLE="디자인 토큰을 ${SHORT}로 동기화한다"
-          ISSUE_URL="$(gh issue create --title "$TITLE" --body "FestiCore-DesignSystem ${SHA}의 generated/android/tokens를 ui/designkit으로 가져온다." --assignee Roy-wonji)"
-          ISSUE="${ISSUE_URL##*/}"
+          # 앞선 실행이 PR 생성 전에 실패했으면 그때 만든 이슈를 다시 쓴다
+          ISSUE="$(gh issue list --state open --search "\"$TITLE\" in:title" --json number,title --jq "map(select(.title == \"$TITLE\")) | .[0].number // empty")"
+          if [ -z "$ISSUE" ]; then
+            ISSUE_URL="$(gh issue create --title "$TITLE" --body "FestiCore-DesignSystem ${SHA}의 generated/android/tokens를 ui/designkit으로 가져온다." --assignee Roy-wonji)"
+            ISSUE="${ISSUE_URL##*/}"
+          fi
           BRANCH="feature/design-tokens-${SHORT}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
