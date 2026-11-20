@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Gradle · Kotlin 생성물
+.gradle/
+build/
+.kotlin/
+local.properties
+captures/
+*.apk
+*.aab
+
+# IDE 설정 (Android Studio · IntelliJ)
+.idea/
+*.iml
+
+# 에이전트 로컬 상태 (OMC · OMX)
+.omc/
+.omx/
+
+# Claude 에이전트 설정은 팀이 공유하므로 커밋한다 (전역 gitignore의 .claude/ 해제)
+!.claude/
+.claude/settings.local.json
+.claude/worktrees/
+.claude/agent-memory/
+.claude/ralph-loop.local.md
+
+# 하네스 로컬 상태 (검증 기록 · 사용 기록)
+.claude/state/
+__pycache__/
+
+# 로컬 비밀 설정 (Firebase · 서명 키)
+google-services.json
+*.jks
+*.keystore
+keystore.properties
