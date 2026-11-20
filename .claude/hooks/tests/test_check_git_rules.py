@@ -196,6 +196,14 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(0, self.check("feature/auth/sources/src/main/kotlin/A.kt", "val a = 1\n").returncode)
         self.assertEqual(0, self.check("core/database/src/main/kotlin/A.kt", "import androidx.room.Dao\n").returncode)
 
+    def test_hex_color_outside_tokens_blocked(self):
+        result = self.check("feature/home/sources/src/main/kotlin/A.kt", "val c = Color(0xFF111113)\n")
+        self.assertEqual(1, result.returncode)
+        self.assertIn("디자인 토큰", result.stdout)
+        self.assertEqual(0, self.check("feature/home/sources/src/main/kotlin/A.kt", "val c = 1\n").returncode)
+        token = "ui/designkit/src/main/kotlin/io/festicore/ui/designkit/tokens/FestiCoreSemanticColor.kt"
+        self.assertEqual(0, self.check(token, "val c = Color(0xFF111113)\n").returncode)
+
     def test_feature_depends_on_sources_blocked(self):
         result = self.check("feature/home/sources/build.gradle.kts",
                             "dependencies { implementation(projects.domain.festival.sources) }\n")

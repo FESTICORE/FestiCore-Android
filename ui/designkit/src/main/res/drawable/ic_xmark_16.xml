@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 원본: FestiCore-iOS FestiCoreDesignKit/Resources/ImageAssets.xcassets/Icon/xmark-16.imageset/xmark-16.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="#111113"
+        android:pathData="M11.9218 5.25485C12.2473 4.92933 12.2473 4.4007 11.9218 4.07519C11.5963 3.74968 11.0676 3.74968 10.7421 4.07519L8 6.81991L5.25527 4.07779C4.92976 3.75228 4.40113 3.75228 4.07562 4.07779C3.7501 4.40331 3.7501 4.93194 4.07562 5.25745L6.82034 7.99957L4.07822 10.7443C3.75271 11.0698 3.75271 11.5984 4.07822 11.924C4.40373 12.2495 4.93237 12.2495 5.25788 11.924L8 9.17923L10.7447 11.9213C11.0702 12.2469 11.5989 12.2469 11.9244 11.9213C12.2499 11.5958 12.2499 11.0672 11.9244 10.7417L9.17966 7.99957L11.9218 5.25485Z" />
+</vector>

@@ -41,11 +41,12 @@ build-logic/  Gradle convention plugin
 | 의존성 등록 (Koin) | `.claude/docs/dependency-injection.md` |
 | Gradle · 버전 · convention plugin · 명령 | `.claude/docs/gradle.md` |
 | 포맷 · 이름 · 주석 (ktlint) | `.claude/docs/code-convention.md` |
+| 디자인 토큰 · 폰트 · 아이콘 · 테마 · 동기화 | `.claude/docs/design-system.md` |
 | 기능 spec · 설계 문서 | `.claude/docs/spec-guide.md` → 모듈 `.spec/` · `.claude/docs/specs/` |
 | 코드 리뷰 (심각도 · 제외 · 항상 확인) | `REVIEW.md` |
 | 에이전트 · 훅 · 검증 게이트 | `.claude/docs/harness.md` |
 
-네트워크 · 저장소 · 디자인 토큰 · 분석 문서는 해당 모듈을 만드는 PR에서 추가한다.
+네트워크 · 저장소 · 분석 문서는 해당 모듈을 만드는 PR에서 추가한다.
 
 경로별 규칙은 `.claude/rules/`에 있다(`app` · `feature` · `domain` · `service-core` · `ui`). 해당 경로의 파일을 다룰 때 자동으로 적용된다.
 

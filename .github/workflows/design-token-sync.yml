@@ -1,0 +1,110 @@
+name: Sync design tokens
+
+# FestiCore-DesignSystem main의 generated/android/tokens를 ui/designkit으로 가져와 draft PR을 연다.
+# GITHUB_TOKEN으로 만든 PR은 다른 워크플로를 깨우지 않으므로, 머지 전 절차를 PR 본문에 적는다. 규칙: .claude/docs/design-system.md
+on:
+  schedule:
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: design-token-sync
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: DesignSystem main 커밋 고정
+        id: source
+        run: |
+          set -euo pipefail
+          SHA="$(git ls-remote https://github.com/FESTICORE/FestiCore-DesignSystem.git refs/heads/main | cut -f1)"
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "short=${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          if [ "$(cat ui/designkit/tokens.source-sha)" = "$SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+            echo "디자인 토큰이 이미 $SHA 와 같다" >> "$GITHUB_STEP_SUMMARY"
+          elif git ls-remote --exit-code --heads origin "feature/design-tokens-${SHA:0:7}" > /dev/null; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+            echo "feature/design-tokens-${SHA:0:7} 브랜치가 이미 있다" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.source.outputs.current != 'true'
+        with:
+          node-version: '22.23.2'
+
+      - name: 원천 생성물 검증
+        if: steps.source.outputs.current != 'true'
+        env:
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/FESTICORE/FestiCore-DesignSystem.git "$RUNNER_TEMP/design-system"
+          git -C "$RUNNER_TEMP/design-system" checkout --detach "$SHA"
+          cd "$RUNNER_TEMP/design-system"
+          npm ci
+          npm run check
+
+      - name: 토큰 가져오기
+        id: sync
+        if: steps.source.outputs.current != 'true'
+        run: |
+          gradle/sync-design-tokens "$RUNNER_TEMP/design-system"
+          if [ -z "$(git status --porcelain -- ui/designkit)" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: jdx/mise-action@v2
+        if: steps.sync.outputs.changed == 'true'
+        with:
+          install_args: java ktlint
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.sync.outputs.changed == 'true'
+
+      - name: verify와 같은 검사
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          .claude/scripts/check-boundaries
+          gradle/format --check
+          mise exec -- ./gradlew --console=plain testDebugUnitTest testStageDebugUnitTest :app:assembleStageDebug
+
+      - name: 이슈 · draft PR 만들기
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.source.outputs.sha }}
+          SHORT: ${{ steps.source.outputs.short }}
+        run: |
+          set -euo pipefail
+          TITLE="디자인 토큰을 ${SHORT}로 동기화한다"
+          ISSUE_URL="$(gh issue create --title "$TITLE" --body "FestiCore-DesignSystem ${SHA}의 generated/android/tokens를 ui/designkit으로 가져온다." --assignee Roy-wonji)"
+          ISSUE="${ISSUE_URL##*/}"
+          BRANCH="feature/design-tokens-${SHORT}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add ui/designkit
+          git commit -m "${TITLE} #${ISSUE}" -m "FestiCore-DesignSystem ${SHA}의 Android 토큰 생성물을 가져온다."
+          git push origin "$BRANCH"
+          printf '%s\n' \
+            "## What" "" "FestiCore-DesignSystem \`${SHA}\`의 \`generated/android/tokens\`를 \`ui/designkit\`으로 가져온다." "" \
+            "Closes #${ISSUE}" "" \
+            "## 머지 전 절차" "" \
+            "이 PR은 GITHUB_TOKEN으로 만들어 CI · AI 리뷰가 돌지 않았다. 워크플로 안에서 check-boundaries · ktlint · 단위 테스트 · stage 빌드는 통과했다." \
+            "1. Ready for review로 바꾼다." \
+            "2. PR을 닫았다가 다시 열어 Android PR · PR Rules · Gemini · Codex 리뷰를 실행한다." \
+            "3. CI 통과와 AI 리뷰 결과(또는 미완료 사유)를 확인한 뒤 squash merge한다." > "$RUNNER_TEMP/pr-body.md"
+          gh pr create --draft --base develop --head "$BRANCH" --title "${TITLE} #${ISSUE}" --body-file "$RUNNER_TEMP/pr-body.md" --assignee Roy-wonji
