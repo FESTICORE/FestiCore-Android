@@ -34,15 +34,16 @@ Text(
 ## 토큰 동기화
 
 ```bash
-gradle/sync-design-tokens ../FestiCore-DesignSystem   # 원천 checkout의 커밋된 생성물을 가져오고 SHA를 남긴다
+gradle/sync-design-tokens ../FestiCore-DesignSystem   # 원천의 커밋된 생성물 3개를 확인 후 교체하고 SHA를 남긴다(실패 시 기존 유지)
 ```
 
 - `.github/workflows/design-token-sync.yml`이 6시간마다(또는 수동) DesignSystem `main`을 확인해, 바뀌었으면 원천 `npm run check` → 동기화 → check-boundaries · ktlint · 단위 테스트 · stage 빌드 → 이슈 · draft PR을 만든다.
+- 같은 SHA의 열린 PR이 있으면 건너뛴다. 브랜치만 남고 PR이 없으면(생성 실패 · 닫힘) 다시 검증해 브랜치를 덮어쓰고 PR을 만든다.
 - 이 PR은 `GITHUB_TOKEN`으로 만들어 CI · AI 리뷰가 돌지 않는다. Ready for review로 바꾸고 닫았다 다시 열어 Android PR · PR Rules · Gemini · Codex를 실행한 뒤, 결과를 확인하고 머지한다.
 
 ## 아이콘 추가
 
-iOS `ImageAssets.xcassets`에 추가된 SVG를 같은 이름 규칙으로 바꾼다. 변환기는 `svg` · `path` · `fill`(+ 전체 캔버스 clipPath)만 받고 다른 요소가 있으면 실패한다.
+iOS `ImageAssets.xcassets`에 추가된 SVG를 같은 이름 규칙으로 바꾼다. 변환기는 의미를 그대로 옮길 수 있는 형태(`path`의 `d` · `fill`, 효과 없는 전체 캔버스 clipPath)만 받고 `transform` · `opacity` · `stroke` · 다른 요소가 있으면 실패한다. 실패한 아이콘은 직접 VectorDrawable로 그리거나 원본 SVG를 단순화한다.
 
 ```bash
 python3 -I gradle/svg-to-vector.py ../FestiCore-iOS/Projects/UI/FestiCoreDesignKit/Resources/ImageAssets.xcassets ui/designkit/src/main/res/drawable

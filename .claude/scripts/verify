@@ -26,7 +26,8 @@ def steps_for(files, run_all):
 
     steps = []  # (이름, 명령, 폴더, 추가 환경 변수)
     # 하네스 훅 · 스크립트가 바뀌면 훅 단위 테스트를 먼저 돌린다
-    if touched(".claude/hooks", ".claude/scripts", ".githooks", ".claude/settings.json"):
+    if touched(".claude/hooks", ".claude/scripts", ".githooks", ".claude/settings.json",
+               "gradle/svg-to-vector.py", "gradle/sync-design-tokens"):
         steps.append(("hooks-test", [sys.executable, "-m", "unittest", "discover", "-s", os.path.join(".claude", "hooks", "tests")], ".", {}))
     # 모듈 경계(저장소 API 등)는 빠르니 코드가 바뀌면 항상 본다
     if run_all or files:
