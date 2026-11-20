@@ -30,6 +30,7 @@ import io.festicore.ui.designkit.component.label.FCStatusChipStatus
 import io.festicore.ui.designkit.component.label.FCTag
 import io.festicore.ui.designkit.component.label.FCZoneChip
 import io.festicore.ui.designkit.component.navigation.FCTabItem
+import io.festicore.ui.designkit.component.overlay.FCBanner
 import io.festicore.ui.designkit.component.selection.FCChecklistRow
 import io.festicore.ui.designkit.component.selection.FCConsentAll
 import io.festicore.ui.designkit.component.selection.FCFieldLabel
@@ -52,7 +53,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** iOS `FestiCoreDesignKitFigmaSizeTests`의 `FigmaHeightCase.all` 중 C1 · C2 · C3 · C6 컴포넌트 케이스와 배지 · 존 칩 크기 검사. 기대값 · 허용 오차는 iOS와 같다. */
+/** iOS `FestiCoreDesignKitFigmaSizeTests`의 `FigmaHeightCase.all` 중 C1 · C2 · C3 · C6 · C7 컴포넌트 케이스와 배지 · 존 칩 크기 검사. 기대값 · 허용 오차는 iOS와 같다. */
 // 글자 높이를 실제로 재려면 NATIVE 그래픽이 필요하다. SDK 36 이상에서는 Espresso가 없어진 InputManager.getInstance()를 불러 실패하므로 35로 고정한다.
 // Robolectric 기본 화면 폭(320dp)보다 넓은 Figma 폭(375 · 393)도 그대로 재도록 requiredWidth로 둔다.
 // 기본 mdpi(1x)에서는 행간 18.005sp가 픽셀 올림으로 19dp가 되므로 실제 기기에 가까운 xxhdpi에서 잰다.
@@ -155,6 +156,11 @@ class FigmaSizeTest {
     @Test
     fun `Consent All은 Figma 심볼 높이 56이다`() {
         assertFigmaHeight(figmaHeight = 56.dp, width = 343.dp) { FCConsentAll(isChecked = true) {} }
+    }
+
+    @Test
+    fun `Banner는 Figma 심볼 높이 42이다`() {
+        assertFigmaHeight(figmaHeight = 42.dp, width = 343.dp) { FCBanner("시간표가 바뀌었어요") {} }
     }
 
     @Test
