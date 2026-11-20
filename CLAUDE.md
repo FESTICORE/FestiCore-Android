@@ -67,13 +67,14 @@ build-logic/  Gradle convention plugin
 ## 명령
 
 ```bash
+git config core.hooksPath .githooks                  # clone 직후 한 번: pre-commit 검증 게이트 켜기
 ./gradlew testStageDebugUnitTest assembleStageDebug   # 단위 테스트 · stage 디버그 빌드
 gradle/format                                         # Kotlin 포맷(ktlint)
 .claude/scripts/verify                                # 바뀐 경로에 맞는 커밋 전 검증
 .claude/scripts/verify --all                          # 모든 단계
 ```
 
-Gradle 명령은 H2(Gradle 골격) 이후에 동작한다. 도구 버전은 `.mise.toml`(`mise install`)로 맞춘다.
+도구 버전은 `.mise.toml`(`mise install`)로 맞춘다.
 
 ## 문서 갱신
 
