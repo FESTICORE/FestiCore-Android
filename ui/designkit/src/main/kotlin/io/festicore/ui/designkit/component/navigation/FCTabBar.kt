@@ -41,7 +41,8 @@ enum class FCTabBarTab {
     My,
 }
 
-internal val FCTabBarTab.title: String
+/** 탭 표시 이름. 탭 루트 화면 제목에도 쓴다. */
+val FCTabBarTab.title: String
     get() =
         when (this) {
             FCTabBarTab.Live -> "라이브"
