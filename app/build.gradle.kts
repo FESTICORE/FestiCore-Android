@@ -25,6 +25,7 @@ dependencies {
     implementation(project(":feature:onboarding:sources"))
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
+    implementation(project(":feature:festival:sources"))
     implementation(libs.lib("core-splashscreen"))
     implementation(libs.lib("lifecycle-runtime-compose"))
 

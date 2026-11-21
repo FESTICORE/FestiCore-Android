@@ -10,6 +10,7 @@ import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.feature.auth.di.authFeatureModule
+import io.festicore.feature.festival.di.festivalFeatureModule
 import io.festicore.feature.onboarding.di.onboardingFeatureModule
 import io.festicore.feature.web.di.webFeatureModule
 import io.festicore.service.api.di.serviceApiModule
@@ -50,5 +51,6 @@ val appModules: List<Module> = listOf(
     onboardingFeatureModule,
     authFeatureModule(legalBaseUrl = BuildConfig.LEGAL_BASE_URL),
     webFeatureModule,
+    festivalFeatureModule,
     appModule,
 )

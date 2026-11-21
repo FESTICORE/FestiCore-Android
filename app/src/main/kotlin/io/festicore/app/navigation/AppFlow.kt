@@ -21,6 +21,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginFlow
+import io.festicore.feature.festival.FestivalFlow
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
@@ -107,7 +108,7 @@ private fun HomeWithCovers(state: AppCoordinatorState, coordinator: AppCoordinat
                     .graphicsLayer { translationX = mainTabOffset * size.width }
                     .then(if (state.authCover != null) Modifier.clearAndSetSemantics {} else Modifier),
         ) {
-            MainTabScreen()
+            MainTabScreen(liveContent = { onAtRootChanged -> FestivalFlow(onAtRootChanged = onAtRootChanged) })
         }
         AnimatedVisibility(
             visible = state.launchLogin,
