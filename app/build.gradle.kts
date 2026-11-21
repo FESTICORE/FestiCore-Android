@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":service:auth"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":ui:designkit"))
+    implementation(project(":ui:animation"))
     implementation(project(":feature:onboarding:sources"))
     implementation(project(":feature:auth:sources"))
     implementation(libs.lib("core-splashscreen"))

@@ -28,8 +28,12 @@ class AppCoordinatorTest {
         private val writeError: Exception? = null,
     ) : FirstInstallOnboardingStore {
         var markCount = 0
+        var readCount = 0
 
-        override suspend fun hasCompleted(): Boolean = readError?.let { throw it } ?: completed
+        override suspend fun hasCompleted(): Boolean {
+            readCount++
+            return readError?.let { throw it } ?: completed
+        }
 
         override suspend fun markCompleted() {
             markCount++
@@ -84,9 +88,44 @@ class AppCoordinatorTest {
         val scope = this
         coordinator(FakeOnboardingStore(completed = false), loggedIn = true).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(OnboardingRoute)) }
             scope.assertSplashLasted2Seconds()
         }
+    }
+
+    @Test
+    fun `스플래시가 보이기 전에는 넘어가지 않고 보인 때부터 2초 뒤 이동한다`() = runTest {
+        val scope = this
+        val store = FakeOnboardingStore(completed = false)
+        coordinator(store, loggedIn = true).test(this) {
+            runOnCreate()
+            scope.testScheduler.advanceTimeBy(5_000)
+            scope.testScheduler.runCurrent()
+            assertEquals(0, store.readCount)
+
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(OnboardingRoute)) }
+            assertEquals(7_000L, scope.testScheduler.currentTime)
+        }
+    }
+
+    @Test
+    fun `스플래시가 보였다는 두 번째 호출은 무시한다`() = runTest {
+        val scope = this
+        val store = FakeOnboardingStore(completed = false)
+        coordinator(store, loggedIn = true).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            scope.testScheduler.advanceTimeBy(1_000)
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(OnboardingRoute)) }
+            scope.assertSplashLasted2Seconds()
+
+            scope.testScheduler.advanceTimeBy(5_000)
+            scope.testScheduler.runCurrent()
+        }
+        assertEquals(1, store.readCount)
     }
 
     @Test
@@ -94,6 +133,7 @@ class AppCoordinatorTest {
         val store = FakeOnboardingStore(completed = false)
         coordinator(store, loggedIn = false).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(OnboardingRoute)) }
 
             containerHost.onOnboardingCompleted()
@@ -107,6 +147,7 @@ class AppCoordinatorTest {
         val store = FakeOnboardingStore(completed = false)
         coordinator(store, loggedIn = true).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(OnboardingRoute)) }
 
             containerHost.onOnboardingCompleted()
@@ -120,6 +161,7 @@ class AppCoordinatorTest {
         val store = FakeOnboardingStore(completed = false, writeError = IllegalStateException("disk"))
         coordinator(store, loggedIn = true).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(OnboardingRoute)) }
 
             containerHost.onOnboardingCompleted()
@@ -134,6 +176,7 @@ class AppCoordinatorTest {
         val store = FakeOnboardingStore(completed = false, readError = IllegalStateException("read"))
         coordinator(store, loggedIn = false).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
             scope.assertSplashLasted2Seconds()
         }
@@ -145,6 +188,7 @@ class AppCoordinatorTest {
         val scope = this
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = false) }
             scope.assertSplashLasted2Seconds()
         }
@@ -154,6 +198,7 @@ class AppCoordinatorTest {
     fun `완료 기록이 있고 비로그인이면 스플래시 뒤 launchLogin 덮개로 홈에 간다`() = runTest {
         coordinator(FakeOnboardingStore(completed = true), loggedIn = false).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
         }
     }
@@ -163,6 +208,7 @@ class AppCoordinatorTest {
         val expiry = MutableStateFlow(0L)
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = false) }
 
             expiry.subscriptionCount.first { it > 0 }
@@ -185,6 +231,7 @@ class AppCoordinatorTest {
         }
         AppCoordinator(FakeOnboardingStore(completed = true), isLoggedIn, expiry, auth, { auth.sessionId }).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(launchLogin = true) }
             expectState { copy(routes = listOf(AppRoute.Home)) }
             cancelAndIgnoreRemainingItems()
@@ -205,6 +252,7 @@ class AppCoordinatorTest {
         }
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
             expectState { copy(launchLogin = true) }
 
@@ -219,6 +267,7 @@ class AppCoordinatorTest {
     fun `첫 진입 덮개를 마치거나 건너뛰면 덮개를 닫는다`() = runTest {
         coordinator(FakeOnboardingStore(completed = true), loggedIn = false).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
 
             containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
@@ -231,6 +280,7 @@ class AppCoordinatorTest {
         val auth = FakeAuthRepository()
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
         }
         assertEquals(1, auth.fetchCount)
@@ -241,6 +291,7 @@ class AppCoordinatorTest {
         val auth = FakeAuthRepository(profile = { notEligible })
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
             expectState {
                 copy(signUp = AuthRoute.SignUp(userId = "u1", nickname = "roy", currentTermsVersion = "2026-11", sessionId = "s1"))
@@ -259,6 +310,7 @@ class AppCoordinatorTest {
         val auth = FakeAuthRepository(profile = { throw AuthDomainError.NotAuthenticated() })
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
             expectState { copy(launchLogin = true) }
         }
@@ -271,6 +323,7 @@ class AppCoordinatorTest {
         val auth = FakeAuthRepository(profile = { throw error })
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
 
             error = AuthDomainError.Unavailable()
@@ -289,6 +342,7 @@ class AppCoordinatorTest {
         }
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
         }
         assertEquals(1, auth.fetchCount)
@@ -301,6 +355,7 @@ class AppCoordinatorTest {
         val auth = FakeAuthRepository(profile = { pending.await() })
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState(home)
 
             containerHost.onForegrounded()
@@ -318,6 +373,7 @@ class AppCoordinatorTest {
         val auth = FakeAuthRepository()
         coordinator(FakeOnboardingStore(completed = false), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
+            containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(OnboardingRoute)) }
 
             containerHost.onForegrounded()

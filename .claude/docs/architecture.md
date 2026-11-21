@@ -64,7 +64,8 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Core/FestiCoreStorage` | `core/datastore` · `core/database` | 보안 값 · 설정 / Room |
 | `Core/FestiCoreLogger` · `FestiCoreUtility` · `FestiCoreLocation` | `core/{logger,utility,location}` | |
 | `UI/FestiCoreDesignKit` · `UI/FestiCoreDesignSystem` | `ui/designkit` | 토큰은 FestiCore-DesignSystem에서 생성 |
-| `UI/FestiCoreSharedUI` · `UI/FestiCoreAnimation` | `ui/sharedui` · `ui/animation` | |
+| `UI/FestiCoreSharedUI` | `ui/sharedui` | |
+| `UI/FestiCoreAnimation` | `ui/animation` | `FestiCoreLottieView` · `FestiCoreAnimationAsset`(`lottie-compose`, Apache-2.0). JSON은 iOS `Resources`와 같은 파일을 `res/raw`에 둔다. 원격 · `.lottie` 소스와 GIF(`FestiCoreAnimationView`)는 아직 옮기지 않았다 |
 | `UI/FestiCoreLiveActivity` · `Widget/` · `Extension/` | 없음 | Android 대응은 별도 결정 |
 
 ## 모듈 추가
