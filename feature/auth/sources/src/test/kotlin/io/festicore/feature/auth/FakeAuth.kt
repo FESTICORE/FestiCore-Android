@@ -52,13 +52,19 @@ internal class FakeAuthRepository(
     val signUpCalls = mutableListOf<List<String?>>()
     var clearCount = 0
     var fetchCount = 0
+    val fetchSessionIds = mutableListOf<String?>()
+
+    /** 현재 세션. [fetchProfile]이 다른 세션을 기대하면 NotAuthenticated. */
+    var currentSessionId: String? = "s1"
 
     override val sessionExpired: Flow<Unit> = emptyFlow()
 
     override suspend fun login(idToken: String): AuthLoginResult = throw AuthDomainError.Unavailable()
 
-    override suspend fun fetchProfile(): AuthProfile {
+    override suspend fun fetchProfile(expectedSessionId: String?): AuthProfile {
         fetchCount++
+        fetchSessionIds += expectedSessionId
+        if (expectedSessionId != null && expectedSessionId != currentSessionId) throw AuthDomainError.NotAuthenticated()
         return profile()
     }
 

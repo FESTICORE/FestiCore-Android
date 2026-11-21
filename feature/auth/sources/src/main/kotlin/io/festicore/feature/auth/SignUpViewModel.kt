@@ -93,15 +93,15 @@ class SignUpViewModel(
     }
 
     private suspend fun reloadProfile() = subIntent {
-        onProfileReloaded(catching { authRepository.fetchProfile() })
+        onProfileReloaded(catching { authRepository.fetchProfile(expectedSessionId = route.sessionId) })
     }
 
     private suspend fun onSignUpSubmitted(result: Result<AuthUser>, termsVersion: String) = subIntent {
         val user = result.getOrNull()
         if (user != null) {
             if (AuthProfile(user, termsVersion).isEligible) {
-                // 제출 사이 약관 버전이 올랐을 수 있어 현재 프로필로 다시 판단한다.
-                onSignUpVerified(catching { authRepository.fetchProfile() })
+                // 제출 사이 약관 버전이 올랐을 수 있어 현재 프로필로 다시 판단한다. route 세션이 아니면 NotAuthenticated로 버린다.
+                onSignUpVerified(catching { authRepository.fetchProfile(expectedSessionId = route.sessionId) })
             } else {
                 reduce { state.copy(isSubmitting = false, message = REQUIRED_INFO_MISSING) }
             }

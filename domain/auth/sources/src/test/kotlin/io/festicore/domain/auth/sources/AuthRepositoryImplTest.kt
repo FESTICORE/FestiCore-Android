@@ -119,6 +119,24 @@ class AuthRepositoryImplTest {
     }
 
     @Test
+    fun `기대 세션이 현재 세션과 다르면 프로필을 요청하지 않는다`() = runTest {
+        enqueue(loginResponse)
+        repository.login("id-token")
+
+        assertFails<AuthDomainError.NotAuthenticated> { repository.fetchProfile(expectedSessionId = "other") }
+        assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun `기대 세션이 현재 세션과 같으면 프로필을 읽는다`() = runTest {
+        enqueue(loginResponse)
+        enqueue(meResponse)
+        val login = repository.login("id-token")
+
+        assertEquals("u1", repository.fetchProfile(expectedSessionId = login.sessionId).user.id)
+    }
+
+    @Test
     fun `가입은 공백을 뺀 닉네임과 약관 버전을 보낸다`() = runTest {
         enqueue(loginResponse)
         enqueue("""{"code":"SUCCESS","message":"ok","data":${user("u1")}}""")
