@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -60,12 +61,14 @@ fun SignUpScreen(
     onClosed: () -> Unit,
     onLegalDocumentRequested: (WebPage) -> Unit,
     handlesSystemBack: Boolean = true,
+    profile: AuthRoute.SignUp = route,
     viewModel: SignUpViewModel = koinViewModel { parametersOf(route) },
     legalDocumentUrls: LegalDocumentUrls = koinInject(),
 ) {
     val state by viewModel.collectAsState()
 
     BackHandler(enabled = handlesSystemBack, onBack = viewModel::onCloseTapped)
+    LaunchedEffect(profile) { viewModel.onProfileRefreshed(profile) }
 
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {

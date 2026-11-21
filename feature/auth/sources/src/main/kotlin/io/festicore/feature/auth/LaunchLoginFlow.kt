@@ -27,6 +27,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
  * [legalDocument]는 약관 상세 화면이다. feature끼리 sources를 보지 않아 app이 `feature/web` 화면을 넘긴다.
  * 스택 push · pop은 [AuthTransitions]로 오른쪽에서 밀어 넣고 오른쪽으로 뺀다(iOS `.move(edge: .trailing)`, 0.3초 easeInOut).
  * 첫 진입 흐름의 가입 정보는 로그인 화면 위에 쌓여 있어 시스템 뒤로 · predictive back을 `NavDisplay`가 pop으로 받는다.
+ * [signUpProfile]은 재확인 가입 덮개의 최신 프로필이다. 스택의 route는 그대로 두고(초안 유지) 같은 사용자 · 세션의 가입 화면에 반영한다.
  */
 @Composable
 fun LaunchLoginFlow(
@@ -35,6 +36,7 @@ fun LaunchLoginFlow(
     onTopChanged: (AuthRoute) -> Unit,
     legalDocument: @Composable (page: WebPage, onBackToRoot: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
+    signUpProfile: AuthRoute.SignUp? = null,
 ) {
     val flowKey = rememberSaveable { UUID.randomUUID().toString() }
     val coordinator: AuthCoordinator = koinViewModel(key = "launchLoginFlow-$flowKey") { parametersOf(start) }
@@ -77,6 +79,8 @@ fun LaunchLoginFlow(
                             onLegalDocumentRequested = coordinator::onLegalDocumentRequested,
                             // 재확인 가입 덮개는 스택의 첫 화면이라 NavDisplay가 뒤로를 받지 않는다. 가입 화면이 직접 닫기를 알린다.
                             handlesSystemBack = start is AuthRoute.SignUp,
+                            profile =
+                                signUpProfile?.takeIf { it.userId == route.userId && it.sessionId == route.sessionId } ?: route,
                         )
                     }
                     entry<AuthRoute.LegalDocument> { route ->

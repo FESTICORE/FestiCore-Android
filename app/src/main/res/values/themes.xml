@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 시스템 스플래시는 첫 프레임까지만 보인다. 배경은 Compose SplashScreen과 같은 staticInk, Lottie는 Compose SplashScreen이 그린다. -->
+    <!-- 시스템 스플래시는 Compose SplashScreen의 Lottie를 읽을 때까지 남는다(MainActivity). 배경은 Compose SplashScreen과 같은 staticInk, Lottie는 Compose SplashScreen이 그린다. -->
     <style name="Theme.FestiCore.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>

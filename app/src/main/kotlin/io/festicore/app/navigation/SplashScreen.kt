@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
@@ -21,7 +20,8 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * iOS `SplashView`. staticInk 배경 위에 Lottie를 2초에 맞춰 한 번, 화면을 채워(Crop) 재생한다.
- * 첫 컴포지션에서 [onAppear]를 보낸다(iOS `onAppear`). 2초는 [AppCoordinator]가 그때부터 잰다.
+ * Lottie를 읽어 그릴 수 있게 되면 [onAppear]를 보낸다(iOS는 번들 Lottie를 바로 그린다). 읽기에 실패해도 바로 보내 흐름이 멈추지 않는다.
+ * 2초는 [AppCoordinator]가 그때부터 잰다. 그 전까지는 시스템 스플래시(같은 staticInk)가 남는다(`MainActivity`).
  */
 @Composable
 fun SplashScreen(onAppear: () -> Unit) {
@@ -32,7 +32,6 @@ fun SplashScreen(onAppear: () -> Unit) {
         controller?.hide(WindowInsetsCompat.Type.statusBars())
         onDispose { controller?.show(WindowInsetsCompat.Type.statusBars()) }
     }
-    LaunchedEffect(Unit) { onAppear() }
     Box(
         modifier =
             Modifier
@@ -46,6 +45,7 @@ fun SplashScreen(onAppear: () -> Unit) {
             duration = 2.seconds,
             playOnce = true,
             contentScale = ContentScale.Crop,
+            onLoadFinished = onAppear,
         )
     }
 }
