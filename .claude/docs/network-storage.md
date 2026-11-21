@@ -23,6 +23,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 ## core/datastore
 
 - `FirstInstallOnboardingStore`: 첫 설치 온보딩 완료 여부(DataStore Preferences).
+- `RecentSearchStore`: 사용자별 최근 검색어(DataStore Preferences, iOS와 같은 키 · `\n` 형식). 규칙은 `domain/festival/.spec/recent-search.md`.
 - `SecureStorage`: 토큰 같은 보안 값. Android Keystore AES/GCM으로 암호화해 DataStore에 저장한다. 복호화에 실패하면 `null`을 돌려주고 그 키를 지운다. 쓰기 실패는 `SecureStorageException`.
 - Keystore · DataStore · SharedPreferences는 이 모듈에서만 쓴다(`check-boundaries`가 막는다). 다른 모듈은 인터페이스를 주입받는다.
 - Robolectric은 AndroidKeyStore를 지원하지 않으므로 테스트는 가짜 `ValueCipher`를 주입한다. 실제 Keystore 동작은 기기 · 에뮬레이터에서 확인한다.

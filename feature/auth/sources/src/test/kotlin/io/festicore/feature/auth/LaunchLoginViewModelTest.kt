@@ -21,7 +21,7 @@ class LaunchLoginViewModelTest {
         viewModel().test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
         }
     }
 
@@ -56,12 +56,13 @@ class LaunchLoginViewModelTest {
     }
 
     @Test
-    fun `계정 확인이 실패하면 iOS와 같이 덮개를 닫는다`() = runTest {
+    fun `계정 확인이 실패하면 iOS와 같이 덮개를 닫고 로그인 응답의 사용자를 알린다`() = runTest {
         val repository = FakeAuthRepository(profile = { throw AuthDomainError.Offline() })
-        viewModel(repository = repository).test(this) {
+        val login = suspend { loginResult().copy(user = user(id = "u9")) }
+        viewModel(login = login, repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u9", sessionId = "s1")))
         }
     }
 
@@ -71,7 +72,7 @@ class LaunchLoginViewModelTest {
         viewModel(repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
         }
         assertEquals(0, repository.clearCount)
     }
@@ -82,7 +83,7 @@ class LaunchLoginViewModelTest {
         viewModel(repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
         }
         assertEquals(listOf<String?>("s1"), repository.fetchSessionIds)
     }
@@ -192,7 +193,7 @@ class LaunchLoginViewModelTest {
             fail = false
             containerHost.onSignInTapped()
             expectState(LaunchLoginState(isSigningIn = true, attemptId = 2))
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
         }
     }
 
@@ -215,7 +216,7 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             containerHost.onSkipTapped()
             pending.complete(loginResult())
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
         }
         assertEquals(1, useCase.callCount)
     }

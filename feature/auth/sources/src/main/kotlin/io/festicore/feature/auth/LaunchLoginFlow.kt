@@ -74,7 +74,9 @@ fun LaunchLoginFlow(
                     entry<AuthRoute.SignUp> { route ->
                         SignUpScreen(
                             route = route,
-                            onCompleted = { coordinator.onFinished(LaunchLoginResult.Completed) },
+                            onCompleted = {
+                                coordinator.onFinished(LaunchLoginResult.Completed(userId = route.userId, sessionId = route.sessionId))
+                            },
                             onClosed = coordinator::onSignUpClosed,
                             onLegalDocumentRequested = coordinator::onLegalDocumentRequested,
                             // 재확인 가입 덮개는 스택의 첫 화면이라 NavDisplay가 뒤로를 받지 않는다. 가입 화면이 직접 닫기를 알린다.
