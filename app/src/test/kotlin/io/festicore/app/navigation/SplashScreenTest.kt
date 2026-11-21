@@ -21,7 +21,8 @@ class SplashScreenTest {
         var appearCount = 0
         composeRule.setContent { SplashScreen(onAppear = { appearCount++ }) }
 
-        composeRule.waitUntil(timeoutMillis = 5_000) { appearCount > 0 }
+        // 내장 PNG 9개가 든 Splash.json(약 620KB) 해석은 CI 러너에서 수 초 걸릴 수 있어 넉넉히 기다린다.
+        composeRule.waitUntil(timeoutMillis = 30_000) { appearCount > 0 }
         composeRule.waitForIdle()
         assertEquals(1, appearCount)
     }
