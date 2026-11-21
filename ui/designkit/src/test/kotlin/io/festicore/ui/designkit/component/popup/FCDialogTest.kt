@@ -6,8 +6,7 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpRect
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -29,21 +28,21 @@ class FCDialogTest {
 
     @Test
     fun `짧은 한 줄 제목은 Trailing이어도 iOS처럼 왼쪽에서 시작한다`() {
-        val (cardLeft, titleLeft, _) = titleBounds(FCDialogTextAlign.Trailing)
+        val (card, title) = titleBounds(FCDialogTextAlign.Trailing)
 
-        assertEquals((cardLeft + FestiCoreSpacing.paddingP20).value, titleLeft.value, 0.5f)
+        assertEquals((card.left + FestiCoreSpacing.paddingP20).value, title.left.value, 0.5f)
     }
 
     @Test
     fun `짧은 한 줄 제목은 Center면 카드 가운데에 놓인다`() {
-        val (cardLeft, titleLeft, titleRight) = titleBounds(FCDialogTextAlign.Center)
-        val cardCenter = cardLeft + 311.dp / 2
+        val (card, title) = titleBounds(FCDialogTextAlign.Center)
+        val cardCenter = (card.left + card.right) / 2
 
-        assertTrue(titleLeft > cardLeft + FestiCoreSpacing.paddingP20)
-        assertEquals(cardCenter.value, ((titleLeft + titleRight) / 2).value, 0.5f)
+        assertTrue(title.left > card.left + FestiCoreSpacing.paddingP20)
+        assertEquals(cardCenter.value, ((title.left + title.right) / 2).value, 0.5f)
     }
 
-    private fun titleBounds(textAlign: FCDialogTextAlign): Triple<Dp, Dp, Dp> {
+    private fun titleBounds(textAlign: FCDialogTextAlign): Pair<DpRect, DpRect> {
         composeRule.setContent {
             FCDialogCard(
                 item = FCDialogItem(title = "삭제", message = "설명", onConfirm = {}),
@@ -54,6 +53,6 @@ class FCDialogTest {
         }
         val card = composeRule.onNodeWithTag("card").getUnclippedBoundsInRoot()
         val title = composeRule.onNode(isHeading()).getUnclippedBoundsInRoot()
-        return Triple(card.left, title.left, title.right)
+        return card to title
     }
 }
