@@ -26,7 +26,7 @@ class LaunchLoginViewModelTest {
 
     @Test
     fun `가입 조건을 채우지 못한 계정이면 로그인 세션으로 가입 정보에 간다`() = runTest {
-        val repository = FakeAuthRepository(profile = { newUserProfile })
+        val repository = FakeAuthRepository(profile = { newUserProfile }).apply { currentSessionId = "s9" }
         viewModel(login = { loginResult(sessionId = "s9") }, repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
@@ -60,14 +60,80 @@ class LaunchLoginViewModelTest {
     }
 
     @Test
-    fun `계정 확인이 401이면 덮개를 닫지 않고 세션을 지운 뒤 실패 문구를 보인다`() = runTest {
+    fun `로그인 세션에 묶어 계정을 확인한다`() = runTest {
+        val repository = FakeAuthRepository()
+        viewModel(repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+        }
+        assertEquals(listOf<String?>("s1"), repository.fetchSessionIds)
+    }
+
+    @Test
+    fun `시나리오 7 - 계정 확인 401에 이 세션의 만료 이벤트가 있으면 문구 없이 만료로 알리고 세션을 건드리지 않는다`() = runTest {
+        val repository = FakeAuthRepository()
+        repository.profile = {
+            // 토큰 갱신 401: 저장소를 비우고 만료 이벤트를 보낸 뒤 요청이 실패한다.
+            repository.currentSessionId = null
+            repository.expiredSessionId = "s1"
+            throw AuthDomainError.NotAuthenticated()
+        }
+        viewModel(repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectState(LaunchLoginState(attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = true)))
+        }
+        assertEquals(emptyList<String>(), repository.clearIfSessionIds)
+        assertEquals(0, repository.clearCount)
+    }
+
+    @Test
+    fun `시나리오 8 - 계정 확인 401에 만료 이벤트가 없으면 이 세션만 조건 삭제하고 만료 아님으로 알린다`() = runTest {
         val repository = FakeAuthRepository(profile = { throw AuthDomainError.NotAuthenticated() })
         viewModel(repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectState(LaunchLoginState(errorMessage = "로그인에 실패했습니다. 다시 시도해 주세요.", attemptId = 1))
+            expectState(LaunchLoginState(attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = false)))
         }
-        assertEquals(1, repository.clearCount)
+        assertEquals(listOf("s1"), repository.clearIfSessionIds)
+        assertEquals(null, repository.currentSessionId)
+        assertEquals(0, repository.clearCount)
+    }
+
+    @Test
+    fun `시나리오 8b - 401 처리 중 다른 로그인이 세션을 저장했으면 그 세션을 지우지 않는다`() = runTest {
+        val repository = FakeAuthRepository()
+        repository.profile = {
+            repository.currentSessionId = "s2"
+            throw AuthDomainError.NotAuthenticated()
+        }
+        viewModel(repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectState(LaunchLoginState(attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = false)))
+        }
+        assertEquals("s2", repository.currentSessionId)
+        assertEquals(0, repository.clearCount)
+    }
+
+    @Test
+    fun `시나리오 8c - 다른 세션의 만료 이벤트는 이 로그인의 401을 만료로 보지 않는다`() = runTest {
+        val repository = FakeAuthRepository()
+        repository.profile = {
+            repository.expiredSessionId = "s0"
+            throw AuthDomainError.NotAuthenticated()
+        }
+        viewModel(repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectState(LaunchLoginState(attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = false)))
+        }
+        assertEquals(listOf("s1"), repository.clearIfSessionIds)
     }
 
     @Test

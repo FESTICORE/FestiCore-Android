@@ -56,8 +56,14 @@ fun AppFlow(coordinator: AppCoordinator = koinViewModel()) {
                         Box(modifier = if (cover != null) Modifier.clearAndSetSemantics {} else Modifier) {
                             MainTabScreen()
                         }
-                        // 시작 화면이 바뀌면(예: 가입 덮개 중 세션 만료) 새 흐름으로 다시 만든다.
-                        if (cover != null) key(cover) { LaunchLoginFlow(start = cover, onResult = coordinator::onLaunchLoginFinished) }
+                        // 시작 화면이 바뀌거나(예: 가입 덮개 중 세션 만료) 덮개 세대가 오르면(로그인 직후 세션 만료) 새 흐름으로 다시 만든다.
+                        if (cover !=
+                            null
+                        ) {
+                            key(cover, state.coverEpoch) {
+                                LaunchLoginFlow(start = cover, onResult = coordinator::onLaunchLoginFinished)
+                            }
+                        }
                     }
                 }
             },

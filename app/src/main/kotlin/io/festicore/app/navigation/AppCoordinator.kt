@@ -23,11 +23,13 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
  * 루트 화면 상태. [routes]는 항상 한 화면(Splash · Onboarding · Home)이고 다음 화면으로 갈 때 대체한다.
  * [launchLogin]은 Home 위 첫 진입 로그인 덮개 표시 여부다(iOS `Home(launchLogin:)`). 키와 분리해 덮개가 바뀌어도 메인 탭 상태를 유지한다.
  * [signUp]은 로그인 상태 프로필 재확인에서 가입 조건을 채우지 못했을 때 Home 위에 띄우는 가입 정보 덮개다.
+ * [coverEpoch]는 덮개 세대다. 오르면 덮개 종류가 같아도 덮개 흐름을 시작 화면부터 새로 만든다(로그인 직후 세션 만료).
  */
 data class AppCoordinatorState(
     val routes: List<NavKey> = listOf(AppRoute.Splash),
     val launchLogin: Boolean = false,
     val signUp: AuthRoute.SignUp? = null,
+    val coverEpoch: Int = 0,
 ) {
     /** Home 위 덮개의 시작 화면. 없으면 덮개를 그리지 않는다. */
     val authCover: AuthRoute?
@@ -72,16 +74,36 @@ class AppCoordinator(
         checkSession()
     }
 
-    /** 덮개(로그인 · 가입)를 마치거나 건너뛰었다. */
+    /** 덮개(로그인 · 가입)를 마치거나 건너뛰었거나 로그인 직후 세션을 잃었다. */
     fun onLaunchLoginFinished(result: LaunchLoginResult) = intent {
         when (result) {
-            LaunchLoginResult.Completed, LaunchLoginResult.Skipped -> reduce { state.copy(launchLogin = false, signUp = null) }
+            LaunchLoginResult.Completed,
+            LaunchLoginResult.Skipped,
+            LaunchLoginResult.SignUpCancelled,
+            -> reduce { state.copy(launchLogin = false, signUp = null) }
+
+            is LaunchLoginResult.SessionLost -> onLaunchSessionLost(result)
         }
     }
 
     /** `ON_START`(포그라운드 진입). 홈이고 덮개가 없을 때만 프로필을 다시 확인한다. */
     fun onForegrounded() = intent {
         if (state.routes.lastOrNull() == AppRoute.Home) recheckProfile()
+    }
+
+    /**
+     * 로그인 직후 계정 확인 401(iOS `SessionCoordinator.swift:196-223,341-351`). 그 사이 다른 로그인이 세션을 저장했으면 오래된 결과라 버린다.
+     * 이 세션의 만료 이벤트가 있었으면 첫 진입 흐름이라 launchLogin을 유지하고 덮개 세대를 올려 LaunchLogin부터 새로(문구 없이) 만든다.
+     * 만료 이벤트가 없으면(세션은 로그인 화면이 조건 삭제했다) 덮개를 닫아 비로그인 Home으로 간다. 재확인은 하지 않는다.
+     */
+    private suspend fun onLaunchSessionLost(result: LaunchLoginResult.SessionLost) = subIntent {
+        val current = currentSessionId()
+        if (current != null && current != result.sessionId) return@subIntent
+        if (result.expired) {
+            reduce { state.copy(launchLogin = true, signUp = null, coverEpoch = state.coverEpoch + 1) }
+        } else {
+            reduce { state.copy(launchLogin = false, signUp = null) }
+        }
     }
 
     private suspend fun presentHome() = subIntent {
@@ -109,6 +131,7 @@ class AppCoordinator(
 
     /**
      * 생성 때부터 만료 세대를 구독한다. 구독 시점 값은 이미 반영된 것으로 보고, 커질 때마다 한 번 launchLogin을 켠다.
+     * 덮개 세대는 올리지 않는다. 이미 launchLogin이면 진행 중인 다른 세션의 로그인 시도를 지우지 않도록 그대로 둔다.
      * 덮개는 홈 위에만 그려지므로 홈 전 만료는 상태에 남았다가 [enterHome]에서 그대로 쓰인다.
      */
     private suspend fun observeSessionExpiry() = subIntent {
@@ -161,8 +184,8 @@ class AppCoordinator(
     private suspend fun onProfileRechecked(sessionId: String, result: Result<AuthProfile>) = subIntent {
         val current = currentSessionId()
         if (result.exceptionOrNull() is AuthDomainError.NotAuthenticated && (current == null || current == sessionId)) {
-            // 토큰 갱신이 401로 끝났으면 저장소는 이미 비었고 만료 이벤트도 온다. 남아 있으면 여기서 지운다.
-            if (current != null) clearSession()
+            // 토큰 갱신이 401로 끝났으면 저장소는 이미 비었고 만료 이벤트도 온다. 이 세션이 남아 있으면 여기서 지운다.
+            if (current != null) clearSessionIf(sessionId)
             reduce { state.copy(launchLogin = true, signUp = null) }
             return@subIntent
         }
@@ -178,9 +201,9 @@ class AppCoordinator(
         reduce { state.copy(signUp = route) }
     }
 
-    private suspend fun clearSession() {
+    private suspend fun clearSessionIf(sessionId: String) {
         try {
-            authRepository.clearSession()
+            authRepository.clearSessionIf(sessionId)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

@@ -166,14 +166,14 @@ class FestiCoreAuthPluginTest {
     @Test
     fun `refresh가 401이면 만료 이벤트를 1회 보내고 저장소를 비운다`() = runTest {
         collectExpiry()
-        session.saveLogin("old-access", "old-refresh")
+        val sessionId = session.saveLogin("old-access", "old-refresh")
         val api = api(onRefresh = { unauthorized() }) { unauthorized() }
 
         expect<AuthSessionError.NotAuthenticated> { api.me() }
 
         assertEquals(1, expiredCount.get())
-        // 구독 전에 만료돼도 잃지 않도록 세대도 1 오른다.
-        assertEquals(1L, expiryEvents.expiredGeneration.value)
+        // 구독 전에 만료돼도 잃지 않도록 세대가 1 오르고, 갱신하던 세션 ID를 함께 남긴다.
+        assertEquals(SessionExpiry(generation = 1, sessionId = sessionId), expiryEvents.expired.value)
         assertNull(store.current())
         assertTrue(storage.values.isEmpty())
         assertEquals(1, requests.count { it.isMe() })
@@ -191,7 +191,7 @@ class FestiCoreAuthPluginTest {
         assertEquals("old-access", current.accessToken)
         assertEquals(0L, current.revision)
         assertEquals(0, expiredCount.get())
-        assertEquals(0L, expiryEvents.expiredGeneration.value)
+        assertEquals(SessionExpiry(generation = 0, sessionId = null), expiryEvents.expired.value)
     }
 
     @Test

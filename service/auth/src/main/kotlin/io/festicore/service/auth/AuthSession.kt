@@ -11,4 +11,7 @@ class AuthSession internal constructor(private val store: CredentialStore) {
     suspend fun saveLogin(accessToken: String, refreshToken: String): String = store.saveNewSession(accessToken, refreshToken).sessionId
 
     suspend fun clear() = store.clear()
+
+    /** 현재 세션이 [sessionId]일 때만 지우고 지웠으면 `true`. 그 사이 다른 로그인이 저장한 세션은 지우지 않는다. */
+    suspend fun clearIfCurrent(sessionId: String): Boolean = store.clearIfSession(sessionId)
 }

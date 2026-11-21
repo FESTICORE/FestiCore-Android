@@ -66,9 +66,18 @@ class AppCoordinatorTest {
 
         override suspend fun isLoggedIn(): Boolean = sessionId != null
 
+        override fun hasSessionExpired(sessionId: String): Boolean = false
+
         override suspend fun clearSession() {
             clearCount++
             sessionId = null
+        }
+
+        override suspend fun clearSessionIf(sessionId: String): Boolean {
+            if (this.sessionId != sessionId) return false
+            clearCount++
+            this.sessionId = null
+            return true
         }
     }
 
@@ -273,6 +282,92 @@ class AppCoordinatorTest {
             containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
             expectState { copy(launchLogin = false) }
         }
+    }
+
+    @Test
+    fun `시나리오 7 - 로그인 직후 401에 이 세션의 만료 이벤트가 있으면 launchLogin을 유지하고 덮개를 새로 만든다`() = runTest {
+        val expiry = MutableStateFlow(0L)
+        // 토큰 갱신 401로 저장소는 이미 비었다.
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, expiry = expiry, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            expiry.subscriptionCount.first { it > 0 }
+            // 만료 이벤트는 launchLogin이 이미 떠 있으므로 상태를 바꾸지 않는다.
+            expiry.value = 1
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = true))
+            expectState { copy(coverEpoch = 1) }
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `시나리오 8 - 로그인 직후 401에 만료 이벤트가 없고 세션이 지워졌으면 덮개를 닫고 재확인하지 않는다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = false))
+            expectState { copy(launchLogin = false) }
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `시나리오 8b - 그 사이 다른 로그인이 세션을 저장했으면 이전 세션의 401 결과를 버린다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            auth.sessionId = "b"
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = false))
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = true))
+            // 덮개 전이는 세션 b의 결과만 정한다.
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
+            expectState { copy(launchLogin = false) }
+        }
+        assertEquals("b", auth.sessionId)
+        assertEquals(0, auth.clearCount)
+    }
+
+    @Test
+    fun `시나리오 8c - 다른 세션의 만료 이벤트는 로그인 직후 만료 이벤트 없는 401 결과를 바꾸지 않는다`() = runTest {
+        val expiry = MutableStateFlow(0L)
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, expiry = expiry, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            expiry.subscriptionCount.first { it > 0 }
+            // 세션 a의 만료. launchLogin이 이미 떠 있어 덮개 세대를 올리지 않는다(진행 중인 b 로그인을 지우지 않음).
+            expiry.value = 1
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "b", expired = false))
+            expectState { copy(launchLogin = false) }
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    @Test
+    fun `시나리오 8d - 세션이 아예 없어졌으면 이전 세션의 401 결과로 덮개를 닫는다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = false))
+            expectState { copy(launchLogin = false) }
+        }
+        assertEquals(0, auth.fetchCount)
+        assertEquals(0, auth.clearCount)
     }
 
     @Test

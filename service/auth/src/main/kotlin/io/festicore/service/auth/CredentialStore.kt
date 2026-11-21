@@ -60,6 +60,13 @@ internal class CredentialStore(private val storage: SecureStorage) {
         true
     }
 
+    /** 현재 세션이 [expectedSessionId]일 때만 지운다(revision 무관). 다른 세션이 저장됐거나 이미 비었으면 `false`. */
+    suspend fun clearIfSession(expectedSessionId: String): Boolean = mutex.withLock {
+        if (load()?.sessionId != expectedSessionId) return@withLock false
+        remove()
+        true
+    }
+
     private suspend fun load(): Session? {
         if (loaded) return cached
         val raw = storage.read(KEY)
