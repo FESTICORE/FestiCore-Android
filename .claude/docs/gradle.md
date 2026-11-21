@@ -31,6 +31,7 @@ build-logic/               convention plugin
 | `festicore.android.library` | `core/**` · `service/**` · domain · feature `interface` | Android 라이브러리, `io.festicore.{폴더 경로}` namespace(`interface`는 예약어라 `contract`), compileSdk · minSdk · JDK 21, 단위 테스트 |
 | `festicore.android.compose` | `ui/**` | 위 라이브러리 + Compose 컴파일러 · `buildFeatures.compose` |
 | `festicore.android.feature` | feature `sources` | 위 + Compose · Orbit · Koin · Navigation 3 · kotlinx.serialization, 테스트(JUnit · orbit-test · coroutines-test) |
+| `festicore.kotlin.serialization` | 라이브러리 중 `@Serializable`을 쓰는 모듈(`core/network` 등) | kotlinx.serialization 컴파일러 플러그인. `festicore.android.library`와 함께 적용 |
 | `festicore.android.application` | `app` | 앱(applicationId `io.festiCore.co`), flavor `stage`(`.stage` 접미사) · `prod`, Compose · Koin · Navigation 3 |
 
 - 모듈 `build.gradle.kts`에는 `plugins { id("festicore.android.library") }`와 의존성만 쓴다. 공통 설정을 복사하지 않는다.

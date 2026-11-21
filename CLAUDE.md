@@ -39,6 +39,7 @@ build-logic/  Gradle convention plugin
 | 화면 · ViewModel (Orbit) | `.claude/docs/android-mvi.md` |
 | 화면 전환 (Navigation 3 · Coordinator) | `.claude/docs/navigation.md` |
 | 의존성 등록 (Koin) | `.claude/docs/dependency-injection.md` |
+| 네트워크(Ktor) · 저장소(DataStore · Keystore) | `.claude/docs/network-storage.md` |
 | Gradle · 버전 · convention plugin · 명령 | `.claude/docs/gradle.md` |
 | 포맷 · 이름 · 주석 (ktlint) | `.claude/docs/code-convention.md` |
 | 디자인 토큰 · 폰트 · 아이콘 · 테마 · 동기화 | `.claude/docs/design-system.md` |
@@ -46,7 +47,7 @@ build-logic/  Gradle convention plugin
 | 코드 리뷰 (심각도 · 제외 · 항상 확인) | `REVIEW.md` |
 | 에이전트 · 훅 · 검증 게이트 | `.claude/docs/harness.md` |
 
-네트워크 · 저장소 · 분석 문서는 해당 모듈을 만드는 PR에서 추가한다.
+분석 문서는 해당 모듈을 만드는 PR에서 추가한다.
 
 경로별 규칙은 `.claude/rules/`에 있다(`app` · `feature` · `domain` · `service-core` · `ui`). 해당 경로의 파일을 다룰 때 자동으로 적용된다.
 
