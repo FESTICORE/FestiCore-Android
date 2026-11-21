@@ -1,6 +1,6 @@
 ---
 spec: signup
-modules: [feature/auth, app]
+modules: [feature/auth, feature/web, app]
 ---
 
 # 회원가입(가입 정보) Spec
@@ -29,6 +29,7 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
 6. 세션 만료 이벤트: Launch 덮개 안에서 그 세션의 가입 화면이 보이면 덮개 세대를 올려 LaunchLogin부터 새로 만든다. 로그인 화면이 보이면(다른 세션의 로그인 진행 중일 수 있음) 그대로 둔다. Recheck 덮개면 닫아 비로그인 Home. 덮개가 없으면 launchLogin을 켜지 않는다.
 7. 가입 제출 401(만료 이벤트 없음): Launch는 LaunchLogin으로, Recheck는 덮개를 닫는다.
 8. 스크롤을 사용자가 끌기 시작하면 키보드를 숨긴다. 흐름 문구(오류 · 재동의)는 줄 박스 없는 글꼴(`textStyleWithoutLineBox`)을 쓴다.
+9. 약관 '보기': auth 스택의 가입 정보 위에 `AuthRoute.LegalDocument(WebPage)`를 push해 앱 안 웹 화면(`feature/web` `WebScreen`)으로 연다(iOS `AuthCoordinator.swift:366-378`). 주소는 `LegalDocumentUrls`(`LEGAL_BASE_URL` + 경로), 제목은 약관 제목. 이미 열려 있으면 다시 쌓지 않는다. 상단 back · 시스템 뒤로는 `goBack`으로 가입 정보에 돌아오고 입력 초안은 남는다. 약관 상세가 열려 있어도 상위에는 가입 화면이 보이는 것으로 알린다(규칙 4 · 5 · 6).
 
 ## 엣지 케이스
 
@@ -39,21 +40,22 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
 ## 제약 / 가정
 
 - 계정에 묶인 상태는 아직 세션 저장소 하나뿐이다. `CurrentUserProvider` 등 계정 상태가 생기면 401 경로에서 함께 비운다.
-- 약관 상세는 외부 브라우저로 연다. 앱 안 화면은 P4b(`feature/web`).
+- feature는 다른 feature의 sources를 보지 않아 `LaunchLoginFlow`는 약관 상세 화면을 슬롯(`legalDocument`)으로 받고 app이 `WebScreen`을 넘긴다.
 
 ## 작업 모듈
 
-| 모듈                   | 계층      | 변경 내용                                                                                             |
-| ---------------------- | --------- | ----------------------------------------------------------------------------------------------------- |
-| feature/auth/interface | interface | `AuthRoute.SignUp.isReconsent`, `SignUpCancelled` 설명                                                |
-| feature/auth/sources   | sources   | 뒤로 시 세션 유지, `AuthCoordinator.onSignUpClosed`, 맨 위 화면 알림, 재동의 문구, 키보드 숨김, C1    |
-| app                    | app       | 건너뛰기 뒤 재확인, 포그라운드 가입 덮개 재확인, 만료 · 재확인 401 전이(결정 7), 첫 진입 가입 중 만료 |
+| 모듈                   | 계층      | 변경 내용                                                                                    |
+| ---------------------- | --------- | -------------------------------------------------------------------------------------------- |
+| feature/web            | 신설      | `WebPage` · `WebScreen` · `WebViewModel` · 문서 이동 정책(`feature/web/.spec/web.md`)        |
+| feature/auth/interface | interface | `AuthRoute.LegalDocument(WebPage)`                                                           |
+| feature/auth/sources   | sources   | 약관 '보기'를 외부 브라우저 대신 `onLegalDocumentRequested` push, `LaunchLoginFlow` 슬롯     |
+| app                    | app       | `feature/web` 연결(`webFeatureModule` · `legalDocument = WebScreen`)                         |
 
 ## 영향 범위
 
-| 모듈         | 계층    | 영향 이유                                           |
-| ------------ | ------- | --------------------------------------------------- |
-| service/auth | service | `SessionExpiry`(세대 · 세션 ID)를 app이 그대로 구독 |
+| 모듈 | 계층 | 영향 이유                                                              |
+| ---- | ---- | ---------------------------------------------------------------------- |
+| app  | app  | `coverTop`은 약관 상세가 열려 있어도 가입 정보(`AuthRoute.SignUp`)이다 |
 
 ## 미해결 질문
 
@@ -61,4 +63,5 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
 
 ## 변경 이력
 
+- P4b 약관 상세 앱 안 화면: `feature/web` 신설, `AuthRoute.LegalDocument` push
 - P4 가입 iOS 대조: 재동의 문구 · 뒤로 세션 유지 · 건너뛰기 뒤 재확인 · 포그라운드 재확인 · 만료 전이 · 키보드 · C1

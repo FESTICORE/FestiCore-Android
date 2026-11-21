@@ -1,5 +1,6 @@
 package io.festicore.feature.auth
 
+import io.festicore.feature.web.WebPage
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
@@ -32,6 +33,21 @@ class AuthCoordinatorTest {
         AuthCoordinator(AuthRoute.LaunchLogin).test(this) {
             containerHost.onFinished(LaunchLoginResult.Skipped)
             expectSideEffect(AuthCoordinatorSideEffect.Finished(LaunchLoginResult.Skipped))
+        }
+    }
+
+    @Test
+    fun `약관 상세는 가입 정보 위에 한 번만 쌓고 뒤로 가면 가입 정보로 돌아온다`() = runTest {
+        val page = WebPage(url = "https://festicore.app/terms", title = "서비스 이용약관")
+        AuthCoordinator(AuthRoute.LaunchLogin).test(this) {
+            containerHost.onSignUpRequired(signUp)
+            expectState(AuthCoordinatorState(listOf(signUp)))
+            containerHost.onLegalDocumentRequested(page)
+            expectState(AuthCoordinatorState(listOf(signUp, AuthRoute.LegalDocument(page))))
+            // 이미 열려 있으면 다른 약관도 다시 쌓지 않는다(iOS 중복 push 막음).
+            containerHost.onLegalDocumentRequested(page.copy(title = "개인정보 수집 · 이용"))
+            containerHost.goBack()
+            expectState(AuthCoordinatorState(listOf(signUp)))
         }
     }
 }

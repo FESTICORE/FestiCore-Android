@@ -1,9 +1,10 @@
 package io.festicore.feature.auth
 
 import androidx.navigation3.runtime.NavKey
+import io.festicore.feature.web.WebPage
 import kotlinx.serialization.Serializable
 
-/** 첫 진입 로그인 흐름(Home 위 덮개)의 화면 경로. iOS `AuthFlowState.Presentation`의 `launchLogin` · `onboarding`(가입 정보). */
+/** 첫 진입 로그인 흐름(Home 위 덮개)의 화면 경로. iOS `AuthFlowState.Presentation`의 `launchLogin` · `onboarding`(가입 정보 · 약관 상세). */
 @Serializable
 sealed interface AuthRoute : NavKey {
     /** 첫 진입 로그인 화면(iOS S14 A `LoginView`). */
@@ -26,4 +27,8 @@ sealed interface AuthRoute : NavKey {
         val sessionId: String? = null,
         val isReconsent: Boolean = false,
     ) : AuthRoute
+
+    /** 가입 정보 위에 여는 약관 상세(iOS `AuthScreen.legalDocument`, 앱 안 웹 화면). */
+    @Serializable
+    data class LegalDocument(val page: WebPage) : AuthRoute
 }
