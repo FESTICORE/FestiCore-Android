@@ -9,5 +9,5 @@ plugins {
 dependencies {
     val libs = catalog
     api(libs.lib("navigation3-runtime"))
-    api(libs.lib("kotlinx-serialization-json"))
+    api(libs.lib("kotlinx-serialization-core"))
 }
