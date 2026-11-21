@@ -10,6 +10,33 @@ iOS `../FestiCore-iOS/Projects/UI/FestiCoreDesignKit/Sources/Component`의 Swift
 2. 색 · 글꼴 · 비활성 투명도는 생성 토큰(`FestiCoreSemanticColor` · `FestiCoreTextStyle` · `FestiCoreState`)만 쓴다. 간격 · 반경은 같은 값의 토큰(`FestiCoreSpacing` · `FestiCoreRadius`)이 있으면 반드시 토큰을 쓴다. 토큰에 없는 컴포넌트 고유 크기(컨트롤 높이 · 아이콘 크기 · 그랩버 등, iOS에서도 리터럴인 값)만 iOS와 같은 값을 그 컴포넌트 파일의 이름 있는 `private val` 상수(예: `private val Height = 36.dp`)로 둔다. C1에서 `.claude/rules/ui.md`의 "크기 하드코딩 금지"를 이 규칙으로 고친다. `check-boundaries`의 색 하드코딩 검사를 통과한다.
 3. 모든 공개 컴포넌트에 `@Preview`가 있다(라이트 · 다크 각 1개 이상인 그룹 미리보기 파일 허용).
 4. iOS `Tests/FestiCoreDesignKitFigmaSizeTests.swift`의 높이 · 크기 검사(`FigmaHeightCase.all` · 배지 16×16 · 존 칩 100×26)를 Robolectric + `compose-ui-test`로 같은 기대값으로 옮겨 통과한다. iOS `FestiCoreDesignKitTests.swift`(24개)의 로직 검사(상태 계산 · 포맷 등)는 해당 Kotlin 함수의 JVM 단위 테스트로 옮긴다. 그중 시트 시나리오(`FestiCoreDesignKitTests.swift` 16~246행: 교체 · 재열기 · 제거 중 dismiss 경합, 상위 모달 상태 전파)는 `FCSheet` Compose 테스트로 같은 시나리오 · 같은 기대 결과로 옮긴다(C7).
+
+   | iOS 테스트 | Android |
+   | --- | --- |
+   | `delayedDismissalCannotCloseReplacementSheet` | `FCSheetTest` `지연된 닫기는 교체된 시트를 닫지 못하고 같은 시트만 닫는다` |
+   | `pendingDismissalSurvivesReopenWhileMounted` | `FCSheetTest` `붙어 있는 시트를 닫는 중 다시 열면 열린 채로 남는다` |
+   | `pendingDismissalCannotCloseRapidConditionalReopen` | `FCSheetTest` `조건부 시트를 닫는 중 빠르게 다시 열어도 예약된 닫기가 닫지 못한다` |
+   | `pendingDismissalIsCancelledWhenModifierIsRemoved` | `FCSheetTest` `시트가 빠지면 예약된 닫기가 취소된다` |
+   | `removingModifierCancelsDismissalWhileItemRemainsPresented` | `FCSheetTest` `아이템이 남은 채 시트를 빼면 닫기가 취소된다` |
+   | `pendingDismissalKeepsReplacementSheet` | `FCSheetTest` `닫는 중 다른 아이템으로 바꾸면 교체된 시트가 남는다` |
+   | `replacementWithoutPendingDismissalKeepsPosition` | `FCSheetTest` `닫기 예약 없이 교체하면 시트 위치가 그대로다` |
+   | `presentingSheetKeepsBackgroundPosition` | `FCSheetTest` `시트를 띄워도 배경 위치는 그대로다` |
+   | `delayedDismissalClosesUnchangedSheet` | `FCSheetTest` `지연된 닫기는 바뀌지 않은 시트를 닫는다` |
+   | `modalPresenceIsReportedToAncestors` | `FCSheetTest` `바깥 시트와 화면 안쪽 시트 중 하나라도 뜨면 상위에 알린다` |
+   | `modalInPushedScreenIsReportedOutsideNavigationStack` | `FCSheetTest` `push된 화면 안 시트도 내비게이션 바깥에서 감지된다` |
+   | `pretendardRegistersForUIKitAndSwiftUI` | 옮기지 않음: UIKit · SwiftUI 폰트 등록 검사. Android는 `res/font`를 빌드가 묶어 등록 단계가 없다(글꼴 지정은 `DesignKitTokenTest`가 본다) |
+   | `pointStylesRegisterBagelForRenderingAndMetrics` | 옮기지 않음: Bagel 폰트 등록 · UIFont 지표 검사(iOS 폰트 등록 전용) |
+   | `primaryColorTracksSystemAppearance` | 옮기지 않음: UIColor 동적 색 외관 검사. Android는 light · dark 값을 `DesignKitTokenTest`로 본다 |
+   | `appleLoginLogoRendersWithDarkModeContrast` | 옮기지 않음: Apple 로그인은 Android로 옮기지 않는다 |
+   | `swiftUISemanticColorsTrackColorScheme` | 옮기지 않음: SwiftUI 색 외관(colorScheme) 검사 |
+   | `layoutAndTypographyMatchTokenSnapshot` | 옮기지 않음: UIFont 이름 · 줄 간격 토큰 스냅샷. 토큰 값은 생성 원천이 같고 `DesignKitTokenTest`가 레이아웃 · 텍스트 토큰을 본다 |
+   | `tokensComposeWithSwiftUIModifiers` | 옮기지 않음: SwiftUI 수정자 · UIHostingController 생성 검사 |
+   | `typographyModifierUsesFixedTokenSizeAcrossContentSizeCategories` | 옮기지 않음: iOS Dynamic Type(contentSizeCategory) 전용 검사 |
+   | `paginationMarksCurrentPageFromOne` | `FCPaginationTest` `현재 페이지를 1부터 센다` |
+   | `paginationClampsOutOfRangePage` | `FCPaginationTest` `범위 밖 페이지를 보정한다` |
+   | `paginationDrawsNothingWithoutPages` | `FCPaginationTest` `페이지가 없으면 아무것도 그리지 않는다` |
+   | `flagCardFollowButtonMatchesFigmaVariants` | `FCFlagCardTest` 3개(팔로우 스타일 · 기본 켜짐 · `isFollowEnabled` false) |
+   | `missingImageAssetUsesAttendanceFallback` | 옮기지 않음: UIImage 에셋 카탈로그 대체 이미지 검사(iOS 에셋 전용) |
 5. 그룹별 PR(아래 순서)이 develop에 squash merge되고, 각 PR에서 `.claude/scripts/verify --all`과 PR CI(Android PR · PR Rules)가 통과한다. Gemini 리뷰 결과(또는 실패 사유)를 PR에 적는다.
 6. 그룹마다 iOS 대응 경로 · 옮기지 않은 것 · 다르게 둔 것을 PR 본문에 적는다.
 
