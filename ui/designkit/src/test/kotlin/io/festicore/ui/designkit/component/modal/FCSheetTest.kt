@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
@@ -289,6 +290,21 @@ class FCSheetTest {
         }
         repeat(5) { render() }
         assertEquals(200.dp, composeRule.onNodeWithTag(FILLED).getUnclippedBoundsInRoot().height)
+    }
+
+    @Test
+    fun `비율을 주면 내용이 짧아도 내용 영역이 사용 가능 높이의 비율이다`() {
+        composeRule.setContent {
+            FCSheet(item = box.item, onDismissRequest = {}, height = FCSheetHeight.Fraction(0.5f)) {
+                Box(modifier = Modifier.fillMaxSize().testTag(FILLED)) { BasicText("짧은 내용") }
+            }
+        }
+        repeat(5) { render() }
+        // 시트가 별도 창이라 루트가 둘이다. 화면 전체를 덮는 쪽의 높이를 쓴다.
+        val rootHeight =
+            composeRule.onAllNodes(isRoot()).fetchSemanticsNodes().maxOf { it.boundsInRoot.height } / composeRule.density.density
+        val filledHeight = composeRule.onNodeWithTag(FILLED).getUnclippedBoundsInRoot().height
+        assertTrue("내용 영역 $filledHeight, 루트 $rootHeight", filledHeight.value > rootHeight * 0.4f && filledHeight.value < rootHeight * 0.6f)
     }
 
     @Test
