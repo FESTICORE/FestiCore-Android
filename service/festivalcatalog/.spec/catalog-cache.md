@@ -22,9 +22,11 @@ iOS 대응: `Projects/Service/FestiCoreFestivalCatalog/Sources/Storage/FestivalC
 4. 서버 실패는 저장된 목록을 지우지 않는다.
 5. 오프라인 표시(F4): 화면은 첫 서버 갱신이 끝날 때까지 스켈레톤이고, 실패하면 저장 목록 + 배지, 저장 목록이 없으면 배지 + 빈 카드. 캐시를 첫 갱신 전에 즉시 보이지 않는다(iOS `showsListSkeleton`).
 6. 파일 IO는 `Dispatchers.IO`에서 한다.
+7. 쪽 조회 순서: 첫 쪽(`after == null`) 요청마다 세대를 올린다. 응답은 요청 때 세대가 지금과 같고 `after`가 이어 붙일 커서(직전에 모은 쪽의 `nextCursor`)일 때만 모으고, 마지막 쪽이면 잠근 채로 저장한다. 아니면(더 보기 중 첫 쪽을 다시 받았거나 같은 쪽을 이미 붙였다) 받은 쪽만 돌려주고 모으지도 저장하지도 않는다.
 
 ## 엣지 케이스
 
+- 더 보기 요청이 진행 중일 때 첫 쪽 새로고침이 시작되면 늦게 온 옛 쪽은 새 첫 쪽 뒤에 붙지 않고, 오염된 목록을 저장하지 않는다(규칙 7).
 - 쓰기 도중 앱이 죽으면 `AtomicFile` 백업으로 이전 목록을 읽는다.
 - 캐시에 없는 필드(옛 앱 버전 파일)는 기본값(null · 빈 목록)으로 읽는다.
 
@@ -54,3 +56,4 @@ iOS 대응: `Projects/Service/FestiCoreFestivalCatalog/Sources/Storage/FestivalC
 ## 변경 이력
 
 - F1 JSON 파일 캐시(AtomicFile) · 읽기 실패 처리
+- 쪽 순서 세대로 늦은 옛 쪽 응답의 누적 · 저장을 막음(규칙 7)

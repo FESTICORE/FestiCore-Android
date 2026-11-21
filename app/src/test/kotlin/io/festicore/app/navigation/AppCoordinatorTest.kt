@@ -724,6 +724,23 @@ class AppCoordinatorTest {
     }
 
     @Test
+    fun `현재 사용자 - 현재 세션이 없으면 로그인 완료도 사용자를 채우지 않는다`() = runTest {
+        val scope = this
+        val users = CurrentUserStore()
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth, users = users).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            containerHost.onLaunchLoginFinished(completed)
+            expectState { copy(launchLogin = false) }
+            scope.testScheduler.runCurrent()
+        }
+        assertEquals(null, users.currentUserId.value)
+    }
+
+    @Test
     fun `현재 사용자 - 재확인 가입 덮개에서 가입을 마치면 가입한 사용자를 둔다`() = runTest {
         val users = CurrentUserStore()
         val auth = FakeAuthRepository(profile = { notEligible })

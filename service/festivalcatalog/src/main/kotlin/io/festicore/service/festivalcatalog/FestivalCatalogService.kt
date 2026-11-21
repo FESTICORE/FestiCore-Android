@@ -18,6 +18,10 @@ class FestivalCatalogService(
     private val pageLock = Mutex()
     private var pageItems: List<FestivalItemDto> = emptyList()
 
+    /** 쪽 순서 세대. 첫 쪽 요청마다 오른다. [pageCursor]는 이 세대에서 다음에 이어 붙일 쪽의 커서다. */
+    private var pageGeneration = 0
+    private var pageCursor: String? = null
+
     fun imageUrl(value: String?): String? = imageUrlResolver.resolve(value)
 
     /** 저장된 목록. 네트워크를 쓰지 않는다. */
@@ -46,18 +50,23 @@ class FestivalCatalogService(
     /**
      * 한 쪽을 받는다. 받은 쪽은 그대로 돌려준다.
      * 첫 쪽([after] == null)부터 받은 쪽들을 중복 ID 없이 모아 두고, 마지막 쪽을 받으면 모은 전체를 저장한다.
+     * 첫 쪽 요청은 세대를 올린다. 응답이 올 때 요청 때 세대가 아니거나 [after]가 이어 붙일 커서가 아니면
+     * (그 사이 첫 쪽을 다시 받았거나 같은 쪽을 이미 붙였다) 받은 쪽만 돌려주고 모으지도 저장하지도 않는다.
      * 다음 커서가 [after]와 같으면 [FestivalCatalogServiceError.RepeatedCursor].
      */
     suspend fun page(after: String?, limit: Int): FestivalListDto {
+        val generation = pageLock.withLock { if (after == null) ++pageGeneration else pageGeneration }
         val page = api.list(after, limit)
         if (after != null && page.nextCursor == after) throw FestivalCatalogServiceError.RepeatedCursor()
-        val completed = pageLock.withLock {
+        pageLock.withLock {
+            if (generation != pageGeneration || (after != null && after != pageCursor)) return page
             val base = if (after == null) emptyList() else pageItems
             val known = base.mapTo(HashSet()) { it.id }
             pageItems = base + page.items.filter { known.add(it.id) }
-            pageItems.takeIf { page.nextCursor == null }
+            pageCursor = page.nextCursor
+            // 늦게 끝난 저장이 새 세대의 저장을 덮지 않도록 잠근 채로 저장한다.
+            if (page.nextCursor == null) cache.save(pageItems)
         }
-        completed?.let { cache.save(it) }
         return page
     }
 

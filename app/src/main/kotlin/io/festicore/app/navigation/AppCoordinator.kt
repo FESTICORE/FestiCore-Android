@@ -96,8 +96,7 @@ class AppCoordinator(
         when (result) {
             is LaunchLoginResult.Completed -> {
                 // 그 사이 세션이 바뀌었거나 없어졌으면 다른 세션의 사용자라 현재 사용자로 두지 않는다.
-                val current = currentSessionId()
-                if (current != null && (result.sessionId == null || result.sessionId == current)) updateCurrentUserId(result.userId)
+                if (currentSessionId() == result.sessionId) updateCurrentUserId(result.userId)
                 reduce { state.withoutCover() }
             }
 
@@ -188,7 +187,7 @@ class AppCoordinator(
 
             state.launchLogin -> {
                 val top = state.coverTop
-                if (top is AuthRoute.SignUp && (top.sessionId == null || top.sessionId == sessionId)) {
+                if (top is AuthRoute.SignUp && top.sessionId == sessionId) {
                     reduce { state.copy(coverEpoch = state.coverEpoch + 1, coverTop = null) }
                 }
             }
