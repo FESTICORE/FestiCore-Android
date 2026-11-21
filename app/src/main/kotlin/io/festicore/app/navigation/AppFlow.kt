@@ -17,6 +17,7 @@ import io.festicore.feature.auth.LaunchLoginFlow
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
+import io.festicore.feature.web.WebScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.orbitmvi.orbit.compose.collectAsState
 
@@ -65,6 +66,7 @@ fun AppFlow(coordinator: AppCoordinator = koinViewModel()) {
                                     start = cover,
                                     onResult = coordinator::onLaunchLoginFinished,
                                     onTopChanged = coordinator::onAuthCoverTopChanged,
+                                    legalDocument = { page, onBackToRoot -> WebScreen(page = page, onBackToRoot = onBackToRoot) },
                                 )
                             }
                         }

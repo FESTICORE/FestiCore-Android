@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":ui:animation"))
     implementation(project(":feature:onboarding:sources"))
     implementation(project(":feature:auth:sources"))
+    implementation(project(":feature:web:sources"))
     implementation(libs.lib("core-splashscreen"))
     implementation(libs.lib("lifecycle-runtime-compose"))
 

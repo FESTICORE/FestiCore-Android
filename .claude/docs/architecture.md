@@ -54,7 +54,7 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Feature/Timetable` | `feature/timetable` | |
 | `Feature/Profile` | `feature/profile` | |
 | `Feature/Bearer` | `feature/bearer` | |
-| `Feature/Web` | `feature/web` | |
+| `Feature/Web` | `feature/web` | `WebScreen`(앱 안 웹 화면, `android.webkit.WebView`). 진입 인자 `WebPage`는 `interface`. 문서(`document`) 범위만 옮겼다. 다른 feature 스택에 넣을 때는 app이 화면을 슬롯으로 넘긴다(예: `LaunchLoginFlow(legalDocument = ...)`) |
 | `Domain/{Auth,Bearer,Festival,Notice,Timetable,UserNotification}Domain` | `domain/{auth,bearer,festival,notice,timetable,usernotification}` | |
 | `Service/API` · `Service/APIEndpoint` | `service/api` | 경로 상수 · 인증 정책 |
 | `Service/FestiCoreAuth` | `service/auth` | 세션 · 토큰 갱신 |

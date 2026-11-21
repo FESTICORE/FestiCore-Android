@@ -9,6 +9,7 @@ import io.festicore.domain.auth.sources.ActivityProvider
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.feature.auth.di.authFeatureModule
 import io.festicore.feature.onboarding.di.onboardingFeatureModule
+import io.festicore.feature.web.di.webFeatureModule
 import io.festicore.service.api.di.serviceApiModule
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.SessionExpiryEvents
@@ -42,5 +43,6 @@ val appModules: List<Module> = listOf(
     domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),
     onboardingFeatureModule,
     authFeatureModule(legalBaseUrl = BuildConfig.LEGAL_BASE_URL),
+    webFeatureModule,
     appModule,
 )

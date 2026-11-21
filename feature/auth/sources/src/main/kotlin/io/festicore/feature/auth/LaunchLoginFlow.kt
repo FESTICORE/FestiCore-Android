@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.festicore.feature.web.WebPage
 import java.util.UUID
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -22,18 +23,21 @@ import org.orbitmvi.orbit.compose.collectSideEffect
  * Home 위에 그리는 첫 진입 로그인 덮개(전체 화면). 아래 메인 탭으로 터치가 새지 않게 막는다.
  * 덮개를 다시 띄울 때마다 새 흐름으로 시작하도록 Coordinator를 덮개 표시마다 따로 만든다.
  * [onTopChanged]로 맨 위 화면을 상위에 알린다. 상위는 가입 화면이 보이는지로 재확인 · 세션 만료 처리를 정한다.
+ * 약관 상세는 가입 정보 위에 쌓인 화면이라 알리지 않는다(iOS에서도 가입 정보 표시 중이다).
+ * [legalDocument]는 약관 상세 화면이다. feature끼리 sources를 보지 않아 app이 `feature/web` 화면을 넘긴다.
  */
 @Composable
 fun LaunchLoginFlow(
     start: AuthRoute,
     onResult: (LaunchLoginResult) -> Unit,
     onTopChanged: (AuthRoute) -> Unit,
+    legalDocument: @Composable (page: WebPage, onBackToRoot: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val flowKey = rememberSaveable { UUID.randomUUID().toString() }
     val coordinator: AuthCoordinator = koinViewModel(key = "launchLoginFlow-$flowKey") { parametersOf(start) }
     val state by coordinator.collectAsState()
-    val top = state.routes.lastOrNull() as? AuthRoute
+    val top = state.routes.lastOrNull { it !is AuthRoute.LegalDocument } as? AuthRoute
 
     LaunchedEffect(top) { top?.let(onTopChanged) }
 
@@ -65,7 +69,11 @@ fun LaunchLoginFlow(
                             route = route,
                             onCompleted = { coordinator.onFinished(LaunchLoginResult.Completed) },
                             onClosed = coordinator::onSignUpClosed,
+                            onLegalDocumentRequested = coordinator::onLegalDocumentRequested,
                         )
+                    }
+                    entry<AuthRoute.LegalDocument> { route ->
+                        legalDocument(route.page, coordinator::goBack)
                     }
                 },
         )

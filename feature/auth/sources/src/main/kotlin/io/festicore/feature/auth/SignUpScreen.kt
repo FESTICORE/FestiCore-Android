@@ -1,7 +1,5 @@
 package io.festicore.feature.auth
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,12 +23,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
-import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.domain.auth.AuthNicknameRule
+import io.festicore.feature.web.WebPage
 import io.festicore.ui.designkit.component.button.FCPrimaryButton
 import io.festicore.ui.designkit.component.divider.FCDivider
 import io.festicore.ui.designkit.component.navigation.FCTopBar
@@ -54,18 +50,18 @@ private val ConsentBorderWidth = 1.dp
 
 /**
  * iOS `SignUpView`(S14 B). 뒤로(시스템 뒤로 포함)와 로그인을 잃었을 때는 [onClosed]로 흐름에 맡긴다(세션은 지우지 않는다).
- * 약관 상세는 외부 브라우저로 연다(iOS 앱 안 Web 화면은 `feature/web` 단계).
+ * 약관 상세는 [onLegalDocumentRequested]로 흐름에 맡겨 앱 안 웹 화면으로 연다(iOS `legalDocumentRequested(url:title:)`).
  */
 @Composable
 fun SignUpScreen(
     route: AuthRoute.SignUp,
     onCompleted: () -> Unit,
     onClosed: () -> Unit,
+    onLegalDocumentRequested: (WebPage) -> Unit,
     viewModel: SignUpViewModel = koinViewModel { parametersOf(route) },
     legalDocumentUrls: LegalDocumentUrls = koinInject(),
 ) {
     val state by viewModel.collectAsState()
-    val context = LocalContext.current
 
     BackHandler(onBack = viewModel::onCloseTapped)
 
@@ -76,12 +72,8 @@ fun SignUpScreen(
             SignUpSideEffect.Closed, SignUpSideEffect.SessionLost -> onClosed()
 
             is SignUpSideEffect.OpenLegalDocument -> {
-                val intent = Intent(Intent.ACTION_VIEW, legalDocumentUrls.url(sideEffect.document))
-                try {
-                    context.startActivity(intent)
-                } catch (_: ActivityNotFoundException) {
-                    FestiCoreLogger.error("약관 상세를 열 앱이 없음", LogCategory.UI)
-                }
+                val document = sideEffect.document
+                onLegalDocumentRequested(WebPage(url = legalDocumentUrls.url(document).toString(), title = document.title))
             }
         }
     }
