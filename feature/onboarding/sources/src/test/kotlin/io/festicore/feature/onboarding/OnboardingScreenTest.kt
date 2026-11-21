@@ -27,6 +27,7 @@ class OnboardingScreenTest {
         composeRule.setContent { OnboardingScreen(onResult = results::add, viewModel = OnboardingViewModel()) }
 
         composeRule.onNodeWithText("건너뛰기").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) { results.isNotEmpty() }
         composeRule.waitForIdle()
 
         assertEquals(listOf<OnboardingResult>(OnboardingResult.Completed), results)
@@ -46,6 +47,8 @@ class OnboardingScreenTest {
             composeRule.waitForIdle()
         }
         composeRule.onNodeWithContentDescription("시작하기").performClick()
+        // 완료 알림도 Orbit 부수효과로 Compose 시계 밖에서 오므로 도착할 때까지 기다린다.
+        composeRule.waitUntil(timeoutMillis = 5_000) { results.isNotEmpty() }
         composeRule.waitForIdle()
 
         assertEquals(listOf<OnboardingResult>(OnboardingResult.Completed), results)
