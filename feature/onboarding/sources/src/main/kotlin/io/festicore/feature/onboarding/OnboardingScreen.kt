@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -155,6 +156,7 @@ private fun TopActions(onSkipTapped: () -> Unit) {
             style = FCButtonStyle.Ghost,
             size = FCButtonSize.Medium,
             onClick = onSkipTapped,
+            modifier = Modifier.testTag(OnboardingTestTag.SKIP),
         )
     }
 }
@@ -183,6 +185,7 @@ private fun PageContents(
                 Modifier
                     .fillMaxWidth()
                     .height(visualHeight)
+                    .testTag(OnboardingTestTag.NEXT)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -212,6 +215,7 @@ private fun PageIndicator(page: Int) {
             Modifier
                 .padding(horizontal = FestiCoreSpacing.paddingP24)
                 .padding(top = ContentSpacing, bottom = BottomPadding)
+                .testTag(OnboardingTestTag.PAGE_INDICATOR)
                 .clearAndSetSemantics { contentDescription = "${page + 1} / ${OnboardingPage.all.size} 페이지" },
         horizontalArrangement = Arrangement.spacedBy(DotSpacing),
     ) {
@@ -235,4 +239,11 @@ private fun PageIndicator(page: Int) {
             )
         }
     }
+}
+
+/** iOS `OnboardingAccessibilityID`(`OnboardingView.swift:59,103,171`)와 같은 UI 테스트 식별자. */
+internal object OnboardingTestTag {
+    const val SKIP = "onboarding.skip"
+    const val NEXT = "onboarding.next"
+    const val PAGE_INDICATOR = "onboarding.pageIndicator"
 }
