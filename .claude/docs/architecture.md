@@ -50,7 +50,7 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Feature/FeatureAssembly` · `Service/ServiceAssembly` · `Core/CoreAssembly` | 각 모듈 `di/` + `app` 목록 | 조립 모듈을 따로 두지 않는다 |
 | `Feature/Auth` | `feature/auth` | Google 로그인만. Apple 로그인 제외 |
 | `Feature/Onboarding` | `feature/onboarding` | |
-| `Feature/Festival` | `feature/festival` | 목록 · 라이브 보드 · 알림함 |
+| `Feature/Festival` | `feature/festival` | 목록 · 라이브 보드 · 알림함. 지금은 S00 목록만 옮겼다: `FestivalFlow`(라이브 탭 루트) · `FestivalCoordinator` · `FestivalListViewModel` · `FestivalListPresentation`. 예매처는 Custom Tabs(`androidx.browser`, Apache-2.0). 라이브 스택이 목록뿐이면 `MainTabScreen`이 탭 바를 숨긴다. 동작은 `feature/festival/.spec/festival-list-screen.md` |
 | `Feature/Timetable` | `feature/timetable` | |
 | `Feature/Profile` | `feature/profile` | |
 | `Feature/Bearer` | `feature/bearer` | |

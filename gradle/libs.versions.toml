@@ -24,6 +24,7 @@ googleid = "1.2.1"
 core-splashscreen = "1.2.0"
 lottie = "6.7.1"
 coil = "3.6.3"
+browser = "1.10.0"
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -67,6 +68,7 @@ lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 coil-test = { module = "io.coil-kt.coil3:coil-test", version.ref = "coil" }
+browser = { module = "androidx.browser:browser", version.ref = "browser" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 # build-logic(convention plugin) 클래스패스
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
