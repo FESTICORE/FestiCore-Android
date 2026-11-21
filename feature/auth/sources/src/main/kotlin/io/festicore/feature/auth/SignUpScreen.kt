@@ -18,9 +18,15 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
@@ -37,6 +43,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -46,14 +53,14 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 private val ConsentBorderWidth = 1.dp
 
 /**
- * iOS `SignUpView`(S14 B). 뒤로(시스템 뒤로 포함)는 세션을 지우고 첫 진입 로그인으로 돌아간다.
+ * iOS `SignUpView`(S14 B). 뒤로(시스템 뒤로 포함)와 로그인을 잃었을 때는 [onClosed]로 흐름에 맡긴다(세션은 지우지 않는다).
  * 약관 상세는 외부 브라우저로 연다(iOS 앱 안 Web 화면은 `feature/web` 단계).
  */
 @Composable
 fun SignUpScreen(
     route: AuthRoute.SignUp,
     onCompleted: () -> Unit,
-    onReturnToLaunchLogin: () -> Unit,
+    onClosed: () -> Unit,
     viewModel: SignUpViewModel = koinViewModel { parametersOf(route) },
     legalDocumentUrls: LegalDocumentUrls = koinInject(),
 ) {
@@ -66,7 +73,7 @@ fun SignUpScreen(
         when (sideEffect) {
             SignUpSideEffect.Completed -> onCompleted()
 
-            SignUpSideEffect.Closed, SignUpSideEffect.SessionLost -> onReturnToLaunchLogin()
+            SignUpSideEffect.Closed, SignUpSideEffect.SessionLost -> onClosed()
 
             is SignUpSideEffect.OpenLegalDocument -> {
                 val intent = Intent(Intent.ACTION_VIEW, legalDocumentUrls.url(sideEffect.document))
@@ -104,6 +111,17 @@ internal fun SignUpContent(
     onSubmitTapped: () -> Unit,
     onCloseTapped: () -> Unit,
 ) {
+    // iOS `.scrollDismissesKeyboard(.interactively)`. Android에는 손가락을 따라 내려가는 방식이 없어 사용자가 끌기 시작하면 숨긴다.
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val hidesKeyboardOnDrag =
+        remember(keyboardController) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (source == NestedScrollSource.UserInput) keyboardController?.hide()
+                    return Offset.Zero
+                }
+            }
+        }
     Column(
         modifier =
             Modifier
@@ -117,6 +135,7 @@ internal fun SignUpContent(
             modifier =
                 Modifier
                     .weight(1f)
+                    .nestedScroll(hidesKeyboardOnDrag)
                     .verticalScroll(rememberScrollState())
                     .padding(FestiCoreSpacing.paddingP16),
             verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP24),
@@ -145,7 +164,9 @@ internal fun SignUpContent(
             state.message?.let { message ->
                 BasicText(
                     text = message,
-                    style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.statusNegative.color),
+                    style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                        color = FestiCoreSemanticColor.statusNegative.color,
+                    ),
                 )
             }
         }

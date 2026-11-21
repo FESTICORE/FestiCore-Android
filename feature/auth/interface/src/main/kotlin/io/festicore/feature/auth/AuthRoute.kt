@@ -16,6 +16,7 @@ sealed interface AuthRoute : NavKey {
      * @param nickname 서버 닉네임. 있으면 처음 한 번 미리 채운다.
      * @param currentTermsVersion 서버 현재 약관 버전.
      * @param sessionId 가입 요청을 묶을 세션. `null`이면 현재 세션에 묶는다.
+     * @param isReconsent 예전 약관에 동의한 기존 회원인지(iOS `termsAcceptedAt != nil`). 참이면 처음부터 재동의 문구를 보인다.
      */
     @Serializable
     data class SignUp(
@@ -23,5 +24,6 @@ sealed interface AuthRoute : NavKey {
         val nickname: String?,
         val currentTermsVersion: String,
         val sessionId: String? = null,
+        val isReconsent: Boolean = false,
     ) : AuthRoute
 }

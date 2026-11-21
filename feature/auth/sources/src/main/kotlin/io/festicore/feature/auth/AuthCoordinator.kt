@@ -14,10 +14,10 @@ sealed interface AuthCoordinatorSideEffect {
 
 /**
  * 첫 진입 로그인 흐름(iOS `AuthCoordinator`의 launchLogin ↔ 가입 정보). [start]에서 시작한다.
- * LaunchLogin과 SignUp은 서로를 대체해 스택은 항상 한 화면이다. 그래서 SignUp 뒤로는 화면이 처리하고(세션 폐기),
- * LaunchLogin 뒤로는 앱을 닫는다(iOS 첫 진입 화면에는 닫기 제스처가 없다).
+ * LaunchLogin과 SignUp은 서로를 대체해 스택은 항상 한 화면이다. LaunchLogin 뒤로는 앱을 닫는다(iOS 첫 진입 화면에는 닫기 제스처가 없다).
+ * [start]가 LaunchLogin이면 첫 진입 흐름(iOS `isLaunchFlow`), SignUp이면 로그인 상태 재확인으로 뜬 가입 덮개다.
  */
-class AuthCoordinator(start: AuthRoute) :
+class AuthCoordinator(private val start: AuthRoute) :
     ViewModel(),
     OrbitContainerHost<AuthCoordinatorState, AuthCoordinatorState, AuthCoordinatorSideEffect> {
     override val container = orbitContainer<AuthCoordinatorState, AuthCoordinatorSideEffect>(AuthCoordinatorState(listOf(start)))
@@ -28,10 +28,17 @@ class AuthCoordinator(start: AuthRoute) :
 
     fun onSignUpRequired(route: AuthRoute.SignUp) = replaceCurrent(route)
 
-    /** 가입 정보에서 뒤로 나왔거나 로그인을 잃었다. */
-    fun onReturnToLaunchLogin() = intent {
+    /**
+     * 가입 정보에서 뒤로 나왔거나 가입 중 로그인을 잃었다(iOS `dismissFlow`). 세션은 지우지 않는다.
+     * 첫 진입 흐름이면 로그인 화면으로 돌아가고, 재확인으로 뜬 가입이면 [LaunchLoginResult.SignUpCancelled]로 덮개를 닫는다.
+     */
+    fun onSignUpClosed() = intent {
         if (state.routes.lastOrNull() !is AuthRoute.SignUp) return@intent
-        reduce { state.copy(routes = state.routes.dropLast(1) + AuthRoute.LaunchLogin) }
+        if (start is AuthRoute.LaunchLogin) {
+            reduce { state.copy(routes = state.routes.dropLast(1) + AuthRoute.LaunchLogin) }
+        } else {
+            postSideEffect(AuthCoordinatorSideEffect.Finished(LaunchLoginResult.SignUpCancelled))
+        }
     }
 
     fun onFinished(result: LaunchLoginResult) = intent { postSideEffect(AuthCoordinatorSideEffect.Finished(result)) }

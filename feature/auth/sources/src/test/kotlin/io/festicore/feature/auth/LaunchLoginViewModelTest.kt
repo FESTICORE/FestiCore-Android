@@ -1,6 +1,7 @@
 package io.festicore.feature.auth
 
 import io.festicore.domain.auth.AuthDomainError
+import io.festicore.domain.auth.AuthProfile
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -33,6 +34,20 @@ class LaunchLoginViewModelTest {
             expectSideEffect(
                 LaunchLoginSideEffect.SignUpRequired(
                     AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V1, sessionId = "s9"),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `예전 약관에 동의한 기존 회원이면 재동의로 가입 정보에 간다`() = runTest {
+        val repository = FakeAuthRepository(profile = { AuthProfile(user(), TERMS_V2) }).apply { currentSessionId = "s9" }
+        viewModel(login = { loginResult(sessionId = "s9") }, repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectSideEffect(
+                LaunchLoginSideEffect.SignUpRequired(
+                    AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V2, sessionId = "s9", isReconsent = true),
                 ),
             )
         }

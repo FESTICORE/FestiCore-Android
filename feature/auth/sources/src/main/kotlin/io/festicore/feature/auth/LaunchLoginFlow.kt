@@ -3,6 +3,7 @@ package io.festicore.feature.auth
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -20,16 +21,21 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 /**
  * Home 위에 그리는 첫 진입 로그인 덮개(전체 화면). 아래 메인 탭으로 터치가 새지 않게 막는다.
  * 덮개를 다시 띄울 때마다 새 흐름으로 시작하도록 Coordinator를 덮개 표시마다 따로 만든다.
+ * [onTopChanged]로 맨 위 화면을 상위에 알린다. 상위는 가입 화면이 보이는지로 재확인 · 세션 만료 처리를 정한다.
  */
 @Composable
 fun LaunchLoginFlow(
     start: AuthRoute,
     onResult: (LaunchLoginResult) -> Unit,
+    onTopChanged: (AuthRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val flowKey = rememberSaveable { UUID.randomUUID().toString() }
     val coordinator: AuthCoordinator = koinViewModel(key = "launchLoginFlow-$flowKey") { parametersOf(start) }
     val state by coordinator.collectAsState()
+    val top = state.routes.lastOrNull() as? AuthRoute
+
+    LaunchedEffect(top) { top?.let(onTopChanged) }
 
     coordinator.collectSideEffect { sideEffect ->
         when (sideEffect) {
@@ -58,7 +64,7 @@ fun LaunchLoginFlow(
                         SignUpScreen(
                             route = route,
                             onCompleted = { coordinator.onFinished(LaunchLoginResult.Completed) },
-                            onReturnToLaunchLogin = coordinator::onReturnToLaunchLogin,
+                            onClosed = coordinator::onSignUpClosed,
                         )
                     }
                 },

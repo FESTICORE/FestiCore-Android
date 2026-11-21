@@ -13,7 +13,6 @@ import io.festicore.service.api.di.serviceApiModule
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.SessionExpiryEvents
 import io.festicore.service.auth.di.serviceAuthModule
-import kotlinx.coroutines.flow.map
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.bind
@@ -27,7 +26,7 @@ private val appModule = module {
         AppCoordinator(
             onboardingStore = get(),
             isLoggedIn = session::isLoggedIn,
-            sessionExpiredGeneration = get<SessionExpiryEvents>().expired.map { it.generation },
+            sessionExpired = get<SessionExpiryEvents>().expired,
             authRepository = get(),
             currentSessionId = session::currentSessionId,
         )

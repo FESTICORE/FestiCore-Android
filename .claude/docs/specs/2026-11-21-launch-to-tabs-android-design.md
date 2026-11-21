@@ -30,8 +30,8 @@ iOS 원본(`../FestiCore-iOS/Projects`, 이하 iOS):
 1. 첫 설치 실행: 스플래시(2초) → 온보딩. 온보딩을 마치거나 건너뛰면 완료가 저장되고, 이후 실행에서는 온보딩이 다시 뜨지 않는다.
 2. 비로그인 실행: 스플래시 → 메인 탭 위에 launchLogin이 덮인다(전체 화면). "지금은 건너뛸게요"로 닫으면 메인 탭이 보인다. 건너뛰기는 저장하지 않아 다음 실행에 다시 뜬다(iOS와 같음).
 3. Google 로그인 성공 + `isEligible`이면 덮개가 걷히고 메인 탭. 아니면 회원가입 화면으로 가고, 제출 성공 후 메인 탭. 덮개는 계정 확인 · 가입이 끝날 때까지 유지해 홈이 잠깐 비치지 않는다.
-4. 로그인 실행: 스플래시 동안 로컬 세션을 확인해 바로 메인 탭(덮개 없음). 진입과 동시에, 그리고 이후 포그라운드 진입마다 `GET api/v1/me`로 프로필을 재확인한다(아래 "프로필 재확인"). 성공 프로필이 `isEligible == false`(약관 버전 상승 등)면 메인 탭 위에 SignUp 덮개를 띄운다.
-5. 오류: 사용자 취소 · 중복 요청은 문구 없음, 그 외 로그인 실패는 "로그인에 실패했습니다. 다시 시도해 주세요.", 토큰 저장 실패는 "로그인 정보를 저장하지 못했어요. 다시 시도해 주세요.". 가입: 닉네임 규칙 위반 "닉네임은 1~12자로 입력해 주세요.", `422 TERMS_VERSION_OUTDATED`는 체크를 지우고 "약관이 변경됐어요. 내용을 확인하고 다시 동의해 주세요." 후 프로필 재조회(1회만, 다시 바뀌면 "약관이 다시 변경됐어요. 나중에 다시 시도해 주세요."로 제출 막음), 401은 launchLogin으로 복귀, 오프라인 "오프라인에서 저장하지 못했어요. 연결 후 다시 시도해 주세요.", 그 외 "저장하지 못했어요. 다시 시도해 주세요.".
+4. 로그인 실행: 스플래시 동안 로컬 세션을 확인해 바로 메인 탭(덮개 없음). 진입과 동시에, 그리고 이후 포그라운드 진입마다 `GET api/v1/me`로 프로필을 재확인한다(아래 "프로필 재확인"). 성공 프로필이 `isEligible == false`(약관 버전 상승 등)면 메인 탭 위에 SignUp 덮개를 띄운다. 첫 진입 흐름이 아닐 때 세션 만료 이벤트나 재확인 401이 오면 iOS와 같이 launchLogin을 띄우지 않고 비로그인 메인 탭에 둔다(`SessionCoordinator.swift:206-210,341-351`, 점검 문서 결정 7).
+5. 오류: 사용자 취소 · 중복 요청은 문구 없음, 그 외 로그인 실패는 "로그인에 실패했습니다. 다시 시도해 주세요.", 토큰 저장 실패는 "로그인 정보를 저장하지 못했어요. 다시 시도해 주세요.". 가입: 닉네임 규칙 위반 "닉네임은 1~12자로 입력해 주세요.", `422 TERMS_VERSION_OUTDATED`는 체크를 지우고 "약관이 변경됐어요. 내용을 확인하고 다시 동의해 주세요." 후 프로필 재조회(1회만, 다시 바뀌면 "약관이 다시 변경됐어요. 나중에 다시 시도해 주세요."로 제출 막음), 401은 첫 진입 흐름이면 launchLogin으로 복귀하고 재확인으로 뜬 가입이면 덮개를 닫아 비로그인 메인 탭(iOS 로그인 시트는 옮기지 않음), 오프라인 "오프라인에서 저장하지 못했어요. 연결 후 다시 시도해 주세요.", 그 외 "저장하지 못했어요. 다시 시도해 주세요.".
 6. 프로필 조회가 오프라인 · 서버 오류로 실패해도 로그인 상태를 유지한다. 401(갱신까지 실패)일 때만 세션을 지운다.
 7. 단위 테스트(JVM): 각 ViewModel(Orbit `test`)의 상태 전이 · 부수효과, 닉네임 규칙, `isEligible`, 응답 래퍼 · 에러 매핑(Ktor `MockEngine`), 토큰 갱신(401 → refresh → 재요청, refresh 401 → 만료 이벤트), 토큰 저장소 왕복(Robolectric). 실서버를 부르는 테스트는 없다.
 8. `.claude/scripts/verify --all`과 PR CI가 통과한다. stage 앱(`assembleStageDebug`)이 빌드된다.
@@ -66,19 +66,19 @@ Splash ── 2초 ──▶ onboardingStore.hasCompleted()
    └─ false ─▶ Home + launchLogin
 launchLogin ─ 건너뛰기 ─▶ Home
             ─ Google 성공 ─▶ (덮개 유지) 토큰 저장 ─▶ GET /me ─▶ isEligible ? Home : SignUp(덮개 안)
-SignUp ─ 제출 성공 ─▶ Home     SignUp ─ 뒤로 ─▶ 세션 폐기 → launchLogin
-세션 만료 이벤트 ─▶ 토큰 삭제 → Home + launchLogin
+SignUp ─ 제출 성공 ─▶ Home     SignUp ─ 뒤로 ─▶ 세션 유지 → launchLogin(첫 진입) / Home(재확인 가입)
+세션 만료 이벤트 ─▶ 토큰 삭제 → 첫 진입 가입 중이면 launchLogin, 그 밖에는 Home(비로그인)
 ```
 
 **프로필 재확인** (iOS `AppCoordinator.swift:243-250`, `SessionCoordinator.swift:109-117 · 267-292`): 로그인 상태로 Home에 들어갈 때와 `ON_START`(포그라운드)마다 `GET api/v1/me`를 한 번 부른다. 이미 진행 중이면 겹쳐 부르지 않는다.
 - 성공 ∧ `isEligible` → 그대로. 성공 ∧ `!isEligible` → SignUp 덮개(받은 프로필로 초기화).
-- 401(갱신까지 실패) → 세션 만료 경로(토큰 삭제 → launchLogin).
+- 401(갱신까지 실패) → 세션 삭제 → 비로그인 Home(launchLogin 없음).
 - 오프라인 · 5xx · 디코딩 오류 → 로그인 · 화면 유지, 자동 재시도 없음(다음 포그라운드에서 다시 확인).
 - 응답 사용자 ID가 저장된 세션 계정과 다르면 무시한다(그 사이 계정이 바뀐 경우).
 
 - Navigation 3: 루트 back stack에 `Splash` · `Onboarding` · `Home` 키. launchLogin · SignUp은 Home 위에 그리는 전체 화면 덮개(feature/auth Coordinator의 자체 back stack)로 둔다. 시스템 뒤로는 SignUp → launchLogin → 앱 종료 순(launchLogin에서 뒤로 = 건너뛰기와 같게 하지 않는다: iOS 첫 진입 화면은 닫기 제스처가 없다).
 - 스플래시: 의존성을 늘리지 않기 위해 Lottie 대신 Android 12+ `SplashScreen` API(`core-splashscreen`, 배경 `staticInk`)와 Compose 스플래시 화면(`staticInk` 배경 + designkit `logo`, 상태바 숨김)을 2초 보인다. iOS Lottie 애니메이션은 `ui/animation` 모듈을 만드는 단계로 미룬다(차이로 기록).
-- 임시 세션: iOS `stageSession`/`commitSession`은 "로그인 시트를 닫은 뒤 늦게 온 결과"를 버리기 위한 것이다. launchLogin에는 닫기가 없고 건너뛰기는 로그인 중 비활성(`isSigningIn` 동안 전체 disabled, iOS와 같음)이라 로그인 시도 ID로 늦은 결과만 버리고, 토큰은 서버 응답 직후 바로 저장한다. SignUp에서 뒤로 가면 저장한 토큰을 지운다.
+- 임시 세션: iOS `stageSession`/`commitSession`은 "로그인 시트를 닫은 뒤 늦게 온 결과"를 버리기 위한 것이다. launchLogin에는 닫기가 없고 건너뛰기는 로그인 중 비활성(`isSigningIn` 동안 전체 disabled, iOS와 같음)이라 로그인 시도 ID로 늦은 결과만 버리고, 토큰은 서버 응답 직후 바로 저장한다. SignUp에서 뒤로 가도 iOS와 같이 확정된 세션은 유지한다(점검 문서 결정 2, `feature/auth/.spec/signup.md`).
 
 ## 화면
 

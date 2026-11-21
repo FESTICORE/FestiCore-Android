@@ -9,6 +9,7 @@ import io.festicore.domain.auth.AuthUser
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.onboarding.OnboardingRoute
+import io.festicore.service.auth.SessionExpiry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,7 @@ class AppCoordinatorTest {
         var sessionId: String? = "s1"
         var fetchCount = 0
         var clearCount = 0
+        var expiredSessionId: String? = null
 
         override val sessionExpired: Flow<Unit> = emptyFlow()
 
@@ -66,7 +68,7 @@ class AppCoordinatorTest {
 
         override suspend fun isLoggedIn(): Boolean = sessionId != null
 
-        override fun hasSessionExpired(sessionId: String): Boolean = false
+        override fun hasSessionExpired(sessionId: String): Boolean = expiredSessionId == sessionId
 
         override suspend fun clearSession() {
             clearCount++
@@ -84,11 +86,17 @@ class AppCoordinatorTest {
     private fun coordinator(
         store: FirstInstallOnboardingStore,
         loggedIn: Boolean,
-        expiry: Flow<Long> = emptyFlow(),
+        expiry: Flow<SessionExpiry> = emptyFlow(),
         auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
     ) = AppCoordinator(store, { loggedIn }, expiry, auth, { auth.sessionId })
 
     private val home = AppCoordinatorState(routes = listOf(AppRoute.Home))
+
+    private fun expiryFlow(generation: Long = 0) = MutableStateFlow(SessionExpiry(generation = generation, sessionId = null))
+
+    private fun MutableStateFlow<SessionExpiry>.expire(sessionId: String) {
+        value = SessionExpiry(generation = value.generation + 1, sessionId = sessionId)
+    }
 
     private fun TestScope.assertSplashLasted2Seconds() = assertEquals(2_000L, testScheduler.currentTime)
 
@@ -213,16 +221,21 @@ class AppCoordinatorTest {
     }
 
     @Test
-    fun `홈에서 세션 만료 이벤트를 받으면 launchLogin 덮개를 띄운다`() = runTest {
-        val expiry = MutableStateFlow(0L)
-        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry).test(this) {
+    fun `시나리오 11 - 홈(덮개 없음)에서 세션 만료 이벤트를 받아도 launchLogin을 띄우지 않고 비로그인 메인 탭에 둔다`() = runTest {
+        val expiry = expiryFlow()
+        var profile = eligible
+        val auth = FakeAuthRepository(profile = { profile })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry, auth = auth).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = false) }
 
             expiry.subscriptionCount.first { it > 0 }
-            expiry.value = 1
-            expectState { copy(launchLogin = true) }
+            expiry.expire("s1")
+            // 만료가 launchLogin을 켰다면 재확인은 건너뛰고 다음 상태에 launchLogin이 남는다.
+            profile = notEligible
+            containerHost.onForegrounded()
+            expectState { copy(signUp = recheckSignUp) }
             // 만료 구독은 홈에 있는 동안 계속 돈다.
             cancelAndIgnoreRemainingItems()
         }
@@ -230,11 +243,11 @@ class AppCoordinatorTest {
 
     @Test
     fun `홈에 들어가기 전에 세션이 만료되면 홈에서 launchLogin 덮개를 띄운다`() = runTest {
-        val expiry = MutableStateFlow(0L)
+        val expiry = expiryFlow()
         val auth = FakeAuthRepository()
         val isLoggedIn = suspend {
             // 로그인으로 확인한 직후, 홈에 들어가기 전에 만료된다.
-            expiry.value = 1
+            expiry.expire("s1")
             delay(1)
             true
         }
@@ -250,43 +263,106 @@ class AppCoordinatorTest {
     }
 
     @Test
-    fun `초기 프로필 재확인 중 세션이 만료되면 launchLogin 덮개를 띄우고 같은 만료는 한 번만 반영한다`() = runTest {
-        // 구독 전에 쌓인 값은 이미 반영된 것으로 본다.
-        val expiry = MutableStateFlow(3L)
+    fun `시나리오 11 - 초기 프로필 재확인이 401이고 이 세션이 만료됐으면 launchLogin 없이 비로그인 메인 탭에 둔다`() = runTest {
         val auth = FakeAuthRepository()
         auth.profile = {
-            expiry.value = 4
+            // 토큰 갱신 401: 저장소를 지우고 만료 이벤트를 보낸 뒤 실패한다(만료 이벤트 처리는 위 시나리오 11).
+            auth.sessionId = null
+            auth.expiredSessionId = "s1"
             delay(1)
-            eligible
+            throw AuthDomainError.NotAuthenticated()
         }
-        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry, auth = auth).test(this) {
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
             expectState(home)
-            expectState { copy(launchLogin = true) }
+        }
+        assertEquals(1, auth.fetchCount)
+        assertEquals(0, auth.clearCount)
+    }
+
+    @Test
+    fun `시나리오 1 - 비로그인 launchLogin을 건너뛰면 덮개를 닫고 세션이 없어 프로필을 부르지 않는다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+            containerHost.onAuthCoverTopChanged(AuthRoute.LaunchLogin)
+            expectState { copy(coverTop = AuthRoute.LaunchLogin) }
 
             containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
+            expectState { copy(launchLogin = false, coverTop = null) }
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `시나리오 2 · 3 - 로그인 뒤 가입에서 뒤로 나와 건너뛰면 세션을 유지한 채 한 번 재확인해 가입 덮개를 띄우고 닫으면 다음 포그라운드에 한 번 다시 띄운다`() = runTest {
+        val auth = FakeAuthRepository(profile = { notEligible }).apply { sessionId = null }
+        val launchSignUp = recheckSignUp.copy(sessionId = "s1")
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            // 로그인이 세션 s1을 저장하고 가입 화면으로 갔다가 뒤로 나왔다(세션 유지).
+            auth.sessionId = "s1"
+            containerHost.onAuthCoverTopChanged(launchSignUp)
+            expectState { copy(coverTop = launchSignUp) }
+            containerHost.onAuthCoverTopChanged(AuthRoute.LaunchLogin)
+            expectState { copy(coverTop = AuthRoute.LaunchLogin) }
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
+            expectState { copy(launchLogin = false, coverTop = null) }
+            expectState { copy(signUp = recheckSignUp) }
+            assertEquals(1, auth.fetchCount)
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SignUpCancelled)
+            expectState { copy(signUp = null) }
+            assertEquals(1, auth.fetchCount)
+
+            containerHost.onForegrounded()
+            expectState { copy(signUp = recheckSignUp) }
+        }
+        assertEquals(2, auth.fetchCount)
+        assertEquals(0, auth.clearCount)
+        assertEquals("s1", auth.sessionId)
+    }
+
+    @Test
+    fun `시나리오 4 - 로그인 직후 조건을 채워 완료하면 덮개를 닫고 다시 확인하지 않는다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            auth.sessionId = "s1"
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
             expectState { copy(launchLogin = false) }
-            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `시나리오 6 - 건너뛰기 재확인은 덮개를 지운 뒤 실행된다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            auth.sessionId = "s1"
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
+            expectState { copy(launchLogin = false) }
         }
         assertEquals(1, auth.fetchCount)
     }
 
     @Test
-    fun `첫 진입 덮개를 마치거나 건너뛰면 덮개를 닫는다`() = runTest {
-        coordinator(FakeOnboardingStore(completed = true), loggedIn = false).test(this) {
-            runOnCreate()
-            containerHost.onSplashAppeared()
-            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
-
-            containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
-            expectState { copy(launchLogin = false) }
-        }
-    }
-
-    @Test
     fun `시나리오 7 - 로그인 직후 401에 이 세션의 만료 이벤트가 있으면 launchLogin을 유지하고 덮개를 새로 만든다`() = runTest {
-        val expiry = MutableStateFlow(0L)
+        val expiry = expiryFlow()
         // 토큰 갱신 401로 저장소는 이미 비었다.
         val auth = FakeAuthRepository().apply { sessionId = null }
         coordinator(FakeOnboardingStore(completed = true), loggedIn = false, expiry = expiry, auth = auth).test(this) {
@@ -295,8 +371,8 @@ class AppCoordinatorTest {
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
 
             expiry.subscriptionCount.first { it > 0 }
-            // 만료 이벤트는 launchLogin이 이미 떠 있으므로 상태를 바꾸지 않는다.
-            expiry.value = 1
+            // 만료 이벤트는 로그인 화면이 떠 있으므로 상태를 바꾸지 않는다.
+            expiry.expire("a")
             containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = true))
             expectState { copy(coverEpoch = 1) }
             cancelAndIgnoreRemainingItems()
@@ -339,7 +415,7 @@ class AppCoordinatorTest {
 
     @Test
     fun `시나리오 8c - 다른 세션의 만료 이벤트는 로그인 직후 만료 이벤트 없는 401 결과를 바꾸지 않는다`() = runTest {
-        val expiry = MutableStateFlow(0L)
+        val expiry = expiryFlow()
         val auth = FakeAuthRepository().apply { sessionId = null }
         coordinator(FakeOnboardingStore(completed = true), loggedIn = false, expiry = expiry, auth = auth).test(this) {
             runOnCreate()
@@ -347,10 +423,12 @@ class AppCoordinatorTest {
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
 
             expiry.subscriptionCount.first { it > 0 }
-            // 세션 a의 만료. launchLogin이 이미 떠 있어 덮개 세대를 올리지 않는다(진행 중인 b 로그인을 지우지 않음).
-            expiry.value = 1
+            containerHost.onAuthCoverTopChanged(AuthRoute.LaunchLogin)
+            expectState { copy(coverTop = AuthRoute.LaunchLogin) }
+            // 세션 a의 만료. 로그인 화면이 떠 있어 덮개 세대를 올리지 않는다(진행 중인 b 로그인을 지우지 않음).
+            expiry.expire("a")
             containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "b", expired = false))
-            expectState { copy(launchLogin = false) }
+            expectState { copy(launchLogin = false, coverTop = null) }
             cancelAndIgnoreRemainingItems()
         }
     }
@@ -382,18 +460,14 @@ class AppCoordinatorTest {
     }
 
     @Test
-    fun `재확인 결과가 가입 조건 미달이면 가입 덮개를 띄우고 마치면 닫는다`() = runTest {
+    fun `시나리오 5 - 재확인 결과가 가입 조건 미달이면 재동의 가입 덮개를 띄우고 가입을 마치면 다시 확인하지 않고 닫는다`() = runTest {
         val auth = FakeAuthRepository(profile = { notEligible })
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
             expectState(home)
-            expectState {
-                copy(signUp = AuthRoute.SignUp(userId = "u1", nickname = "roy", currentTermsVersion = "2026-11", sessionId = "s1"))
-            }
+            expectState { copy(signUp = recheckSignUp) }
 
-            // 덮개가 떠 있으면 포그라운드 재확인을 하지 않는다.
-            containerHost.onForegrounded()
             containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
             expectState(home)
         }
@@ -401,15 +475,109 @@ class AppCoordinatorTest {
     }
 
     @Test
-    fun `재확인이 401이면 세션을 지우고 launchLogin 덮개를 띄운다`() = runTest {
+    fun `시나리오 10 - 재확인 가입 덮개가 떠 있을 때 포그라운드에서 여전히 미달이면 같은 덮개를 두고 충족이면 닫는다`() = runTest {
+        // 처음 진입 · 첫 포그라운드는 미달, 두 번째 포그라운드는 충족.
+        val results = ArrayDeque(listOf(notEligible, notEligible, eligible))
+        val auth = FakeAuthRepository(profile = { results.removeFirst() })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState(home)
+            expectState { copy(signUp = recheckSignUp) }
+            containerHost.onAuthCoverTopChanged(recheckSignUp)
+            expectState { copy(coverTop = recheckSignUp) }
+
+            // 같은 덮개(같은 route 객체)를 그대로 둔다. 가입 초안은 덮개 흐름에 남는다.
+            // 미달 재확인이 상태를 바꿨다면 다음 기대 상태 앞에 그 상태가 먼저 온다.
+            containerHost.onForegrounded()
+            containerHost.onForegrounded()
+            expectState(home)
+        }
+        assertEquals(3, auth.fetchCount)
+    }
+
+    @Test
+    fun `포그라운드 때 첫 진입 덮개 안의 가입 화면이 보이면 재확인하고 충족이면 덮개를 닫는다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        val launchSignUp = recheckSignUp.copy(sessionId = "s1")
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            // 로그인 화면이 보이는 동안에는 재확인하지 않는다.
+            containerHost.onForegrounded()
+            assertEquals(0, auth.fetchCount)
+
+            auth.sessionId = "s1"
+            containerHost.onAuthCoverTopChanged(launchSignUp)
+            expectState { copy(coverTop = launchSignUp) }
+            containerHost.onForegrounded()
+            expectState { copy(launchLogin = false, coverTop = null) }
+        }
+        assertEquals(1, auth.fetchCount)
+    }
+
+    @Test
+    fun `시나리오 9 - 재확인 가입 중 세션이 만료되면 덮개를 닫고 launchLogin을 띄우지 않는다`() = runTest {
+        val expiry = expiryFlow()
+        val auth = FakeAuthRepository(profile = { notEligible })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState(home)
+            expectState { copy(signUp = recheckSignUp) }
+            containerHost.onAuthCoverTopChanged(recheckSignUp)
+            expectState { copy(coverTop = recheckSignUp) }
+
+            expiry.subscriptionCount.first { it > 0 }
+            expiry.expire("s1")
+            expectState(home)
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    @Test
+    fun `시나리오 9 - 첫 진입 가입 중 그 세션이 만료되면 덮개를 로그인 화면부터 새로 만들고 다른 세션 만료는 무시한다`() = runTest {
+        val scope = this
+        val expiry = expiryFlow()
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        val launchSignUp = recheckSignUp.copy(sessionId = "a")
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, expiry = expiry, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+            containerHost.onAuthCoverTopChanged(launchSignUp)
+            expectState { copy(coverTop = launchSignUp) }
+
+            expiry.subscriptionCount.first { it > 0 }
+            // 다른 세션 만료는 무시한다. 무시하지 않았다면 다음 상태에 덮개 세대가 올라 있다.
+            expiry.expire("b")
+            containerHost.onAuthCoverTopChanged(AuthRoute.LaunchLogin)
+            expectState { copy(coverTop = AuthRoute.LaunchLogin) }
+            containerHost.onAuthCoverTopChanged(launchSignUp)
+            expectState { copy(coverTop = launchSignUp) }
+
+            expiry.expire("a")
+            expectState { copy(coverEpoch = 1, coverTop = null) }
+            // 새 흐름이 로그인 화면을 알린다.
+            containerHost.onAuthCoverTopChanged(AuthRoute.LaunchLogin)
+            expectState { copy(coverTop = AuthRoute.LaunchLogin) }
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `시나리오 11 - 재확인이 401이고 만료 이벤트가 없으면 세션을 지우고 launchLogin 없이 비로그인 메인 탭에 둔다`() = runTest {
         val auth = FakeAuthRepository(profile = { throw AuthDomainError.NotAuthenticated() })
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
             expectState(home)
-            expectState { copy(launchLogin = true) }
         }
         assertEquals(1, auth.clearCount)
+        assertEquals(null, auth.sessionId)
     }
 
     @Test
@@ -493,5 +661,9 @@ class AppCoordinatorTest {
 
         /** 약관 버전이 올라 다시 동의해야 한다. */
         val notEligible = AuthProfile(user, "2026-11")
+
+        /** [notEligible] 재확인으로 뜨는 가입 덮개. 예전 약관에 동의한 회원이라 재동의다. */
+        val recheckSignUp =
+            AuthRoute.SignUp(userId = "u1", nickname = "roy", currentTermsVersion = "2026-11", sessionId = "s1", isReconsent = true)
     }
 }

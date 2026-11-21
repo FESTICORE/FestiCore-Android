@@ -103,6 +103,7 @@ class LaunchLoginViewModel(
                 nickname = profile.user.nickname,
                 currentTermsVersion = profile.currentTermsVersion,
                 sessionId = login.sessionId,
+                isReconsent = profile.user.termsAcceptedAt != null,
             )
         postSideEffect(LaunchLoginSideEffect.SignUpRequired(route))
     }

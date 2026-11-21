@@ -70,10 +70,10 @@ sealed interface SignUpSideEffect {
     /** 가입을 마쳐 메인 탭으로 간다. */
     data object Completed : SignUpSideEffect
 
-    /** 뒤로 나왔다. 세션은 이미 지웠다. */
+    /** 뒤로 나왔다. 세션은 유지한다. */
     data object Closed : SignUpSideEffect
 
-    /** 로그인을 잃었다(401). 첫 진입 로그인으로 돌아간다. */
+    /** 로그인을 잃었다(401). 첫 진입 흐름이면 첫 진입 로그인으로, 재확인 가입이면 덮개를 닫는다. */
     data object SessionLost : SignUpSideEffect
 
     data class OpenLegalDocument(val document: LegalDocument) : SignUpSideEffect
