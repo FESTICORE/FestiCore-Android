@@ -162,31 +162,69 @@ private fun FCSearchResultRowBadgeStyle.colors(): Pair<FestiCoreSemanticColor, F
 }
 
 /**
- * [title]에서 [query]와 겹치지 않게 일치하는 구간을 앞에서부터 돌려준다.
+ * [title]에서 [query]와 겹치지 않게 일치하는 구간을 앞에서부터 원문 인덱스 범위로 돌려준다.
  * iOS `range(of:options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive])`처럼 대소문자 · 라틴 발음 기호 · 전각을 무시한다.
- * 글자 하나를 글자 하나로 접어 위치가 원문과 1:1로 맞는다(한글은 그대로 비교한다).
+ * 분해형(NFD) 결합 문자는 접힌 문자열에서 버리고, 접힌 글자마다 원문 구간을 기록해 결합 문자를 앞 기본 문자 범위에 포함한다.
  */
 internal fun fcSearchHighlightRanges(title: String, query: String): List<IntRange> {
     if (query.isEmpty()) return emptyList()
     val foldedTitle = title.fcFoldForSearch()
-    val foldedQuery = query.fcFoldForSearch()
+    val foldedQuery = query.fcFoldForSearch().text
+    if (foldedQuery.isEmpty()) return emptyList()
     val ranges = mutableListOf<IntRange>()
     var from = 0
     while (true) {
-        val index = foldedTitle.indexOf(foldedQuery, startIndex = from)
+        val index = foldedTitle.text.indexOf(foldedQuery, startIndex = from)
         if (index < 0) break
-        ranges += index until index + foldedQuery.length
-        from = index + foldedQuery.length
+        val last = index + foldedQuery.length - 1
+        ranges += foldedTitle.starts[index] until foldedTitle.ends[last]
+        from = last + 1
     }
     return ranges
 }
 
-private fun String.fcFoldForSearch(): String = map { char ->
-    var folded = char
-    if (folded in '！'..'～') folded = folded - FULL_WIDTH_OFFSET
-    if (folded == '　') folded = ' '
-    if (folded in 'À'..'ɏ') folded = Normalizer.normalize(folded.toString(), Normalizer.Form.NFD).first()
-    folded.lowercaseChar()
-}.joinToString("")
+/** 접힌 문자열과, 접힌 UTF-16 단위마다 대응하는 원문 구간(시작 · 끝 제외) */
+private class FoldedText(
+    val text: String,
+    val starts: IntArray,
+    val ends: IntArray,
+)
+
+private fun String.fcFoldForSearch(): FoldedText {
+    val text = StringBuilder()
+    val starts = mutableListOf<Int>()
+    val ends = mutableListOf<Int>()
+    var index = 0
+    while (index < length) {
+        val codePoint = codePointAt(index)
+        val next = index + Character.charCount(codePoint)
+        val folded = fcFoldCodePoint(codePoint)
+        if (folded.isEmpty()) {
+            // 결합 문자는 앞 기본 문자의 원문 구간을 넓힌다.
+            if (ends.isNotEmpty()) ends[ends.lastIndex] = next
+        } else {
+            text.append(folded)
+            repeat(folded.length) {
+                starts += index
+                ends += next
+            }
+        }
+        index = next
+    }
+    return FoldedText(text.toString(), starts.toIntArray(), ends.toIntArray())
+}
+
+private fun fcFoldCodePoint(codePoint: Int): String {
+    if (Character.getType(codePoint) == Character.NON_SPACING_MARK.toInt()) return ""
+    var folded = codePoint
+    if (folded in '！'.code..'～'.code) folded -= FULL_WIDTH_OFFSET
+    if (folded == '　'.code) folded = ' '.code
+    var text = String(Character.toChars(folded))
+    // 한글은 NFD로 자모가 갈라지지 않게 라틴 범위만 발음 기호를 푼다.
+    if (folded in 'À'.code..'ɏ'.code) {
+        text = Normalizer.normalize(text, Normalizer.Form.NFD).filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
+    }
+    return text.lowercase()
+}
 
 private const val FULL_WIDTH_OFFSET = 0xFEE0
