@@ -2,7 +2,10 @@ package io.festicore.feature.onboarding
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
@@ -46,5 +49,14 @@ class OnboardingScreenTest {
         composeRule.waitForIdle()
 
         assertEquals(listOf<OnboardingResult>(OnboardingResult.Completed), results)
+    }
+
+    @Test
+    fun `iOS와 같은 UI 테스트 식별자로 건너뛰기 · 그림 · 페이지 점을 찾는다`() {
+        composeRule.setContent { OnboardingScreen(onResult = {}, viewModel = OnboardingViewModel()) }
+
+        composeRule.onNodeWithTag(OnboardingTestTag.SKIP).assertExists()
+        composeRule.onAllNodesWithTag(OnboardingTestTag.NEXT).onFirst().assertExists()
+        composeRule.onNodeWithTag(OnboardingTestTag.PAGE_INDICATOR).assertExists()
     }
 }
