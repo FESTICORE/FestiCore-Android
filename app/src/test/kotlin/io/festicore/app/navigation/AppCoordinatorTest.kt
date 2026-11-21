@@ -497,6 +497,25 @@ class AppCoordinatorTest {
     }
 
     @Test
+    fun `재확인 가입 덮개가 떠 있을 때 약관 버전 · 닉네임이 바뀌면 같은 덮개의 route만 새 프로필로 바꾼다`() = runTest {
+        val newer = AuthProfile(user.copy(nickname = "roy2"), "2026-12")
+        val results = ArrayDeque(listOf(notEligible, newer))
+        val auth = FakeAuthRepository(profile = { results.removeFirst() })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState(home)
+            expectState { copy(signUp = recheckSignUp) }
+            containerHost.onAuthCoverTopChanged(recheckSignUp)
+            expectState { copy(coverTop = recheckSignUp) }
+
+            containerHost.onForegrounded()
+            expectState { copy(signUp = recheckSignUp.copy(nickname = "roy2", currentTermsVersion = "2026-12")) }
+        }
+        assertEquals(2, auth.fetchCount)
+    }
+
+    @Test
     fun `포그라운드 때 첫 진입 덮개 안의 가입 화면이 보이면 재확인하고 충족이면 덮개를 닫는다`() = runTest {
         val auth = FakeAuthRepository().apply { sessionId = null }
         val launchSignUp = recheckSignUp.copy(sessionId = "s1")

@@ -2,7 +2,9 @@ package io.festicore.ui.animation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,6 +20,7 @@ import kotlin.time.DurationUnit
  * [duration]을 주면 한 번 재생 길이를 그 시간에 맞춰 속도를 바꾼다(고유 길이 / 목표 길이).
  * iOS 기본값과 같이 반복 재생 · 원본 비율 맞춤(`scaleAspectFit` = [ContentScale.Fit])이다.
  * iOS처럼 읽기 도구에 노출하지 않는다(semantics 없음).
+ * [onLoadFinished]는 파일 읽기가 끝나면(성공 · 실패 모두) 한 번 부른다. 성공이면 다음 프레임부터 그린다.
  */
 @Composable
 fun FestiCoreLottieView(
@@ -26,8 +29,12 @@ fun FestiCoreLottieView(
     duration: Duration? = null,
     playOnce: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
+    onLoadFinished: () -> Unit = {},
 ) {
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(asset.resId))
+    val result = rememberLottieComposition(LottieCompositionSpec.RawRes(asset.resId))
+    val composition by result
+    val currentOnLoadFinished by rememberUpdatedState(onLoadFinished)
+    LaunchedEffect(result.isComplete) { if (result.isComplete) currentOnLoadFinished() }
     LottieAnimation(
         composition = composition,
         modifier = modifier,

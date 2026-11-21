@@ -27,6 +27,23 @@ class SignUpViewModel(
                 .copy(message = if (route.isReconsent) TERMS_CHANGED_RECONSENT else null),
         )
 
+    /** 마지막으로 반영한 프로필. 같은 값이 다시 오면 초안 · 문구를 건드리지 않는다. */
+    private var appliedProfile: AuthRoute.SignUp = route
+
+    /**
+     * 열린 가입 화면에 포그라운드 재확인 프로필을 반영한다(iOS `handleProfileLoaded`의 `signUp.apply` · 문구).
+     * 사용자 초안(고친 닉네임 · 체크)은 두고, 약관 버전이 바뀌면 이전 버전의 필수 체크를 지운다. 같은 사용자 · 세션 프로필만 받는다.
+     */
+    fun onProfileRefreshed(profile: AuthRoute.SignUp) = intent {
+        if (profile == appliedProfile || profile.userId != route.userId || profile.sessionId != route.sessionId) return@intent
+        appliedProfile = profile
+        reduce {
+            state
+                .applying(profile.nickname, profile.currentTermsVersion)
+                .copy(message = if (state.hasRetriedTermsUpdate || profile.isReconsent) TERMS_CHANGED_RECONSENT else null)
+        }
+    }
+
     fun onNicknameChanged(value: String) = intent {
         reduce { state.copy(nickname = AuthNicknameRule.limited(value), nicknameEdited = true) }
     }

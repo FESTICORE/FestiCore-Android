@@ -28,6 +28,35 @@ class SignUpViewModelTest {
     }
 
     @Test
+    fun `포그라운드 재확인 프로필은 고친 닉네임을 두고 약관 버전이 바뀌면 필수 체크를 지우고 재동의 문구를 보인다`() = runTest {
+        SignUpViewModel(route, FakeAuthRepository()).test(this) {
+            containerHost.onNicknameChanged("내닉")
+            expectState { copy(nickname = "내닉", nicknameEdited = true) }
+            containerHost.onAllConsentToggled()
+            expectState {
+                copy(acceptedServiceTerms = true, acceptedPrivacyTerms = true, acceptedLocationTerms = true, termsDraftVersion = TERMS_V1)
+            }
+
+            // 같은 프로필 · 다른 사용자 · 다른 세션은 반영하지 않는다.
+            containerHost.onProfileRefreshed(route)
+            containerHost.onProfileRefreshed(route.copy(userId = "u2", currentTermsVersion = TERMS_V2))
+            containerHost.onProfileRefreshed(route.copy(sessionId = "s2", currentTermsVersion = TERMS_V2))
+
+            containerHost.onProfileRefreshed(route.copy(nickname = "서버닉", currentTermsVersion = TERMS_V2, isReconsent = true))
+            expectState {
+                copy(
+                    currentTermsVersion = TERMS_V2,
+                    acceptedServiceTerms = false,
+                    acceptedPrivacyTerms = false,
+                    acceptedLocationTerms = false,
+                    termsDraftVersion = null,
+                    message = SignUpViewModel.TERMS_CHANGED_RECONSENT,
+                )
+            }
+        }
+    }
+
+    @Test
     fun `닉네임은 공백을 뺀 12자까지만 받고 카운터는 그 길이를 센다`() = runTest {
         SignUpViewModel(route, FakeAuthRepository()).test(this) {
             containerHost.onNicknameChanged("가나다라마바사아자차카타파하")

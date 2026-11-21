@@ -16,7 +16,7 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 ## 동작 규칙
 
 1. 상단 바: `FCTopBar(Back, title = page.title)`. back은 `onBackToRoot`. 배경 `backgroundNormal`.
-2. 로드 시도: 처음 나타날 때 한 번 `loadId = 1`로 시작한다. 다시 시도는 `loadId`를 1 올리고 로딩으로 간다. 결과 콜백은 시도의 `loadId`를 함께 보내고, 지금 `loadId`와 다르면 무시한다.
+2. 로드 시도: 처음 나타날 때 한 번 `loadId = 1`로 시작한다. 다시 시도는 `loadId`를 1 올리고 로딩으로 간다. 시도마다 웹뷰와 클라이언트를 새로 만들어, 결과 콜백은 그 웹뷰를 연 시도의 `loadId`를 함께 보낸다. 지금 `loadId`와 다르면 무시한다.
 3. 단계: 로딩 = 배경 위 가운데 원형 진행 표시(접근성 "문서를 불러오는 중"). 실패 = 위쪽 정렬 `FCEmptyCard`(아이콘 `circle_info_16`, "문서를 불러오지 못했어요" / "연결을 확인하고 다시 시도해 주세요.", 버튼 "다시 시도"), 바깥 여백 16. 로딩 · 실패 중에는 웹뷰를 덮개로 가리고 터치 · 접근성을 막는다.
 4. 이동 정책(iOS `document` 범위): 처음 연 주소와 같은 호스트(대소문자 무시)의 https만 연다. 다른 호스트 · http · 앱 스킴(`mailto` 등) · `file`은 열지 않고 외부로도 넘기지 않는다. 첫 페이지 전에 main frame이 막히면 실패다. 처음 주소도 같은 정책을 거친다.
 5. 실패 판정: main frame 응답 상태가 200..<300이 아니면, main frame 로드 오류, 첫 페이지 전 인증서 오류(항상 거절), 렌더 프로세스 종료.
@@ -25,7 +25,7 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 
 ## 엣지 케이스
 
-- 재시도 직후 이전 시도의 늦은 완료 · 실패는 무시한다(`loadId` 비교).
+- 재시도 직후 이전 시도의 늦은 완료 · 실패(멈춘 웹뷰의 콜백 포함)는 이전 `loadId`로 와서 무시된다.
 - 첫 페이지 뒤 같은 호스트 링크가 main frame 오류를 내면 실패로 바뀐다(iOS와 같음).
 - 시스템 뒤로는 웹 기록을 거슬러 가지 않고 화면을 닫는다(iOS에 웹 안 뒤로 없음).
 
@@ -38,7 +38,7 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 
 - 예매(`booking`) 범위와 외부 앱 넘기기(`externalURLRequested`)는 쓰는 화면이 없어 옮기지 않았다.
 - 화면 조회 분석(`screenView(.web)`)은 Android 분석 연결 전이라 보내지 않는다.
-- WebView는 탐색마다 식별자가 없어 콜백을 "지금 시도"에 묶는다(iOS는 `WKNavigation`별 시도를 추적).
+- WebView는 탐색마다 식별자가 없어 시도마다 웹뷰 · 클라이언트를 새로 만들어 콜백을 그 시도에 묶는다(iOS는 `WKNavigation`별 시도를 추적).
 - 접근성 식별자(`web.root` · `web.loading` · `web.failure`)는 두지 않았다.
 - 상태가 없는 응답 판정(iOS `statusCode == nil`)은 Android가 HTTP 오류(400 이상)만 알려 주어 확인하지 않는다.
 
@@ -63,3 +63,4 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 ## 변경 이력
 
 - P4b 신설: 문서 범위 웹 화면(로딩 · 실패 · 다시 시도)
+- 다시 시도 경합: 콜백을 지금 `loadId`가 아니라 시도를 시작한 `loadId`에 묶는다(시도마다 웹뷰 새로 만듦)
