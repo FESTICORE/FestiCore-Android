@@ -48,7 +48,7 @@ class AppCoordinatorTest {
 
         override suspend fun login(idToken: String): AuthLoginResult = throw AuthDomainError.Unavailable()
 
-        override suspend fun fetchProfile(): AuthProfile {
+        override suspend fun fetchProfile(expectedSessionId: String?): AuthProfile {
             fetchCount++
             return profile()
         }

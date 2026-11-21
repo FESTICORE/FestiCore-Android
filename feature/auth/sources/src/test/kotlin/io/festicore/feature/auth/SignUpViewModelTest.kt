@@ -162,6 +162,48 @@ class SignUpViewModelTest {
     }
 
     @Test
+    fun `가입 성공 뒤 세션이 바뀌면 다른 계정 프로필로 완료하지 않고 첫 진입 로그인으로 돌아간다`() = runTest {
+        lateinit var repository: FakeAuthRepository
+        repository =
+            FakeAuthRepository(
+                signUpResult = {
+                    repository.currentSessionId = "s2"
+                    user()
+                },
+            )
+        SignUpViewModel(route, repository).test(this) {
+            containerHost.onAllConsentToggled()
+            expectState(consented)
+            containerHost.onSubmitTapped()
+            expectState(submitting)
+            expectSideEffect(SignUpSideEffect.SessionLost)
+        }
+        assertEquals(listOf<String?>("s1"), repository.fetchSessionIds)
+    }
+
+    @Test
+    fun `약관 422 뒤 재조회도 route 세션에 묶는다`() = runTest {
+        val repository =
+            FakeAuthRepository(
+                profile = { AuthProfile(newUserProfile.user, TERMS_V2) },
+                signUpResult = { throw AuthDomainError.TermsVersionOutdated() },
+            )
+        SignUpViewModel(route, repository).test(this) {
+            containerHost.onAllConsentToggled()
+            expectState(consented)
+            containerHost.onSubmitTapped()
+            expectState(submitting)
+            expectState(
+                prefilled.copy(isSubmitting = true, hasRetriedTermsUpdate = true, message = "약관이 변경됐어요. 내용을 확인하고 다시 동의해 주세요."),
+            )
+            expectState {
+                copy(currentTermsVersion = TERMS_V2, isSubmitting = false, message = "변경된 약관을 확인하고 다시 동의해 주세요.")
+            }
+        }
+        assertEquals(listOf<String?>("s1"), repository.fetchSessionIds)
+    }
+
+    @Test
     fun `오프라인이면 오프라인 저장 실패 문구를 보인다`() = runTest {
         val repository = FakeAuthRepository(signUpResult = { throw AuthDomainError.Offline() })
         SignUpViewModel(route, repository).test(this) {

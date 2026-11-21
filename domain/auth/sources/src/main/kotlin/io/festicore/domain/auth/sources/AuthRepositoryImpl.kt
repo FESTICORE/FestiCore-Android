@@ -38,8 +38,10 @@ internal class AuthRepositoryImpl(
         return AuthLoginResult(newUser = response.newUser, user = response.user.toDomain(), sessionId = sessionId)
     }
 
-    override suspend fun fetchProfile(): AuthProfile {
-        val sessionId = session.currentSessionId() ?: throw AuthDomainError.NotAuthenticated()
+    override suspend fun fetchProfile(expectedSessionId: String?): AuthProfile {
+        val currentSessionId = session.currentSessionId() ?: throw AuthDomainError.NotAuthenticated()
+        if (expectedSessionId != null && expectedSessionId != currentSessionId) throw AuthDomainError.NotAuthenticated()
+        val sessionId = expectedSessionId ?: currentSessionId
         val response = mapAuthErrors { api.me(expectedSessionId = sessionId) }
         if (response.currentTermsVersion.isEmpty()) throw AuthDomainError.Unavailable()
         return response.toDomain()
