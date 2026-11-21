@@ -41,14 +41,18 @@ data class AppCoordinatorState(
 class AppCoordinator(
     private val onboardingStore: FirstInstallOnboardingStore,
     private val isLoggedIn: suspend () -> Boolean,
-    private val sessionExpiry: Flow<Unit>,
+    private val sessionExpiredGeneration: Flow<Long>,
     private val authRepository: AuthRepository,
     private val currentSessionId: suspend () -> String?,
 ) : ViewModel(),
     OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, Nothing> {
-    override val container = orbitContainer<AppCoordinatorState, Nothing>(AppCoordinatorState()) { presentHome() }
+    override val container = orbitContainer<AppCoordinatorState, Nothing>(AppCoordinatorState()) {
+        intent { observeSessionExpiry() }
+        presentHome()
+    }
 
     private val isCheckingProfile = AtomicBoolean(false)
+    private val isRecheckPending = AtomicBoolean(false)
 
     fun onOnboardingCompleted() = intent {
         if (state.routes.lastOrNull() != OnboardingRoute) return@intent
@@ -97,36 +101,55 @@ class AppCoordinator(
         enterHome(launchLogin = !isLoggedIn())
     }
 
-    /** 홈으로 바꾸고 세션 만료 구독을 시작한다. 첫 진입 덮개는 건너뛰기를 저장하지 않아 실행마다 다시 뜬다. */
+    /**
+     * 생성 때부터 만료 세대를 구독한다. 구독 시점 값은 이미 반영된 것으로 보고, 커질 때마다 한 번 launchLogin을 켠다.
+     * 덮개는 홈 위에만 그려지므로 홈 전 만료는 상태에 남았다가 [enterHome]에서 그대로 쓰인다.
+     */
+    private suspend fun observeSessionExpiry() = subIntent {
+        var handled: Long? = null
+        sessionExpiredGeneration.collect { generation ->
+            val previous = handled
+            handled = generation
+            if (previous != null && generation > previous) reduce { state.copy(launchLogin = true, signUp = null) }
+        }
+    }
+
+    /** 홈으로 바꾼다. 첫 진입 덮개는 건너뛰기를 저장하지 않아 실행마다 다시 뜬다. */
     private suspend fun enterHome(launchLogin: Boolean) = subIntent {
         if (state.routes.lastOrNull() == AppRoute.Home) return@subIntent
-        reduce { state.copy(routes = listOf(AppRoute.Home), launchLogin = launchLogin) }
-        intent {
-            sessionExpiry.collect { reduce { state.copy(launchLogin = true, signUp = null) } }
-        }
-        if (!launchLogin) intent { recheckProfile() }
+        // 홈 전에 받은 만료(launchLogin)는 유지한다.
+        reduce { state.copy(routes = listOf(AppRoute.Home), launchLogin = launchLogin || state.launchLogin) }
+        if (!state.launchLogin) intent { recheckProfile() }
     }
 
     /**
      * `GET api/v1/me`를 한 번 부른다. 진행 중이면 겹쳐 부르지 않는다. 그 사이 세션이 바뀌었으면 결과를 버린다.
      * 성공 ∧ 가입 조건 미달 → 가입 덮개, 401 → 세션 만료 경로(launchLogin), 오프라인 · 서버 오류 → 그대로(자동 재시도 없음).
      */
-    private suspend fun recheckProfile() = subIntent {
-        if (state.authCover != null || !isCheckingProfile.compareAndSet(false, true)) return@subIntent
+    private suspend fun recheckProfile(): Unit = subIntent {
+        if (state.authCover != null) return@subIntent
+        if (!isCheckingProfile.compareAndSet(false, true)) {
+            // 진행 중에 온 요청은 하나로 모아 끝난 뒤 한 번만 다시 확인한다.
+            isRecheckPending.set(true)
+            return@subIntent
+        }
         try {
-            val sessionId = currentSessionId() ?: return@subIntent
-            val result =
-                try {
-                    Result.success(authRepository.fetchProfile())
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Result.failure<AuthProfile>(e)
-                }
-            onProfileRechecked(sessionId, result)
+            val sessionId = currentSessionId()
+            if (sessionId != null) {
+                val result =
+                    try {
+                        Result.success(authRepository.fetchProfile())
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Result.failure<AuthProfile>(e)
+                    }
+                onProfileRechecked(sessionId, result)
+            }
         } finally {
             isCheckingProfile.set(false)
         }
+        if (isRecheckPending.getAndSet(false)) recheckProfile()
     }
 
     private suspend fun onProfileRechecked(sessionId: String, result: Result<AuthProfile>) = subIntent {

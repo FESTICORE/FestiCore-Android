@@ -74,6 +74,32 @@ class SignUpViewModelTest {
     }
 
     @Test
+    fun `가입 직후 다시 읽은 프로필의 약관 버전이 올랐으면 체크를 지우고 가입 정보에 남는다`() = runTest {
+        val repository = FakeAuthRepository(profile = { AuthProfile(user(), TERMS_V2) })
+        SignUpViewModel(route, repository).test(this) {
+            containerHost.onAllConsentToggled()
+            expectState(consented)
+            containerHost.onSubmitTapped()
+            expectState(submitting)
+            expectState(prefilled.copy(currentTermsVersion = TERMS_V2, message = "약관이 변경됐어요. 내용을 확인하고 다시 동의해 주세요."))
+        }
+        assertEquals(1, repository.fetchCount)
+    }
+
+    @Test
+    fun `가입 직후 프로필을 다시 읽지 못해도 가입은 성공했으므로 완료를 알린다`() = runTest {
+        val repository = FakeAuthRepository(profile = { throw AuthDomainError.Offline() })
+        SignUpViewModel(route, repository).test(this) {
+            containerHost.onAllConsentToggled()
+            expectState(consented)
+            containerHost.onSubmitTapped()
+            expectState(submitting)
+            expectSideEffect(SignUpSideEffect.Completed)
+        }
+        assertEquals(1, repository.fetchCount)
+    }
+
+    @Test
     fun `제출할 수 없는 상태면 보내지 않는다`() = runTest {
         val repository = FakeAuthRepository()
         SignUpViewModel(route, repository).test(this) {
