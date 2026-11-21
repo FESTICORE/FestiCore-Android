@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -38,6 +39,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import org.koin.compose.viewmodel.koinViewModel
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -148,10 +150,11 @@ private fun Actions(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         state.errorMessage?.let { message ->
+            // iOS `LoginView`는 오류 문구에 줄 박스를 쓰지 않는다(`festiCoreFont`만).
             BasicText(
                 text = message,
                 style =
-                    FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(
+                    FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(
                         color = FestiCoreSemanticColor.statusNegative.color,
                         textAlign = TextAlign.Center,
                     ),
@@ -165,7 +168,7 @@ private fun Actions(
             text = "지금은 건너뛸게요",
             style = FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
             modifier =
-                Modifier.clickable(
+                Modifier.testTag(LaunchLoginTestTag.SKIP).clickable(
                     enabled = !state.isSigningIn,
                     interactionSource = null,
                     indication = null,
@@ -238,4 +241,9 @@ private fun Decorations() {
             )
         }
     }
+}
+
+/** iOS `LoginView`(`LoginView.swift:283`)와 같은 UI 테스트 식별자. */
+internal object LaunchLoginTestTag {
+    const val SKIP = "launchLogin.skip"
 }

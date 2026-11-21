@@ -189,4 +189,18 @@ class AuthRepositoryImplTest {
         assertFalse(repository.isLoggedIn())
         assertTrue(storage.values.isEmpty())
     }
+
+    @Test
+    fun `clearSessionIf는 현재 세션일 때만 지우고 다른 세션은 남긴다`() = runTest {
+        enqueue(loginResponse)
+        val first = repository.login("id-token").sessionId
+        enqueue(loginResponse)
+        val second = repository.login("id-token").sessionId
+
+        assertFalse(repository.clearSessionIf(first))
+        assertEquals(second, session.currentSessionId())
+        assertTrue(repository.clearSessionIf(second))
+        assertFalse(repository.isLoggedIn())
+        assertFalse(repository.hasSessionExpired(second))
+    }
 }

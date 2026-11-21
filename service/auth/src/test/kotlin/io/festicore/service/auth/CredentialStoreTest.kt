@@ -50,6 +50,20 @@ class CredentialStoreTest {
     }
 
     @Test
+    fun `clearIfSession은 sessionId가 같을 때만 revision과 관계없이 지운다`() = runTest {
+        val first = store.saveNewSession("a1", "r1")
+        val second = store.saveNewSession("a2", "r2")
+        assertTrue(store.compareAndSetTokens(second.sessionId, 0, "a3", "r3"))
+
+        assertFalse(store.clearIfSession(first.sessionId))
+        assertEquals(second.sessionId, store.current()?.sessionId)
+        assertTrue(store.clearIfSession(second.sessionId))
+        assertNull(store.current())
+        assertTrue(storage.values.isEmpty())
+        assertFalse(store.clearIfSession(second.sessionId))
+    }
+
+    @Test
     fun `clear는 세션을 없앤다`() = runTest {
         store.saveNewSession("a1", "r1")
 

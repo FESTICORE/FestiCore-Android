@@ -7,6 +7,9 @@ interface AuthRepository {
     /** 토큰 갱신까지 실패해 세션이 지워질 때 한 번씩 알린다. */
     val sessionExpired: Flow<Unit>
 
+    /** 마지막 세션 만료(토큰 갱신 401)가 [sessionId] 세션의 것이면 `true`. 다른 세션의 만료는 `false`. */
+    fun hasSessionExpired(sessionId: String): Boolean
+
     /** Google ID 토큰으로 서버에 로그인하고 받은 토큰을 새 세션으로 저장한다. */
     suspend fun login(idToken: String): AuthLoginResult
 
@@ -30,4 +33,7 @@ interface AuthRepository {
     suspend fun isLoggedIn(): Boolean
 
     suspend fun clearSession()
+
+    /** 현재 세션이 [sessionId]일 때만 원자적으로 지우고 지웠으면 `true`. 그 사이 저장된 다른 세션은 남긴다. */
+    suspend fun clearSessionIf(sessionId: String): Boolean
 }

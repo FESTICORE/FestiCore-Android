@@ -57,6 +57,10 @@ internal class FakeAuthRepository(
     /** 현재 세션. [fetchProfile]이 다른 세션을 기대하면 NotAuthenticated. */
     var currentSessionId: String? = "s1"
 
+    /** 마지막 만료 이벤트의 세션. */
+    var expiredSessionId: String? = null
+    val clearIfSessionIds = mutableListOf<String>()
+
     override val sessionExpired: Flow<Unit> = emptyFlow()
 
     override suspend fun login(idToken: String): AuthLoginResult = throw AuthDomainError.Unavailable()
@@ -80,7 +84,16 @@ internal class FakeAuthRepository(
 
     override suspend fun isLoggedIn(): Boolean = true
 
+    override fun hasSessionExpired(sessionId: String): Boolean = expiredSessionId == sessionId
+
     override suspend fun clearSession() {
         clearCount++
+    }
+
+    override suspend fun clearSessionIf(sessionId: String): Boolean {
+        clearIfSessionIds += sessionId
+        if (currentSessionId != sessionId) return false
+        currentSessionId = null
+        return true
     }
 }

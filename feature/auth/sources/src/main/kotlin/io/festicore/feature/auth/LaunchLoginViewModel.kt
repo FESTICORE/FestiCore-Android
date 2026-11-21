@@ -51,11 +51,11 @@ class LaunchLoginViewModel(
     private suspend fun fetchProfile(attemptId: Int, login: AuthLoginResult) = subIntent {
         val profile =
             try {
-                authRepository.fetchProfile()
+                authRepository.fetchProfile(expectedSessionId = login.sessionId)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: AuthDomainError.NotAuthenticated) {
-                onSessionLost(attemptId)
+                onSessionLost(attemptId, login.sessionId)
                 return@subIntent
             } catch (_: Exception) {
                 // iOS와 같이 오프라인 · 서버 오류면 로그인을 유지하고 덮개를 닫는다.
@@ -64,18 +64,26 @@ class LaunchLoginViewModel(
         onProfileLoaded(attemptId, login, profile)
     }
 
-    /** 계정 확인이 401이면 로그인을 잃었다. 덮개에 남아 다시 로그인하게 한다. */
-    private suspend fun onSessionLost(attemptId: Int) = subIntent {
+    /**
+     * 계정 확인이 401이면 이 로그인 세션을 잃었다. iOS `SessionCoordinator.handleSessionExpired` · `handleProfileLoaded(.failure(.notAuthenticated))`.
+     * 이 세션의 토큰 갱신이 401로 끝났으면(만료 이벤트) 저장소는 이미 비었고 상위가 문구 없는 새 launchLogin을 띄운다.
+     * 만료 이벤트가 없으면 이 세션일 때만 지운다(그 사이 저장된 다른 세션은 남긴다). 덮개를 닫을지는 상위가 현재 세션과 비교해 정한다.
+     */
+    private suspend fun onSessionLost(attemptId: Int, sessionId: String) = subIntent {
         if (!(state.isSigningIn && state.attemptId == attemptId)) return@subIntent
-        // 토큰 갱신이 401로 끝났으면 저장소는 이미 비었다. 남은 세션이 있으면 여기서 지운다.
-        try {
-            authRepository.clearSession()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            FestiCoreLogger.error("로그인 확인 실패 후 세션을 지울 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
+        val expired = authRepository.hasSessionExpired(sessionId)
+        if (!expired) {
+            try {
+                authRepository.clearSessionIf(sessionId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                FestiCoreLogger.error("로그인 확인 실패 후 세션을 지울 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
+            }
         }
-        reduce { state.copy(isSigningIn = false, errorMessage = SIGN_IN_FAILED) }
+        // iOS `LoginFeature`는 로그인 성공 때 문구를 지운다. 401은 실패 문구를 보이지 않는다.
+        reduce { state.copy(isSigningIn = false, errorMessage = null) }
+        postSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.SessionLost(sessionId = sessionId, expired = expired)))
     }
 
     private suspend fun onProfileLoaded(

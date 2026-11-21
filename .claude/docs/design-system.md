@@ -9,7 +9,7 @@
 | `src/main/kotlin/.../tokens/` | `FestiCoreSemanticColor` · `FestiCoreSpacing` · `FestiCoreRadius` · `FestiCoreState` · `FestiCoreTextStyle` (생성물) | 아니오. 동기화로만 바뀐다 |
 | `tokens.source-sha` | 가져온 DesignSystem 커밋 SHA | 아니오 |
 | `font/FestiCoreFontFamily` | Pretendard(가변, 400 · 500 · 700) · Bagel Fat One | 예 |
-| `typography/FestiCoreTextStyles` | `FestiCoreTextStyle.textStyle` → Compose `TextStyle` | 예 |
+| `typography/FestiCoreTextStyles` | `FestiCoreTextStyle.textStyle` → Compose `TextStyle`(iOS `festiCoreFont` + `festiCoreLineBox`), `textStyleWithoutLineBox`(줄 박스 없음, iOS `festiCoreFont`만) | 예 |
 | `theme/FestiCoreTheme` | Material 색 · 기본 본문 스타일을 토큰으로 맞춘다 | 예 |
 | `res/font` · `licenses/` | iOS와 같은 폰트 파일과 OFL | 폰트 교체 시만 |
 | `res/drawable` | iOS `ImageAssets.xcassets` 아이콘(`ic_*` · `nav_*` · `logo` · `google_logo`) | 아이콘 추가 시만 |

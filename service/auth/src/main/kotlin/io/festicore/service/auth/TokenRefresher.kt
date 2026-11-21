@@ -41,7 +41,7 @@ internal class TokenRefresher(
         } catch (e: NetworkError.Http) {
             if (!e.isUnauthorized) throw e
             if (store.clearIf(sessionId, revision)) {
-                expiryEvents.emit()
+                expiryEvents.emit(sessionId)
                 return@withLock RefreshResult.NotAuthenticated
             }
             return@withLock latest(sessionId)

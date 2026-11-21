@@ -15,14 +15,17 @@ import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.SessionExpiryEvents
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /** iOS `AuthRepositoryImpl`. 401 뒤 세션 정리와 만료 알림은 service/auth의 토큰 갱신이 맡는다. */
 internal class AuthRepositoryImpl(
     private val api: AuthApi,
     private val session: AuthSession,
-    sessionExpiryEvents: SessionExpiryEvents,
+    private val sessionExpiryEvents: SessionExpiryEvents,
 ) : AuthRepository {
-    override val sessionExpired: Flow<Unit> = sessionExpiryEvents.events
+    override val sessionExpired: Flow<Unit> = sessionExpiryEvents.events.map { }
+
+    override fun hasSessionExpired(sessionId: String): Boolean = sessionExpiryEvents.expired.value.sessionId == sessionId
 
     override suspend fun login(idToken: String): AuthLoginResult {
         if (idToken.isBlank()) throw AuthDomainError.Unavailable()
@@ -66,6 +69,8 @@ internal class AuthRepositoryImpl(
     override suspend fun isLoggedIn(): Boolean = session.isLoggedIn()
 
     override suspend fun clearSession() = session.clear()
+
+    override suspend fun clearSessionIf(sessionId: String): Boolean = session.clearIfCurrent(sessionId)
 
     private companion object {
         const val GOOGLE = "google"
