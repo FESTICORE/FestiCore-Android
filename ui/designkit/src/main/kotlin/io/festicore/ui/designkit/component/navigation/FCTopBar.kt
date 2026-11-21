@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -100,6 +102,7 @@ sealed interface FCTopBarStyle {
  * @param onTrailingAction 오른쪽 버튼 동작(iOS `trailingAction`). `null`이고 [shareUrl]도 없으면 버튼을 그리지 않는다. 검색 스타일에서는 그리지 않는다.
  * @param onBearer 기수 버튼 동작(iOS `onBearer(title:_:)`). logoBearer 스타일에서만 그린다.
  * @param onCancel 검색 취소 버튼 동작(iOS `onCancel(_:)`). 검색 스타일에서만 그린다.
+ * @param onSearchSubmit 키보드 검색 키 동작(iOS `onSubmit`). 검색 스타일에서만 쓴다. 누르면 이 동작 뒤에 iOS 제출처럼 입력 초점을 놓아 키보드를 닫는다.
  */
 @Composable
 fun FCTopBar(
@@ -119,6 +122,7 @@ fun FCTopBar(
     onTrailingAction: (() -> Unit)? = null,
     onBearer: (() -> Unit)? = null,
     onCancel: (() -> Unit)? = null,
+    onSearchSubmit: (() -> Unit)? = null,
 ) {
     val isOnImage = style == FCTopBarStyle.BackOnImage
     val keepsTitleCentered = style == FCTopBarStyle.Back || isOnImage
@@ -195,6 +199,7 @@ fun FCTopBar(
                     text = style.text,
                     onTextChange = style.onTextChange,
                     placeholder = searchPlaceholder,
+                    onSubmit = onSearchSubmit,
                     modifier = Modifier.weight(1f),
                 )
                 if (onCancel != null) {
@@ -408,8 +413,10 @@ private fun SearchField(
     text: String,
     onTextChange: (String) -> Unit,
     placeholder: String,
+    onSubmit: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     val assistive = FestiCoreSemanticColor.labelAssistive.color
     Row(
         modifier =
@@ -434,6 +441,11 @@ private fun SearchField(
             textStyle = textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions =
+                KeyboardActions(onSearch = {
+                    onSubmit?.invoke()
+                    focusManager.clearFocus()
+                }),
             cursorBrush = SolidColor(FestiCoreSemanticColor.labelNormal.color),
             decorationBox = { innerTextField ->
                 Box {

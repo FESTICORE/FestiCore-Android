@@ -23,6 +23,7 @@ credentials = "1.6.0"
 googleid = "1.2.1"
 core-splashscreen = "1.2.0"
 lottie = "6.7.1"
+coil = "3.6.3"
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -63,6 +64,9 @@ credentials = { module = "androidx.credentials:credentials", version.ref = "cred
 credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "core-splashscreen" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottie" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+coil-test = { module = "io.coil-kt.coil3:coil-test", version.ref = "coil" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 # build-logic(convention plugin) 클래스패스
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

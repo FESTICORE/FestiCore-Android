@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":domain:festival:sources"))
     implementation(project(":ui:designkit"))
     implementation(project(":ui:animation"))
+    implementation(project(":ui:sharedui"))
     implementation(project(":feature:onboarding:sources"))
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))

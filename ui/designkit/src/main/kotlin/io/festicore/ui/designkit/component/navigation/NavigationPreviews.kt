@@ -95,6 +95,7 @@ private fun FCTopBarPreview() {
             FCTopBarStyle.Search(text = searchText, onTextChange = { searchText = it }),
             searchPlaceholder = "아티스트 검색",
             onCancel = {},
+            onSearchSubmit = {},
         )
         FCTopBar(
             FCTopBarStyle.BackOnImage,
