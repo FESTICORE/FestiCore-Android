@@ -48,11 +48,17 @@ class AppCoordinator(
     OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, Nothing> {
     override val container = orbitContainer<AppCoordinatorState, Nothing>(AppCoordinatorState()) {
         intent { observeSessionExpiry() }
-        presentHome()
     }
 
+    private val hasSplashStarted = AtomicBoolean(false)
     private val isCheckingProfile = AtomicBoolean(false)
     private val isRecheckPending = AtomicBoolean(false)
+
+    /** 스플래시가 처음 보였다(iOS `SplashFeature` `onAppear`). 그때부터 2초를 잰다. 두 번째 호출은 무시한다(iOS `hasStarted`). */
+    fun onSplashAppeared() = intent {
+        if (state.routes.lastOrNull() != AppRoute.Splash || !hasSplashStarted.compareAndSet(false, true)) return@intent
+        presentHome()
+    }
 
     fun onOnboardingCompleted() = intent {
         if (state.routes.lastOrNull() != OnboardingRoute) return@intent

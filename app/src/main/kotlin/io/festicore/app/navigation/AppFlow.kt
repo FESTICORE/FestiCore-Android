@@ -40,7 +40,7 @@ fun AppFlow(coordinator: AppCoordinator = koinViewModel()) {
             ),
         entryProvider =
             entryProvider {
-                entry<AppRoute.Splash> { SplashScreen() }
+                entry<AppRoute.Splash> { SplashScreen(onAppear = coordinator::onSplashAppeared) }
                 entry<OnboardingRoute> {
                     OnboardingScreen(
                         onResult = { result ->
