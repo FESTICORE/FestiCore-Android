@@ -38,6 +38,9 @@ android {
                 resValue("string", "app_name", config.getProperty("APP_NAME"))
                 buildConfigField("Boolean", "IS_STAGE", (name == "stage").toString())
                 buildConfigField("String", "BASE_URL", "\"${config.getProperty("BASE_URL").orEmpty()}\"")
+                // 공개 값(웹 OAuth 클라이언트 ID · 약관 주소). 비밀 값은 여기에 두지 않는다.
+                buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"${config.getProperty("GOOGLE_SERVER_CLIENT_ID").orEmpty()}\"")
+                buildConfigField("String", "LEGAL_BASE_URL", "\"${config.getProperty("LEGAL_BASE_URL").orEmpty()}\"")
             }
         }
     }

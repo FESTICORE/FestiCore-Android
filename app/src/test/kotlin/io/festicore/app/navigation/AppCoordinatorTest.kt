@@ -1,7 +1,15 @@
 package io.festicore.app.navigation
 
 import io.festicore.core.datastore.FirstInstallOnboardingStore
+import io.festicore.domain.auth.AuthDomainError
+import io.festicore.domain.auth.AuthLoginResult
+import io.festicore.domain.auth.AuthProfile
+import io.festicore.domain.auth.AuthRepository
+import io.festicore.domain.auth.AuthUser
+import io.festicore.feature.auth.AuthRoute
+import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.onboarding.OnboardingRoute
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -29,11 +37,44 @@ class AppCoordinatorTest {
         }
     }
 
+    /** 프로필 재확인용 가짜 저장소. [profile]이 결과를 정하고, 부를 때마다 [sessionId]를 바꿀 수 있다. */
+    private class FakeAuthRepository(var profile: suspend () -> AuthProfile = { eligible }) : AuthRepository {
+        var sessionId: String? = "s1"
+        var fetchCount = 0
+        var clearCount = 0
+
+        override val sessionExpired: Flow<Unit> = emptyFlow()
+
+        override suspend fun login(idToken: String): AuthLoginResult = throw AuthDomainError.Unavailable()
+
+        override suspend fun fetchProfile(): AuthProfile {
+            fetchCount++
+            return profile()
+        }
+
+        override suspend fun signUp(
+            nickname: String,
+            termsVersion: String,
+            expectedUserId: String,
+            expectedSessionId: String?,
+        ): AuthUser = throw AuthDomainError.Unavailable()
+
+        override suspend fun isLoggedIn(): Boolean = sessionId != null
+
+        override suspend fun clearSession() {
+            clearCount++
+            sessionId = null
+        }
+    }
+
     private fun coordinator(
         store: FirstInstallOnboardingStore,
         loggedIn: Boolean,
         expiry: Flow<Unit> = emptyFlow(),
-    ) = AppCoordinator(store, { loggedIn }, expiry)
+        auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
+    ) = AppCoordinator(store, { loggedIn }, expiry, auth, { auth.sessionId })
+
+    private val home = AppCoordinatorState(routes = listOf(AppRoute.Home))
 
     private fun TestScope.assertSplashLasted2Seconds() = assertEquals(2_000L, testScheduler.currentTime)
 
@@ -129,5 +170,133 @@ class AppCoordinatorTest {
             // 만료 구독은 홈에 있는 동안 계속 돈다.
             cancelAndIgnoreRemainingItems()
         }
+    }
+
+    @Test
+    fun `첫 진입 덮개를 마치거나 건너뛰면 덮개를 닫는다`() = runTest {
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false).test(this) {
+            runOnCreate()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
+            expectState { copy(launchLogin = false) }
+        }
+    }
+
+    @Test
+    fun `로그인 상태로 홈에 들어가면 프로필을 확인하고 가입 조건을 채웠으면 그대로 둔다`() = runTest {
+        val auth = FakeAuthRepository()
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+        }
+        assertEquals(1, auth.fetchCount)
+    }
+
+    @Test
+    fun `재확인 결과가 가입 조건 미달이면 가입 덮개를 띄우고 마치면 닫는다`() = runTest {
+        val auth = FakeAuthRepository(profile = { notEligible })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+            expectState {
+                copy(signUp = AuthRoute.SignUp(userId = "u1", nickname = "roy", currentTermsVersion = "2026-11", sessionId = "s1"))
+            }
+
+            // 덮개가 떠 있으면 포그라운드 재확인을 하지 않는다.
+            containerHost.onForegrounded()
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
+            expectState(home)
+        }
+        assertEquals(1, auth.fetchCount)
+    }
+
+    @Test
+    fun `재확인이 401이면 세션을 지우고 launchLogin 덮개를 띄운다`() = runTest {
+        val auth = FakeAuthRepository(profile = { throw AuthDomainError.NotAuthenticated() })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+            expectState { copy(launchLogin = true) }
+        }
+        assertEquals(1, auth.clearCount)
+    }
+
+    @Test
+    fun `재확인이 오프라인이나 서버 오류면 로그인과 화면을 유지하고 포그라운드에서 다시 확인한다`() = runTest {
+        var error: Exception = AuthDomainError.Offline()
+        val auth = FakeAuthRepository(profile = { throw error })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+
+            error = AuthDomainError.Unavailable()
+            containerHost.onForegrounded()
+        }
+        assertEquals(2, auth.fetchCount)
+        assertEquals(0, auth.clearCount)
+    }
+
+    @Test
+    fun `재확인 중 세션이 바뀌면 결과를 버린다`() = runTest {
+        val auth = FakeAuthRepository()
+        auth.profile = {
+            auth.sessionId = "s2"
+            notEligible
+        }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+        }
+        assertEquals(1, auth.fetchCount)
+    }
+
+    @Test
+    fun `재확인이 진행 중이면 포그라운드에서 겹쳐 부르지 않는다`() = runTest {
+        val scope = this
+        val pending = CompletableDeferred<AuthProfile>()
+        val auth = FakeAuthRepository(profile = { pending.await() })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+
+            containerHost.onForegrounded()
+            containerHost.onForegrounded()
+            // 두 포그라운드 요청이 첫 확인이 끝나기 전에 처리되게 한다.
+            scope.testScheduler.runCurrent()
+            pending.complete(eligible)
+        }
+        assertEquals(1, auth.fetchCount)
+    }
+
+    @Test
+    fun `홈이 아니면 포그라운드 재확인을 하지 않는다`() = runTest {
+        val auth = FakeAuthRepository()
+        coordinator(FakeOnboardingStore(completed = false), loggedIn = true, auth = auth).test(this) {
+            runOnCreate()
+            expectState { copy(routes = listOf(OnboardingRoute)) }
+
+            containerHost.onForegrounded()
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    private companion object {
+        val user =
+            AuthUser(
+                id = "u1",
+                provider = "google",
+                email = null,
+                nickname = "roy",
+                nicknameConfirmed = true,
+                termsAcceptedAt = "2026-10-01T00:00:00Z",
+                termsVersion = "2026-10",
+                pushOptIn = true,
+                profileImageUrl = null,
+            )
+        val eligible = AuthProfile(user, "2026-10")
+
+        /** 약관 버전이 올라 다시 동의해야 한다. */
+        val notEligible = AuthProfile(user, "2026-11")
     }
 }
