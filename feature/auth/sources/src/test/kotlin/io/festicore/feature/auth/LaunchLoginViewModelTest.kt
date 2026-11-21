@@ -31,6 +31,7 @@ class LaunchLoginViewModelTest {
         viewModel(login = { loginResult(sessionId = "s9") }, repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
+            expectState(signingIn.copy(isSigningIn = false))
             expectSideEffect(
                 LaunchLoginSideEffect.SignUpRequired(
                     AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V1, sessionId = "s9"),
@@ -45,6 +46,7 @@ class LaunchLoginViewModelTest {
         viewModel(login = { loginResult(sessionId = "s9") }, repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
+            expectState(signingIn.copy(isSigningIn = false))
             expectSideEffect(
                 LaunchLoginSideEffect.SignUpRequired(
                     AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V2, sessionId = "s9", isReconsent = true),

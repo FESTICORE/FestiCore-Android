@@ -15,7 +15,8 @@ sealed interface AuthCoordinatorSideEffect {
 
 /**
  * 첫 진입 로그인 흐름(iOS `AuthCoordinator`의 launchLogin ↔ 가입 정보). [start]에서 시작한다.
- * LaunchLogin과 SignUp은 서로를 대체한다. 약관 상세(LegalDocument)만 가입 정보 위에 쌓인다. LaunchLogin 뒤로는 앱을 닫는다(iOS 첫 진입 화면에는 닫기 제스처가 없다).
+ * 가입 정보는 LaunchLogin 위에 쌓고(스택 `[LaunchLogin, SignUp]`, iOS `showsLaunchSignUp`), 약관 상세(LegalDocument)는 가입 정보 위에 쌓는다.
+ * 뒤로는 쌓인 화면을 하나 꺼낸다. LaunchLogin 뒤로는 앱을 닫는다(iOS 첫 진입 화면에는 닫기 제스처가 없다).
  * [start]가 LaunchLogin이면 첫 진입 흐름(iOS `isLaunchFlow`), SignUp이면 로그인 상태 재확인으로 뜬 가입 덮개다.
  */
 class AuthCoordinator(private val start: AuthRoute) :
@@ -25,9 +26,11 @@ class AuthCoordinator(private val start: AuthRoute) :
 
     fun goBack() = intent { reduce { state.copy(routes = state.routes.dropLast(1).ifEmpty { state.routes }) } }
 
-    fun replaceCurrent(route: AuthRoute) = intent { reduce { state.copy(routes = state.routes.dropLast(1) + route) } }
-
-    fun onSignUpRequired(route: AuthRoute.SignUp) = replaceCurrent(route)
+    /** 로그인 화면 위에 가입 정보를 쌓는다. 로그인 화면이 맨 위가 아니면(이미 가입 정보) 다시 쌓지 않는다. */
+    fun onSignUpRequired(route: AuthRoute.SignUp) = intent {
+        if (state.routes.lastOrNull() != AuthRoute.LaunchLogin) return@intent
+        reduce { state.copy(routes = state.routes + route) }
+    }
 
     /** 가입 정보의 약관 '보기'(iOS `legalDocumentRequested`). 이미 열려 있으면 다시 쌓지 않는다. 닫기는 [goBack]. */
     fun onLegalDocumentRequested(page: WebPage) = intent {
@@ -37,12 +40,12 @@ class AuthCoordinator(private val start: AuthRoute) :
 
     /**
      * 가입 정보에서 뒤로 나왔거나 가입 중 로그인을 잃었다(iOS `dismissFlow`). 세션은 지우지 않는다.
-     * 첫 진입 흐름이면 로그인 화면으로 돌아가고, 재확인으로 뜬 가입이면 [LaunchLoginResult.SignUpCancelled]로 덮개를 닫는다.
+     * 첫 진입 흐름이면 가입 정보를 꺼내 아래 로그인 화면으로 돌아가고, 재확인으로 뜬 가입이면 [LaunchLoginResult.SignUpCancelled]로 덮개를 닫는다.
      */
     fun onSignUpClosed() = intent {
         if (state.routes.lastOrNull() !is AuthRoute.SignUp) return@intent
         if (start is AuthRoute.LaunchLogin) {
-            reduce { state.copy(routes = state.routes.dropLast(1) + AuthRoute.LaunchLogin) }
+            reduce { state.copy(routes = state.routes.dropLast(1)) }
         } else {
             postSideEffect(AuthCoordinatorSideEffect.Finished(LaunchLoginResult.SignUpCancelled))
         }

@@ -8,7 +8,7 @@ iOS TCAFlow와 같이 **기능마다 Coordinator 하나가 화면 스택(routes)
 | 기능 흐름 담당 | `@FlowCoordinator` `{기능}Coordinator` | `{기능}Coordinator` (Orbit `ContainerHost`) |
 | 화면 스택 | `State.routes: [Route<{기능}Screen.State>]` | `CoordinatorState.routes: List<NavKey>` |
 | 화면 목록 | `@Reducer enum {기능}Screen` | `@Serializable sealed interface {기능}Route : NavKey` |
-| 이동 | `routes.push` · `presentSheet` · `presentCover` · `goBack` · `goBackToRoot` | Coordinator `push` · `goBack` · `goBackToRoot` (+ Android만 `replaceCurrent`) |
+| 이동 | `routes.push` · `presentSheet` · `presentCover` · `goBack` · `goBackToRoot` | Coordinator `push` · `goBack` · `goBackToRoot` (+ 필요할 때만 Android `replaceCurrent`) |
 | 자식 → 부모 | `delegate` Action | 화면 SideEffect → Coordinator 함수 호출 |
 | 그리기 | TCAFlow 뷰 | `NavDisplay(backStack = state.routes, ...)` |
 | 다른 기능으로 | 부모 Coordinator로 `delegate` | 부모 Coordinator로 콜백 |
@@ -94,6 +94,15 @@ fun AuthFlow(coordinator: AuthCoordinator = koinViewModel(), onFinished: () -> U
 
 - iOS `AppCoordinator`처럼 `app`의 루트 Coordinator가 기능 흐름(스플래시 → 온보딩 → `AuthFlow` → 메인 탭)을 전환한다.
 - 기능 밖으로 나가는 이동은 항상 부모 Coordinator가 정한다.
+
+## 화면 전환 애니메이션
+
+iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트한다(`app/.../navigation/LaunchTransitions.kt`, `feature/auth/sources/.../AuthTransitions.kt`).
+
+- 곡선: SwiftUI `easeInOut` → Compose `EaseInOut`(`CubicBezierEasing(0.42, 0, 0.58, 1)`), `spring(response:dampingFraction:)` → `spring(dampingRatio = dampingFraction, stiffness = (2π / response)²)`(질량 1 근사, `blendDuration`은 대응 없음). `move(edge:)` → `slideIn/OutHorizontally { ±it }`, `opacity` → `fadeIn/fadeOut`.
+- SwiftUI는 들어오는 화면의 등장 전환과 나가는 화면의 퇴장 전환을 따로 쓴다. 루트 `transitionSpec`도 엔트리 `metadata`로 두 화면을 알아 각각 고른다.
+- Navigation 3(1.2.1 `NavDisplay`)는 새 스택이 이전 스택의 앞부분이고 더 짧을 때만 pop으로 본다. 맨 앞이 바뀌거나 같은 길이로 바꿔 끼우면 `transitionSpec`을 쓰고 새 화면을 위에(zIndex +1) 그린다. pop은 `popTransitionSpec`, 제스처 중에는 `predictivePopTransitionSpec`을 쓰고 나가는 화면을 위에 그린다.
+- 화면 위에 쌓는 화면은 `replaceCurrent` 대신 `push` · `goBack`으로 두어 아래 화면 상태를 유지하고 시스템 뒤로 · predictive back이 pop 전환을 따르게 한다. 화면이 자기 `BackHandler`를 두면 `NavDisplay`의 predictive back이 가려지므로, 스택 첫 화면일 때만 켠다.
 
 ## 테스트
 

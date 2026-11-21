@@ -51,6 +51,7 @@ private val ConsentBorderWidth = 1.dp
 /**
  * iOS `SignUpView`(S14 B). 뒤로(시스템 뒤로 포함)와 로그인을 잃었을 때는 [onClosed]로 흐름에 맡긴다(세션은 지우지 않는다).
  * 약관 상세는 [onLegalDocumentRequested]로 흐름에 맡겨 앱 안 웹 화면으로 연다(iOS `legalDocumentRequested(url:title:)`).
+ * [handlesSystemBack]이 거짓이면 시스템 뒤로는 흐름의 `NavDisplay`가 받아 pop한다(predictive back 애니메이션이 붙는다).
  */
 @Composable
 fun SignUpScreen(
@@ -58,12 +59,13 @@ fun SignUpScreen(
     onCompleted: () -> Unit,
     onClosed: () -> Unit,
     onLegalDocumentRequested: (WebPage) -> Unit,
+    handlesSystemBack: Boolean = true,
     viewModel: SignUpViewModel = koinViewModel { parametersOf(route) },
     legalDocumentUrls: LegalDocumentUrls = koinInject(),
 ) {
     val state by viewModel.collectAsState()
 
-    BackHandler(onBack = viewModel::onCloseTapped)
+    BackHandler(enabled = handlesSystemBack, onBack = viewModel::onCloseTapped)
 
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
