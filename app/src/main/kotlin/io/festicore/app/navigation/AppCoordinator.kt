@@ -226,8 +226,9 @@ class AppCoordinator(
      * 재확인 결과(iOS `SessionCoordinator.handleProfileLoaded`).
      * - 401: 이 세션의 만료 이벤트가 있었으면 만료 처리에 맡긴다(iOS는 세대를 올려 늦은 결과를 버린다).
      *   없으면 이 세션이 남아 있을 때 지우고 덮개를 닫아 비로그인 메인 탭으로 간다(launchLogin을 켜지 않는다).
-     * - 조건 충족: 가입 화면이 떠 있으면 닫는다. 미달: 가입 화면이 이미 떠 있으면 새로 만들지 않고 둔다(초안 유지),
-     *   덮개가 없을 때만 재확인 가입 덮개를 띄운다. 오프라인 · 서버 오류는 그대로(자동 재시도 없음).
+     * - 조건 충족: 가입 화면이 떠 있으면 닫는다. 미달: 같은 사용자 · 세션의 재확인 가입 덮개가 떠 있으면 새로 만들지 않고
+     *   프로필(닉네임 · 약관 버전 · 재동의)만 바꿔 열린 화면에 반영한다(초안 유지, 값이 같으면 그대로).
+     *   그 밖의 덮개가 있으면 두고, 덮개가 없을 때만 재확인 가입 덮개를 띄운다. 오프라인 · 서버 오류는 그대로(자동 재시도 없음).
      */
     private suspend fun onProfileRechecked(sessionId: String, result: Result<AuthProfile>) = subIntent {
         val current = currentSessionId()
@@ -243,7 +244,6 @@ class AppCoordinator(
             if (state.showsSignUp) reduce { state.withoutCover() }
             return@subIntent
         }
-        if (state.authCover != null) return@subIntent
         val route =
             AuthRoute.SignUp(
                 userId = profile.user.id,
@@ -252,6 +252,12 @@ class AppCoordinator(
                 sessionId = sessionId,
                 isReconsent = profile.user.termsAcceptedAt != null,
             )
+        val open = state.signUp
+        if (!state.launchLogin && open != null && open.userId == route.userId && open.sessionId == sessionId) {
+            if (open != route) reduce { state.copy(signUp = route) }
+            return@subIntent
+        }
+        if (state.authCover != null) return@subIntent
         reduce { state.copy(signUp = route) }
     }
 

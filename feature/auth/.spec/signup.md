@@ -25,7 +25,7 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
    - Recheck: `LaunchLoginResult.SignUpCancelled`로 덮개를 닫는다. 재확인은 하지 않고 다음 포그라운드에 한 번 한다.
 3. 건너뛰기: Launch 덮개를 먼저 닫고(`launchLogin = false`) 그다음 프로필을 한 번 재확인한다. 세션이 남아 있고 조건 미달이면 Recheck 가입 덮개를 띄운다. 완료 · 가입 취소 · 401에서는 재확인하지 않는다.
 4. 재확인은 launchLogin 로그인 화면이 보이는 동안 실행하지 않는다. 덮개 흐름이 맨 위 화면을 상위에 알리고(`onAuthCoverTopChanged`), 상위는 그것으로 가입 화면이 보이는지 판단한다.
-5. 포그라운드 때 가입 화면이 보이면(Recheck 덮개 또는 Launch 덮개 안의 가입 화면) 재확인한다. 충족이면 덮개를 닫고, 미달이면 덮개 · 화면을 새로 만들지 않아 입력 초안이 남는다.
+5. 포그라운드 때 가입 화면이 보이면(Recheck 덮개 또는 Launch 덮개 안의 가입 화면) 재확인한다. 충족이면 덮개를 닫고, 미달이면 덮개 · 화면을 새로 만들지 않아 입력 초안이 남는다. 같은 사용자 · 세션의 Recheck 덮개면 받은 프로필(서버 닉네임 · 약관 버전 · 재동의)을 열린 화면에 반영한다: 고친 닉네임은 두고, 약관 버전이 바뀌면 이전 버전 필수 체크를 지우고, 문구를 다시 정한다(iOS `signUp.apply`). 값이 같으면 그대로 둔다.
 6. 세션 만료 이벤트: Launch 덮개 안에서 그 세션의 가입 화면이 보이면 덮개 세대를 올려 LaunchLogin부터 새로 만든다. 로그인 화면이 보이면(다른 세션의 로그인 진행 중일 수 있음) 그대로 둔다. Recheck 덮개면 닫아 비로그인 Home. 덮개가 없으면 launchLogin을 켜지 않는다.
 7. 가입 제출 401(만료 이벤트 없음): Launch는 LaunchLogin으로, Recheck는 덮개를 닫는다.
 8. 스크롤을 사용자가 끌기 시작하면 키보드를 숨긴다. 흐름 문구(오류 · 재동의)는 줄 박스 없는 글꼴(`textStyleWithoutLineBox`)을 쓴다.
@@ -34,7 +34,7 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
 ## 엣지 케이스
 
 - **가입하지 않은 토큰이 기기에 남는다.** 가입 화면에서 뒤로 나와도 로그인 세션(access · refresh 토큰)을 지우지 않는다(iOS와 같음, 점검 문서 결정 2). 사용자가 건너뛰기로 메인 탭에 가면 가입을 마치지 않은 계정의 토큰이 기기 저장소(`core/datastore`)에 남고, 재확인 · 포그라운드마다 가입 덮개가 다시 뜬다. 토큰은 세션 만료(갱신 401) · 재확인 401 · 다음 로그인 교체 때만 지워진다. 앱 안 로그아웃이 생기면 그 경로에서도 지운다.
-- 포그라운드 재확인이 미달이어도 iOS는 서버 닉네임 · 약관 버전을 초안에 다시 적용하고 문구를 다시 정한다. Android는 열린 가입 화면을 그대로 둔다(아래 미해결 질문).
+- 포그라운드 재확인 미달 때 Launch 덮개 안의 가입 화면에는 새 프로필을 반영하지 않는다(Recheck 덮개만 반영).
 - 가입 중 다른 세션이 만료되면 진행 중인 화면을 바꾸지 않는다.
 
 ## 제약 / 가정
@@ -59,9 +59,12 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
 
 ## 미해결 질문
 
-- 포그라운드 재확인 미달 때 열린 가입 화면에 새 약관 버전 · 문구를 반영할지(iOS `handleProfileLoaded`는 반영한다).
+(없음)
+
+해결: 포그라운드 재확인 미달 때 열린 Recheck 가입 화면에 새 약관 버전 · 닉네임 · 문구를 반영한다(iOS `handleProfileLoaded`와 같음, 동작 규칙 5).
 
 ## 변경 이력
 
 - P4b 약관 상세 앱 안 화면: `feature/web` 신설, `AuthRoute.LegalDocument` push
+- 포그라운드 재확인 미달 프로필을 열린 Recheck 가입 화면에 반영(초안 유지, 약관 버전 변경 시 필수 체크 지움)
 - P4 가입 iOS 대조: 재동의 문구 · 뒤로 세션 유지 · 건너뛰기 뒤 재확인 · 포그라운드 재확인 · 만료 전이 · 키보드 · C1

@@ -6,8 +6,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -31,10 +33,13 @@ import org.orbitmvi.orbit.compose.collectAsState
  * 루트 흐름. 스택은 항상 한 화면이라 시스템 뒤로 가기는 앱을 닫는다(스플래시 · 온보딩으로 돌아가지 않는다).
  * 화면 바꿈은 [LaunchTransitions.root](iOS `AppCoordinatorView` 스프링)로 그린다. 스택을 통째로 바꿔 pop이 생기지 않으므로 `transitionSpec`만 넘긴다.
  * Home 위 덮개(첫 진입 로그인 · 가입 정보)는 feature/auth 흐름이 그린다. 덮개가 있으면 아래 메인 탭은 읽기 도구에서 숨긴다.
+ * [onLaunchContentReady]는 첫 화면을 그릴 수 있을 때 부른다(스플래시면 Lottie를 읽은 뒤, 아니면 바로). 시스템 스플래시를 그때 걷는다.
  */
 @Composable
-fun AppFlow(coordinator: AppCoordinator = koinViewModel()) {
+fun AppFlow(coordinator: AppCoordinator = koinViewModel(), onLaunchContentReady: () -> Unit = {}) {
     val state by coordinator.collectAsState()
+    val currentOnLaunchContentReady by rememberUpdatedState(onLaunchContentReady)
+    LaunchedEffect(Unit) { if (state.routes.lastOrNull() != AppRoute.Splash) currentOnLaunchContentReady() }
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) { coordinator.onForegrounded() }
 
@@ -56,7 +61,12 @@ fun AppFlow(coordinator: AppCoordinator = koinViewModel()) {
         entryProvider =
             entryProvider {
                 entry<AppRoute.Splash>(metadata = rootScreen(RootScreen.Splash)) {
-                    SplashScreen(onAppear = coordinator::onSplashAppeared)
+                    SplashScreen(
+                        onAppear = {
+                            currentOnLaunchContentReady()
+                            coordinator.onSplashAppeared()
+                        },
+                    )
                 }
                 entry<OnboardingRoute>(metadata = rootScreen(RootScreen.Onboarding)) {
                     OnboardingScreen(
@@ -118,6 +128,8 @@ private fun HomeWithCovers(state: AppCoordinatorState, coordinator: AppCoordinat
             targetState = state.signUp.takeUnless { state.launchLogin },
             modifier = Modifier.fillMaxSize(),
             transitionSpec = { LaunchTransitions.signUpCover() },
+            // 재확인으로 같은 사용자 · 세션의 프로필만 바뀌면 덮개를 다시 띄우지 않고 열린 가입 화면에 반영한다.
+            contentKey = { it?.let { route -> route.userId to route.sessionId } },
             label = "signUpCover",
         ) { signUp ->
             if (signUp != null) {
@@ -126,6 +138,7 @@ private fun HomeWithCovers(state: AppCoordinatorState, coordinator: AppCoordinat
                     onResult = coordinator::onLaunchLoginFinished,
                     onTopChanged = coordinator::onAuthCoverTopChanged,
                     legalDocument = legalDocument,
+                    signUpProfile = state.signUp ?: signUp,
                 )
             }
         }
