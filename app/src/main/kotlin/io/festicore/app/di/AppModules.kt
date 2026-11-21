@@ -6,6 +6,7 @@ import io.festicore.app.navigation.AppCoordinator
 import io.festicore.core.datastore.di.coreDataStoreModule
 import io.festicore.core.network.di.coreNetworkModule
 import io.festicore.domain.auth.sources.ActivityProvider
+import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.feature.auth.di.authFeatureModule
@@ -32,6 +33,7 @@ private val appModule = module {
             sessionExpired = get<SessionExpiryEvents>().expired,
             authRepository = get(),
             currentSessionId = session::currentSessionId,
+            updateCurrentUserId = get<CurrentUserStore>()::update,
         )
     }
 }

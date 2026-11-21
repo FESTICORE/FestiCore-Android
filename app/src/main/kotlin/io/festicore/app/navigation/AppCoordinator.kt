@@ -48,6 +48,9 @@ data class AppCoordinatorState(
 /**
  * iOS `AppCoordinator`. 스플래시 → 온보딩 → 홈(비로그인이면 launchLogin 덮개) 전환을 정한다.
  * 로그인 상태로 홈에 들어갈 때와 포그라운드마다 프로필을 다시 확인한다(iOS `SessionCoordinator.foregrounded`).
+ * [updateCurrentUserId]로 확인한 현재 사용자(iOS `verifiedUserID`)를 채우고 비운다.
+ * 채움: 재확인 성공 · 로그인 완료 · 가입 완료. 비움: 세션 만료 · 재확인 401 · 로그인 직후 401.
+ * 로그아웃 · 탈퇴는 Android에 아직 없다. 옮길 때 그 경로에서도 null로 비운다.
  */
 class AppCoordinator(
     private val onboardingStore: FirstInstallOnboardingStore,
@@ -55,6 +58,7 @@ class AppCoordinator(
     private val sessionExpired: Flow<SessionExpiry>,
     private val authRepository: AuthRepository,
     private val currentSessionId: suspend () -> String?,
+    private val updateCurrentUserId: (String?) -> Unit,
 ) : ViewModel(),
     OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, Nothing> {
     override val container = orbitContainer<AppCoordinatorState, Nothing>(AppCoordinatorState()) {
@@ -90,9 +94,14 @@ class AppCoordinator(
      */
     fun onLaunchLoginFinished(result: LaunchLoginResult) = intent {
         when (result) {
-            LaunchLoginResult.Completed,
-            LaunchLoginResult.SignUpCancelled,
-            -> reduce { state.withoutCover() }
+            is LaunchLoginResult.Completed -> {
+                // 그 사이 세션이 바뀌었거나 없어졌으면 다른 세션의 사용자라 현재 사용자로 두지 않는다.
+                val current = currentSessionId()
+                if (current != null && (result.sessionId == null || result.sessionId == current)) updateCurrentUserId(result.userId)
+                reduce { state.withoutCover() }
+            }
+
+            LaunchLoginResult.SignUpCancelled -> reduce { state.withoutCover() }
 
             LaunchLoginResult.Skipped -> {
                 reduce { state.withoutCover() }
@@ -122,6 +131,7 @@ class AppCoordinator(
     private suspend fun onLaunchSessionLost(result: LaunchLoginResult.SessionLost) = subIntent {
         val current = currentSessionId()
         if (current != null && current != result.sessionId) return@subIntent
+        updateCurrentUserId(null)
         if (result.expired) {
             reduce { state.copy(launchLogin = true, signUp = null, coverEpoch = state.coverEpoch + 1, coverTop = null) }
         } else {
@@ -170,6 +180,9 @@ class AppCoordinator(
      * - 재확인 가입 덮개: 덮개를 닫아 비로그인 메인 탭으로. 덮개가 없으면 그대로(launchLogin을 켜지 않는다).
      */
     private suspend fun onSessionExpired(sessionId: String?) = subIntent {
+        // 지금 세션이 없거나 만료된 세션이면 현재 사용자를 비운다. 그 사이 저장된 다른 세션의 사용자는 남긴다.
+        val current = currentSessionId()
+        if (current == null || current == sessionId) updateCurrentUserId(null)
         when {
             state.routes.lastOrNull() != AppRoute.Home -> reduce { state.copy(launchLogin = true, signUp = null) }
 
@@ -233,6 +246,7 @@ class AppCoordinator(
     private suspend fun onProfileRechecked(sessionId: String, result: Result<AuthProfile>) = subIntent {
         val current = currentSessionId()
         if (result.exceptionOrNull() is AuthDomainError.NotAuthenticated && (current == null || current == sessionId)) {
+            updateCurrentUserId(null)
             if (authRepository.hasSessionExpired(sessionId)) return@subIntent
             if (current != null) clearSessionIf(sessionId)
             reduce { state.withoutCover() }
@@ -240,6 +254,8 @@ class AppCoordinator(
         }
         val profile = result.getOrNull()
         if (current != sessionId || profile == null) return@subIntent
+        // iOS `handleProfileLoaded`와 같이 가입 조건과 관계없이 확인한 사용자를 둔다.
+        updateCurrentUserId(profile.user.id)
         if (profile.isEligible) {
             if (state.showsSignUp) reduce { state.withoutCover() }
             return@subIntent

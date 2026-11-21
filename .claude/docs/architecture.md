@@ -55,7 +55,7 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Feature/Profile` | `feature/profile` | |
 | `Feature/Bearer` | `feature/bearer` | |
 | `Feature/Web` | `feature/web` | `WebScreen`(앱 안 웹 화면, `android.webkit.WebView`). 진입 인자 `WebPage`는 `interface`. 문서(`document`) 범위만 옮겼다. 다른 feature 스택에 넣을 때는 app이 화면을 슬롯으로 넘긴다(예: `LaunchLoginFlow(legalDocument = ...)`) |
-| `Domain/{Auth,Bearer,Festival,Notice,Timetable,UserNotification}Domain` | `domain/{auth,bearer,festival,notice,timetable,usernotification}` | `domain/festival`: 목록(카탈로그) 엔티티 · `FestivalCatalogRepository` · `FestivalCatalogUseCase`. 동작은 `domain/festival/.spec/festival-catalog.md` |
+| `Domain/{Auth,Bearer,Festival,Notice,Timetable,UserNotification}Domain` | `domain/{auth,bearer,festival,notice,timetable,usernotification}` | `domain/festival`: 목록(카탈로그) 엔티티 · `FestivalCatalogRepository` · `FestivalCatalogUseCase` · `FestivalLibraryUseCase`(최근 검색). 동작은 `domain/festival/.spec/festival-catalog.md` · `recent-search.md`. `domain/auth`: `CurrentUserProvider`(`domain/auth/.spec/current-user.md`) |
 | `Service/API` · `Service/APIEndpoint` | `service/api` | 경로 상수 · 인증 정책 · 요청 DTO. iOS는 축제 DTO가 `FestivalDomain`에 있지만 Android는 의존 방향 때문에 여기 둔다(`FestivalApi` · `FestivalItemDto`) |
 | `Service/FestiCoreAuth` | `service/auth` | 세션 · 토큰 갱신 |
 | `Service/FestiCoreAnalytics` | `service/analytics` | Sentry · Mixpanel |

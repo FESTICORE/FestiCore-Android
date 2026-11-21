@@ -6,6 +6,7 @@ import io.festicore.domain.auth.AuthLoginResult
 import io.festicore.domain.auth.AuthProfile
 import io.festicore.domain.auth.AuthRepository
 import io.festicore.domain.auth.AuthUser
+import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.onboarding.OnboardingRoute
@@ -88,7 +89,8 @@ class AppCoordinatorTest {
         loggedIn: Boolean,
         expiry: Flow<SessionExpiry> = emptyFlow(),
         auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
-    ) = AppCoordinator(store, { loggedIn }, expiry, auth, { auth.sessionId })
+        users: CurrentUserStore = CurrentUserStore(),
+    ) = AppCoordinator(store, { loggedIn }, expiry, auth, { auth.sessionId }, users::update)
 
     private val home = AppCoordinatorState(routes = listOf(AppRoute.Home))
 
@@ -251,7 +253,7 @@ class AppCoordinatorTest {
             delay(1)
             true
         }
-        AppCoordinator(FakeOnboardingStore(completed = true), isLoggedIn, expiry, auth, { auth.sessionId }).test(this) {
+        AppCoordinator(FakeOnboardingStore(completed = true), isLoggedIn, expiry, auth, { auth.sessionId }, {}).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
             expectState { copy(launchLogin = true) }
@@ -339,7 +341,7 @@ class AppCoordinatorTest {
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
 
             auth.sessionId = "s1"
-            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
+            containerHost.onLaunchLoginFinished(completed)
             expectState { copy(launchLogin = false) }
         }
         assertEquals(0, auth.fetchCount)
@@ -406,7 +408,7 @@ class AppCoordinatorTest {
             containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = false))
             containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = true))
             // 덮개 전이는 세션 b의 결과만 정한다.
-            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
+            containerHost.onLaunchLoginFinished(completed)
             expectState { copy(launchLogin = false) }
         }
         assertEquals("b", auth.sessionId)
@@ -468,7 +470,7 @@ class AppCoordinatorTest {
             expectState(home)
             expectState { copy(signUp = recheckSignUp) }
 
-            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed)
+            containerHost.onLaunchLoginFinished(completed)
             expectState(home)
         }
         assertEquals(1, auth.fetchCount)
@@ -663,6 +665,154 @@ class AppCoordinatorTest {
         assertEquals(0, auth.fetchCount)
     }
 
+    @Test
+    fun `현재 사용자 - 진입 재확인이 성공하면 가입 조건과 관계없이 확인한 사용자를 채운다`() = runTest {
+        for (profile in listOf(eligible, notEligible)) {
+            val users = CurrentUserStore()
+            val auth = FakeAuthRepository(profile = { profile })
+            coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth, users = users).test(this) {
+                runOnCreate()
+                containerHost.onSplashAppeared()
+                expectState(home)
+                if (!profile.isEligible) expectState { copy(signUp = recheckSignUp) }
+            }
+            assertEquals("u1", users.currentUserId.value)
+        }
+    }
+
+    @Test
+    fun `현재 사용자 - 재확인이 오프라인이면 그대로 두고 그 사이 세션이 바뀐 결과로 채우지 않는다`() = runTest {
+        val scope = this
+        val users = CurrentUserStore()
+        val auth = FakeAuthRepository(profile = { throw AuthDomainError.Offline() })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth, users = users).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState(home)
+            scope.testScheduler.runCurrent()
+            assertEquals(1, auth.fetchCount)
+
+            auth.profile = {
+                auth.sessionId = "s2"
+                eligible
+            }
+            containerHost.onForegrounded()
+        }
+        assertEquals(null, users.currentUserId.value)
+    }
+
+    @Test
+    fun `현재 사용자 - 로그인 완료는 현재 세션의 결과일 때만 그 사용자를 채운다`() = runTest {
+        val scope = this
+        val users = CurrentUserStore()
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth, users = users).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            // 다른 세션(a)의 완료는 버린다.
+            auth.sessionId = "s1"
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Completed(userId = "u-old", sessionId = "a"))
+            expectState { copy(launchLogin = false) }
+            assertEquals(null, users.currentUserId.value)
+
+            containerHost.onLaunchLoginFinished(completed)
+            scope.testScheduler.runCurrent()
+        }
+        assertEquals("u1", users.currentUserId.value)
+    }
+
+    @Test
+    fun `현재 사용자 - 재확인 가입 덮개에서 가입을 마치면 가입한 사용자를 둔다`() = runTest {
+        val users = CurrentUserStore()
+        val auth = FakeAuthRepository(profile = { notEligible })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth, users = users).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState(home)
+            expectState { copy(signUp = recheckSignUp) }
+            users.update(null)
+
+            containerHost.onLaunchLoginFinished(completed)
+            expectState(home)
+        }
+        assertEquals("u1", users.currentUserId.value)
+    }
+
+    @Test
+    fun `현재 사용자 - 세션 만료는 비우고 다른 세션의 만료는 무시한다`() = runTest {
+        val scope = this
+        val users = CurrentUserStore()
+        val expiry = expiryFlow()
+        val auth = FakeAuthRepository()
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry, auth = auth, users = users).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState(home)
+            scope.testScheduler.runCurrent()
+            assertEquals("u1", users.currentUserId.value)
+
+            expiry.subscriptionCount.first { it > 0 }
+            expiry.expire("old")
+            scope.testScheduler.runCurrent()
+            assertEquals("u1", users.currentUserId.value)
+
+            // 토큰 갱신 401로 저장소가 비고 만료 이벤트가 온다.
+            auth.sessionId = null
+            expiry.expire("s1")
+            scope.testScheduler.runCurrent()
+            assertEquals(null, users.currentUserId.value)
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    @Test
+    fun `현재 사용자 - 재확인 401이면 만료 이벤트 유무와 관계없이 비운다`() = runTest {
+        for (expired in listOf(false, true)) {
+            val users = CurrentUserStore().apply { update("u1") }
+            val auth = FakeAuthRepository()
+            auth.profile = {
+                if (expired) {
+                    auth.sessionId = null
+                    auth.expiredSessionId = "s1"
+                }
+                throw AuthDomainError.NotAuthenticated()
+            }
+            coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth, users = users).test(this) {
+                runOnCreate()
+                containerHost.onSplashAppeared()
+                expectState(home)
+            }
+            assertEquals(null, users.currentUserId.value)
+        }
+    }
+
+    @Test
+    fun `현재 사용자 - 로그인 직후 401 두 갈래는 비우고 오래된 세션의 401은 무시한다`() = runTest {
+        val scope = this
+        for (expired in listOf(false, true)) {
+            val users = CurrentUserStore().apply { update("u1") }
+            val auth = FakeAuthRepository().apply { sessionId = null }
+            coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth, users = users).test(this) {
+                runOnCreate()
+                containerHost.onSplashAppeared()
+                expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+                // 그 사이 다른 로그인(b)이 세션을 저장했으면 a의 결과는 버린다.
+                auth.sessionId = "b"
+                containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = expired))
+                scope.testScheduler.runCurrent()
+                assertEquals("u1", users.currentUserId.value)
+
+                auth.sessionId = null
+                containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = expired))
+                if (expired) expectState { copy(coverEpoch = 1) } else expectState { copy(launchLogin = false) }
+            }
+            assertEquals(null, users.currentUserId.value)
+        }
+    }
+
     private companion object {
         val user =
             AuthUser(
@@ -684,5 +834,8 @@ class AppCoordinatorTest {
         /** [notEligible] 재확인으로 뜨는 가입 덮개. 예전 약관에 동의한 회원이라 재동의다. */
         val recheckSignUp =
             AuthRoute.SignUp(userId = "u1", nickname = "roy", currentTermsVersion = "2026-11", sessionId = "s1", isReconsent = true)
+
+        /** 세션 s1에서 사용자 u1로 로그인(또는 가입)을 마쳤다. */
+        val completed = LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")
     }
 }
