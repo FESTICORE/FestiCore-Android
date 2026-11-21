@@ -1,6 +1,7 @@
 package io.festicore.feature.onboarding
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -33,8 +34,12 @@ class OnboardingScreenTest {
         val results = mutableListOf<OnboardingResult>()
         composeRule.setContent { OnboardingScreen(onResult = results::add, viewModel = OnboardingViewModel()) }
 
-        repeat(3) {
+        // Orbit intent는 Compose 시계 밖에서 상태를 바꾸므로, 페이지 점이 다음 페이지를 가리킬 때까지 기다린 뒤 다시 누른다.
+        repeat(3) { index ->
             composeRule.onNodeWithContentDescription("다음 화면").performClick()
+            composeRule.waitUntil(timeoutMillis = 5_000) {
+                composeRule.onAllNodesWithContentDescription("${index + 2} / 4 페이지").fetchSemanticsNodes().isNotEmpty()
+            }
             composeRule.waitForIdle()
         }
         composeRule.onNodeWithContentDescription("시작하기").performClick()
