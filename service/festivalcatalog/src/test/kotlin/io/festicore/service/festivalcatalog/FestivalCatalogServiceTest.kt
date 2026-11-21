@@ -12,6 +12,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -33,7 +35,7 @@ class FestivalCatalogServiceTest {
     private val cache by lazy { FestivalCatalogCache(File(folder.root, "festival-catalog.json"), FestiCoreJson) }
 
     /** [pages]: 요청한 after(첫 쪽은 null) → (축제 ID 목록, 다음 커서). 없는 커서는 500. */
-    private fun service(pages: (String?) -> Pair<List<String>, String?>?) = FestivalCatalogService(
+    private fun service(pages: suspend (String?) -> Pair<List<String>, String?>?) = FestivalCatalogService(
         api = FestivalApi(
             createFestiCoreHttpClient(
                 baseUrl = "https://example.test/",
@@ -120,6 +122,40 @@ class FestivalCatalogServiceTest {
 
         assertTrue(error is FestivalCatalogServiceError.RepeatedCursor)
         assertTrue(cachedIds().isEmpty())
+    }
+
+    @Test
+    fun `더 보기 진행 중 첫 쪽을 다시 받으면 늦은 옛 쪽은 모으지도 저장하지도 않는다`() = runTest {
+        val staleStarted = CompletableDeferred<Unit>()
+        val releaseStale = CompletableDeferred<Unit>()
+        var firstPages = 0
+        val service = service {
+            when (it) {
+                null -> if (++firstPages == 1) listOf("a", "b") to "c1" else listOf("x") to "c2"
+
+                "c1" -> {
+                    staleStarted.complete(Unit)
+                    releaseStale.await()
+                    listOf("c") to null
+                }
+
+                "c2" -> listOf("y") to null
+
+                else -> null
+            }
+        }
+
+        service.page(null, 10)
+        val stale = async { service.page("c1", 10) }
+        staleStarted.await()
+        service.page(null, 10)
+        releaseStale.complete(Unit)
+
+        assertEquals(listOf("c"), stale.await().items.map { it.id })
+        assertEquals(emptyList<String>(), cachedIds())
+
+        service.page("c2", 10)
+        assertEquals(listOf("x", "y"), cachedIds())
     }
 
     @Test

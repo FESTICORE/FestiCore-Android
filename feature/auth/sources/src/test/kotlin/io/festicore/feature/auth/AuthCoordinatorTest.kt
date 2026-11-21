@@ -6,7 +6,7 @@ import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
 class AuthCoordinatorTest {
-    private val signUp = AuthRoute.SignUp(userId = "u1", nickname = null, currentTermsVersion = TERMS_V1)
+    private val signUp = AuthRoute.SignUp(userId = "u1", nickname = null, currentTermsVersion = TERMS_V1, sessionId = "s1")
 
     @Test
     fun `첫 진입 흐름에서 가입이 필요하면 로그인 화면 위에 가입 정보를 쌓고 닫으면 꺼내 로그인 화면으로 돌아온다`() = runTest {
