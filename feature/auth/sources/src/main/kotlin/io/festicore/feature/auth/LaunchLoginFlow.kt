@@ -25,6 +25,8 @@ import org.orbitmvi.orbit.compose.collectSideEffect
  * [onTopChanged]로 맨 위 화면을 상위에 알린다. 상위는 가입 화면이 보이는지로 재확인 · 세션 만료 처리를 정한다.
  * 약관 상세는 가입 정보 위에 쌓인 화면이라 알리지 않는다(iOS에서도 가입 정보 표시 중이다).
  * [legalDocument]는 약관 상세 화면이다. feature끼리 sources를 보지 않아 app이 `feature/web` 화면을 넘긴다.
+ * 스택 push · pop은 [AuthTransitions]로 오른쪽에서 밀어 넣고 오른쪽으로 뺀다(iOS `.move(edge: .trailing)`, 0.3초 easeInOut).
+ * 첫 진입 흐름의 가입 정보는 로그인 화면 위에 쌓여 있어 시스템 뒤로 · predictive back을 `NavDisplay`가 pop으로 받는다.
  */
 @Composable
 fun LaunchLoginFlow(
@@ -51,6 +53,9 @@ fun LaunchLoginFlow(
         NavDisplay(
             backStack = state.routes,
             onBack = coordinator::goBack,
+            transitionSpec = { AuthTransitions.push() },
+            popTransitionSpec = { AuthTransitions.pop() },
+            predictivePopTransitionSpec = { AuthTransitions.pop() },
             entryDecorators =
                 listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
@@ -70,6 +75,8 @@ fun LaunchLoginFlow(
                             onCompleted = { coordinator.onFinished(LaunchLoginResult.Completed) },
                             onClosed = coordinator::onSignUpClosed,
                             onLegalDocumentRequested = coordinator::onLegalDocumentRequested,
+                            // 재확인 가입 덮개는 스택의 첫 화면이라 NavDisplay가 뒤로를 받지 않는다. 가입 화면이 직접 닫기를 알린다.
+                            handlesSystemBack = start is AuthRoute.SignUp,
                         )
                     }
                     entry<AuthRoute.LegalDocument> { route ->

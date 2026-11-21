@@ -28,7 +28,7 @@ import io.festicore.ui.designkit.component.divider.FCDivider
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val IconSize = 24.dp
 private val TopInset = 10.dp
@@ -100,11 +100,12 @@ fun FCTabBar(
                         modifier = Modifier.size(IconSize),
                         colorFilter = ColorFilter.tint(color),
                     )
+                    // iOS는 `festiCoreFont`만 쓰고 `festiCoreLineBox`를 쓰지 않는다(C1).
                     BasicText(
                         text = tab.title,
                         style =
                             (if (isSelected) FestiCoreTextStyle.baseCaption2Bold else FestiCoreTextStyle.baseCaption2Medium)
-                                .textStyle
+                                .textStyleWithoutLineBox
                                 .copy(color = color),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

@@ -96,7 +96,8 @@ class LaunchLoginViewModel(
             postSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
             return@subIntent
         }
-        // 가입 정보에서 뒤로 오면 이 화면을 새로 그리므로 진행 표시는 그대로 둔다.
+        // 가입 정보는 이 화면 위에 쌓여 뒤로 오면 이 화면이 그대로 드러난다. iOS `LoginFeature`처럼 진행 표시를 먼저 끈다.
+        reduce { state.copy(isSigningIn = false, errorMessage = null) }
         val route =
             AuthRoute.SignUp(
                 userId = profile.user.id,

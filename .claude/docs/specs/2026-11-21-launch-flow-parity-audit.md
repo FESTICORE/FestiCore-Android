@@ -224,8 +224,16 @@ P2 구현 기록:
 | 온보딩 페이지 넘김                                 | `OnboardingView.swift:79-82,153-156` · `easeInOut(0.3)`                                                                                                     | `OnboardingScreen.kt:131-135,219-228` · `tween(300, EaseInOut)` | 일치                | —                                                                                                                                                                                                                                                    |
 | 탭 바꿈                                            | `MainTabView.swift:230-253` · 애니메이션 없음                                                                                                               | 없음                                                            | 일치                | —                                                                                                                                                                                                                                                    |
 
-- 루트 전환은 스택을 한 칸 그대로 바꿔 끼우므로 `transitionSpec`과 `popTransitionSpec`에 같은 함수를 넣는다(어느 쪽이 쓰이는지는 "확인 못 한 것").
+- 루트 전환은 스택을 한 칸 그대로 바꿔 끼운다. Navigation 3 1.2.1 소스(`NavDisplay.kt`의 `isPop`)는 맨 앞 키가 바뀌면 pop이 아니라고 보므로 `transitionSpec`만 쓰인다(P5에서 확인, 아래 "P5 반영").
 - 곡선 대응: SwiftUI `easeInOut` → Compose `EaseInOut`(`CubicBezierEasing(0.42, 0, 0.58, 1)`), `move(edge:)` → `slideIn/OutHorizontally { ±it }`(전체 폭), `opacity` → `fadeIn/fadeOut`.
+
+### P5 반영
+
+- N1~N3: `AppFlow.kt` 루트 `NavDisplay` `transitionSpec` = `LaunchTransitions.root`. 엔트리 `metadata`로 나가는 · 들어오는 화면을 알아 SwiftUI처럼 각자 전환을 쓴다. 스프링은 `spring(dampingRatio = 0.94, stiffness = (2π/0.52)² ≈ 146)` 근사.
+- N2 고칠 방법 정정: iOS `.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))`는 홈 자신의 전환이다. 스플래시 → 홈에서 스플래시는 자기 전환(`opacity + scale(0.98)`)으로 나간다. 그래서 홈은 오른쪽에서 밀려 들어오고 스플래시는 흐려지며 줄어든다(위 표의 `slideOutHorizontally { -it }`는 쓰지 않음).
+- N4 · N5 · N8: `AppFlow.kt` `HomeWithCovers`. 첫 진입 덮개 `AnimatedVisibility(fadeIn / slideOut { -it }, 0.35초)` + 메인 탭 `graphicsLayer.translationX`(덮개 있으면 폭, `animateFloatAsState` 0.35초), 재확인 가입 덮개 `AnimatedContent`(오른쪽 in · out, 0.3초).
+- N6 · N7 · 약관 상세: `AuthCoordinator`가 가입 정보를 `[LaunchLogin, SignUp]`로 쌓고 닫기는 pop. `LaunchLoginFlow`의 `NavDisplay`에 `AuthTransitions.push` · `pop`(predictive 포함). 첫 진입 흐름의 가입 정보는 자기 `BackHandler`를 끄고 `NavDisplay`가 뒤로를 받는다. 로그인 화면이 남으므로 가입 정보로 갈 때 진행 표시를 끈다(iOS `LoginFeature`와 같음).
+- 탭 글자 C1: `FCTabBar.kt`에 `textStyleWithoutLineBox`. 탭 바꿈 애니메이션 없음(`MainTabScreen.kt`) 확인.
 
 ## iOS → Android 적응
 
@@ -270,8 +278,9 @@ P2 구현 기록:
 - C1 차이의 실제 크기(Pretendard 글꼴 고유 줄 높이 대비 토큰 줄 높이)는 재지 않았다.
 - SwiftUI `.buttonStyle(.plain)`의 눌림 · `.disabled` 시각 변화(launchLogin 진행 중 버튼이 흐려지는지)와 Android에 비활성 표현이 없는 것이 실제로 다르게 보이는지.
 - SwiftUI 페이지 `TabView`의 선택 값이 바뀌는 시점과 Compose `PagerState.currentPage`(스와이프 중간에 바뀜)가 같아 점이 같은 순간에 바뀌는지.
-- SwiftUI `easeInOut` · `spring(response:dampingFraction:)`의 정확한 곡선. 위 대응은 흔히 쓰는 근사(베지어 0.42/0.58, stiffness = (2π/response)²)다.
-- Navigation 3 1.2.1에서 스택을 같은 길이로 바꿔 끼울 때 `transitionSpec`과 `popTransitionSpec` 중 무엇이 쓰이는지, pop 때 나가는 화면이 위에 그려지는지(N7). 바이트코드로는 기본값만 확인했다.
+- SwiftUI `easeInOut` · `spring(response:dampingFraction:)`의 정확한 곡선. 위 대응은 흔히 쓰는 근사(베지어 0.42/0.58, stiffness = (2π/response)²)다. `blendDuration 0.14`는 Compose에 대응이 없어 뺐다. SwiftUI ZStack에서 바뀌는 두 화면 중 어느 쪽이 위에 그려지는지는 실행해 보지 않았다(Android는 들어오는 화면이 위).
+- (P5에서 확인) Navigation 3 1.2.1 `navigation3-ui-android-1.2.1-sources.jar`의 `NavDisplay.kt`: `isPop`은 맨 앞 키가 같고 새 스택이 이전 스택의 앞부분이면서 더 짧을 때만 참이다. 같은 길이로 바꿔 끼우거나 맨 앞이 바뀌면 `transitionSpec`을 쓰고 들어오는 화면 zIndex를 +1, pop · predictive back이면 -1로 둬 나가는 화면이 위에 그려진다(N7 맞음).
+- `ExitTransition.KeepUntilTransitionsFinished`는 Compose에서 internal이라 push 때 아래 화면은 `fadeOut(targetAlpha = 1f)`로 0.3초 유지한다(보이는 결과는 같음).
 - `Splash.json`(내장 PNG 9개)이 lottie-android에서 iOS와 같게 그려지는지(이미지 레이어 · 마스크 지원).
 - iOS `FestiCoreLottieView`의 VoiceOver 노출 여부. Android 정적 스플래시는 로고에 "FestiCore" 라벨이 있다(`SplashScreen.kt:38`). Lottie로 바꿀 때 iOS와 같게 할지 확인이 필요하다.
 - iOS `WebNavigationPolicy.swift`와 `WebFeature.swift`의 세부(외부 링크 처리 · 재시도 규칙)는 읽지 않았다(P4b에서 대조).
