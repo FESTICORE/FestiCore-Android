@@ -52,3 +52,6 @@ python3 -I gradle/svg-to-vector.py ../FestiCore-iOS/Projects/UI/FestiCoreDesignK
 ## 컴포넌트
 
 iOS `FestiCoreDesignKit/Sources/Component`(82개)는 화면을 옮길 때 그 화면이 쓰는 그룹부터 `ui/designkit`에 옮긴다. 이름은 iOS와 같게(`FCButton` ↔ `FCButton`) 두고 `@Preview`를 함께 둔다(`.claude/rules/ui.md`).
+
+- 컴포넌트 동작 규칙은 `ui/designkit/.spec/`에 둔다(예: `top-bar-search.md` — `FCTopBar` 검색 스타일의 키보드 검색 제출 `onSearchSubmit`).
+- 원격 이미지는 designkit이 아니라 `ui/sharedui`의 `FCRemoteImage`다(iOS `FestiCoreSharedUI`와 같은 자리). designkit `FCFestivalImage`처럼 `Painter`를 받는 컴포넌트에는 화면이 불러온 이미지를 넘기거나 `FCRemoteImage`를 쓴다.

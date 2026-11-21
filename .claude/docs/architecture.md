@@ -65,7 +65,7 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Core/FestiCoreStorage` | `core/datastore` · `core/database` | 보안 값 · 설정 / Room |
 | `Core/FestiCoreLogger` · `FestiCoreUtility` · `FestiCoreLocation` | `core/{logger,utility,location}` | |
 | `UI/FestiCoreDesignKit` · `UI/FestiCoreDesignSystem` | `ui/designkit` | 토큰은 FestiCore-DesignSystem에서 생성 |
-| `UI/FestiCoreSharedUI` | `ui/sharedui` | |
+| `UI/FestiCoreSharedUI` | `ui/sharedui` | `FCRemoteImage`(원격 이미지, Coil 3 `coil-compose` + `coil-network-okhttp`, Apache-2.0)만 옮겼다. 로더는 Koin이 아닌 Coil 싱글톤이고 `app`이 `installFestiCoreImageLoader`로 설정한다. 동작은 `ui/sharedui/.spec/remote-image.md`. SVG 처리기 · 토스트 프리셋은 아직 옮기지 않았다 |
 | `UI/FestiCoreAnimation` | `ui/animation` | `FestiCoreLottieView` · `FestiCoreAnimationAsset`(`lottie-compose`, Apache-2.0). JSON은 iOS `Resources`와 같은 파일을 `res/raw`에 둔다. 원격 · `.lottie` 소스와 GIF(`FestiCoreAnimationView`)는 아직 옮기지 않았다 |
 | `UI/FestiCoreLiveActivity` · `Widget/` · `Extension/` | 없음 | Android 대응은 별도 결정 |
 
