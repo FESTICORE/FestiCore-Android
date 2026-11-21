@@ -26,3 +26,11 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - `SecureStorage`: 토큰 같은 보안 값. Android Keystore AES/GCM으로 암호화해 DataStore에 저장한다. 복호화에 실패하면 `null`을 돌려주고 그 키를 지운다. 쓰기 실패는 `SecureStorageException`.
 - Keystore · DataStore · SharedPreferences는 이 모듈에서만 쓴다(`check-boundaries`가 막는다). 다른 모듈은 인터페이스를 주입받는다.
 - Robolectric은 AndroidKeyStore를 지원하지 않으므로 테스트는 가짜 `ValueCipher`를 주입한다. 실제 Keystore 동작은 기기 · 에뮬레이터에서 확인한다.
+
+## service/api · service/auth (인증 세션)
+
+- 경로 상수는 `AuthApiPath`, 요청은 `AuthApi`(login · refresh · me · patchMe). Bearer가 필요한 요청은 `bearerAuthorization(expectedSessionId)` 속성으로 표시하고, 표시가 있는 요청에만 인증 플러그인이 토큰을 붙인다. refresh는 표시가 없어 플러그인을 거치지 않는다.
+- 세션은 `{sessionId, revision, accessToken, refreshToken}` JSON 하나로 `SecureStorage` 한 키에 저장한다(`CredentialStore`). 저장 · 갱신 · 삭제는 `(sessionId, revision)` compare-and-set으로만 한다.
+- 401은 `TokenRefresher`(Mutex) 한 경로로만 갱신한다. 세션이 없거나 sessionId가 바뀌면 재전송하지 않고 `AuthSessionError.NotAuthenticated`, revision만 바뀌었으면 refresh 없이 현재 토큰으로 한 번 재요청한다. refresh 401은 세션을 지우고 `SessionExpiryEvents`에 한 번 알린다. 오프라인 · 5xx는 세션을 유지하고 그 `NetworkError`로 실패한다.
+- 세션이 없거나 기대 sessionId와 다른 Bearer 요청은 보내지 않는다. 공개 API는 `AuthSession`(isLoggedIn · currentSessionId · saveLogin · clear)과 `SessionExpiryEvents`다.
+- HttpClient는 `serviceAuthModule(baseUrl)`이 인증 플러그인을 붙여 등록하고, app은 `BuildConfig.BASE_URL`만 넘긴다.
