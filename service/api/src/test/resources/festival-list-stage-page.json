@@ -1,0 +1,99 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "items": [
+      {
+        "id": "fst_00e0f4f1d8065a93",
+        "name": "WONDERLIVET 2026 (원더리벳 2026)",
+        "venue": "KINTEX HALL 7/8/9/10",
+        "firstDate": "2026-11-20",
+        "lastDate": "2026-11-22",
+        "packVersion": 56,
+        "flagsEnabled": true,
+        "thumbUrl": "/api/v1/festivals/images/c3b583dc-d7a3-4bf5-a905-daaba4267336.webp",
+        "ticketLinks": [
+          {
+            "label": "멜론티켓",
+            "url": "https://ticket.melon.com/performance/index.htm?prodId=213793"
+          },
+          {
+            "label": "예스24",
+            "url": "https://ticket.yes24.com/Perf/59840"
+          }
+        ],
+        "artistNames": [
+          "A I W E O",
+          "nishina"
+        ],
+        "status": "live",
+        "artists": [
+          {
+            "name": "A I W E O",
+            "performances": [
+              {
+                "startsAt": "2026-11-20T12:00:00+09:00",
+                "date": "2026-11-20",
+                "stageName": "LIVET STAGE"
+              }
+            ]
+          },
+          {
+            "name": "nishina",
+            "performances": [
+              {
+                "startsAt": "2026-11-20T12:30:00+09:00",
+                "date": "2026-11-20",
+                "stageName": "WONDER STAGE"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "fst_eacde26f05a55f27",
+        "name": "베스트 프렌즈 포에버 페스티벌(BFF) 2026 : 우르르르",
+        "venue": "KT&G 상상마당 홍대 라이브홀",
+        "firstDate": "2026-11-29",
+        "lastDate": "2026-11-29",
+        "packVersion": 22,
+        "flagsEnabled": false,
+        "thumbUrl": "/api/v1/festivals/images/72f2acdf-fee4-4c6b-b4fc-a6de341af4ad.webp",
+        "ticketLinks": [
+          {
+            "label": "멜론티켓",
+            "url": "https://ticket.melon.com/performance/index.htm?prodId=214164"
+          }
+        ],
+        "artistNames": [
+          "기쿠하시",
+          "김사월"
+        ],
+        "status": "upcoming",
+        "artists": [
+          {
+            "name": "기쿠하시",
+            "performances": [
+              {
+                "startsAt": "2026-11-29T18:30:00+09:00",
+                "date": "2026-11-29",
+                "stageName": "상상마당 라이브홀"
+              }
+            ]
+          },
+          {
+            "name": "김사월",
+            "performances": [
+              {
+                "startsAt": "2026-11-29T19:30:00+09:00",
+                "date": "2026-11-29",
+                "stageName": "상상마당 라이브홀"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "nextCursor": "2026-10-23~v2~2026-11-22~1~2026-11-29~fst_eacde26f05a55f27"
+  },
+  "message": "성공적으로 처리되었습니다."
+}
