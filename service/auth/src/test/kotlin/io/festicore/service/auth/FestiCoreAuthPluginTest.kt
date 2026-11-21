@@ -172,6 +172,8 @@ class FestiCoreAuthPluginTest {
         expect<AuthSessionError.NotAuthenticated> { api.me() }
 
         assertEquals(1, expiredCount.get())
+        // 구독 전에 만료돼도 잃지 않도록 세대도 1 오른다.
+        assertEquals(1L, expiryEvents.expiredGeneration.value)
         assertNull(store.current())
         assertTrue(storage.values.isEmpty())
         assertEquals(1, requests.count { it.isMe() })
@@ -189,6 +191,7 @@ class FestiCoreAuthPluginTest {
         assertEquals("old-access", current.accessToken)
         assertEquals(0L, current.revision)
         assertEquals(0, expiredCount.get())
+        assertEquals(0L, expiryEvents.expiredGeneration.value)
     }
 
     @Test

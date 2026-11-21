@@ -1,6 +1,8 @@
 package io.festicore.feature.auth
 
 import androidx.lifecycle.ViewModel
+import io.festicore.core.logger.FestiCoreLogger
+import io.festicore.core.logger.LogCategory
 import io.festicore.domain.auth.AuthDomainError
 import io.festicore.domain.auth.AuthLoginResult
 import io.festicore.domain.auth.AuthProfile
@@ -52,11 +54,28 @@ class LaunchLoginViewModel(
                 authRepository.fetchProfile()
             } catch (e: CancellationException) {
                 throw e
+            } catch (_: AuthDomainError.NotAuthenticated) {
+                onSessionLost(attemptId)
+                return@subIntent
             } catch (_: Exception) {
-                // iOS와 같이 계정 확인이 실패하면(오프라인 · 서버 오류 · 401) 덮개를 닫는다. 로그인 상태는 세션 저장소가 정한다.
+                // iOS와 같이 오프라인 · 서버 오류면 로그인을 유지하고 덮개를 닫는다.
                 null
             }
         onProfileLoaded(attemptId, login, profile)
+    }
+
+    /** 계정 확인이 401이면 로그인을 잃었다. 덮개에 남아 다시 로그인하게 한다. */
+    private suspend fun onSessionLost(attemptId: Int) = subIntent {
+        if (!(state.isSigningIn && state.attemptId == attemptId)) return@subIntent
+        // 토큰 갱신이 401로 끝났으면 저장소는 이미 비었다. 남은 세션이 있으면 여기서 지운다.
+        try {
+            authRepository.clearSession()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            FestiCoreLogger.error("로그인 확인 실패 후 세션을 지울 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
+        }
+        reduce { state.copy(isSigningIn = false, errorMessage = SIGN_IN_FAILED) }
     }
 
     private suspend fun onProfileLoaded(

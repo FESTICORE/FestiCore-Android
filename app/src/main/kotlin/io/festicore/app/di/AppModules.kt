@@ -26,7 +26,7 @@ private val appModule = module {
         AppCoordinator(
             onboardingStore = get(),
             isLoggedIn = session::isLoggedIn,
-            sessionExpiry = get<SessionExpiryEvents>().events,
+            sessionExpiredGeneration = get<SessionExpiryEvents>().expiredGeneration,
             authRepository = get(),
             currentSessionId = session::currentSessionId,
         )

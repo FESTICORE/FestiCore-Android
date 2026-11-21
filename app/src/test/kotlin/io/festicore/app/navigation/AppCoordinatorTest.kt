@@ -10,8 +10,9 @@ import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -70,7 +71,7 @@ class AppCoordinatorTest {
     private fun coordinator(
         store: FirstInstallOnboardingStore,
         loggedIn: Boolean,
-        expiry: Flow<Unit> = emptyFlow(),
+        expiry: Flow<Long> = emptyFlow(),
         auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
     ) = AppCoordinator(store, { loggedIn }, expiry, auth, { auth.sessionId })
 
@@ -159,17 +160,59 @@ class AppCoordinatorTest {
 
     @Test
     fun `홈에서 세션 만료 이벤트를 받으면 launchLogin 덮개를 띄운다`() = runTest {
-        val expiry = MutableSharedFlow<Unit>()
+        val expiry = MutableStateFlow(0L)
         coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry).test(this) {
             runOnCreate()
             expectState { copy(routes = listOf(AppRoute.Home), launchLogin = false) }
 
             expiry.subscriptionCount.first { it > 0 }
-            expiry.emit(Unit)
+            expiry.value = 1
             expectState { copy(launchLogin = true) }
             // 만료 구독은 홈에 있는 동안 계속 돈다.
             cancelAndIgnoreRemainingItems()
         }
+    }
+
+    @Test
+    fun `홈에 들어가기 전에 세션이 만료되면 홈에서 launchLogin 덮개를 띄운다`() = runTest {
+        val expiry = MutableStateFlow(0L)
+        val auth = FakeAuthRepository()
+        val isLoggedIn = suspend {
+            // 로그인으로 확인한 직후, 홈에 들어가기 전에 만료된다.
+            expiry.value = 1
+            delay(1)
+            true
+        }
+        AppCoordinator(FakeOnboardingStore(completed = true), isLoggedIn, expiry, auth, { auth.sessionId }).test(this) {
+            runOnCreate()
+            expectState { copy(launchLogin = true) }
+            expectState { copy(routes = listOf(AppRoute.Home)) }
+            cancelAndIgnoreRemainingItems()
+        }
+        // 덮개가 떠 있으므로 프로필 재확인을 하지 않는다.
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `초기 프로필 재확인 중 세션이 만료되면 launchLogin 덮개를 띄우고 같은 만료는 한 번만 반영한다`() = runTest {
+        // 구독 전에 쌓인 값은 이미 반영된 것으로 본다.
+        val expiry = MutableStateFlow(3L)
+        val auth = FakeAuthRepository()
+        auth.profile = {
+            expiry.value = 4
+            delay(1)
+            eligible
+        }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, expiry = expiry, auth = auth).test(this) {
+            runOnCreate()
+            expectState(home)
+            expectState { copy(launchLogin = true) }
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
+            expectState { copy(launchLogin = false) }
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(1, auth.fetchCount)
     }
 
     @Test
@@ -252,7 +295,7 @@ class AppCoordinatorTest {
     }
 
     @Test
-    fun `재확인이 진행 중이면 포그라운드에서 겹쳐 부르지 않는다`() = runTest {
+    fun `재확인이 진행 중이면 포그라운드에서 겹쳐 부르지 않고 끝난 뒤 한 번만 다시 확인한다`() = runTest {
         val scope = this
         val pending = CompletableDeferred<AuthProfile>()
         val auth = FakeAuthRepository(profile = { pending.await() })
@@ -264,9 +307,10 @@ class AppCoordinatorTest {
             containerHost.onForegrounded()
             // 두 포그라운드 요청이 첫 확인이 끝나기 전에 처리되게 한다.
             scope.testScheduler.runCurrent()
+            assertEquals(1, auth.fetchCount)
             pending.complete(eligible)
         }
-        assertEquals(1, auth.fetchCount)
+        assertEquals(2, auth.fetchCount)
     }
 
     @Test

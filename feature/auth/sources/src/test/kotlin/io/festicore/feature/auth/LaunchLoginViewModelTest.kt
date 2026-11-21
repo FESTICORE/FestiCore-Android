@@ -49,6 +49,28 @@ class LaunchLoginViewModelTest {
     }
 
     @Test
+    fun `계정 확인이 서버 오류면 iOS와 같이 로그인을 유지하고 덮개를 닫는다`() = runTest {
+        val repository = FakeAuthRepository(profile = { throw AuthDomainError.Unavailable() })
+        viewModel(repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed))
+        }
+        assertEquals(0, repository.clearCount)
+    }
+
+    @Test
+    fun `계정 확인이 401이면 덮개를 닫지 않고 세션을 지운 뒤 실패 문구를 보인다`() = runTest {
+        val repository = FakeAuthRepository(profile = { throw AuthDomainError.NotAuthenticated() })
+        viewModel(repository = repository).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectState(LaunchLoginState(errorMessage = "로그인에 실패했습니다. 다시 시도해 주세요.", attemptId = 1))
+        }
+        assertEquals(1, repository.clearCount)
+    }
+
+    @Test
     fun `사용자가 취소하면 문구 없이 다시 누를 수 있다`() = runTest {
         viewModel(login = { throw AuthDomainError.UserCancelled() }).test(this) {
             containerHost.onSignInTapped()

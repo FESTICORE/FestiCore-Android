@@ -100,7 +100,8 @@ class SignUpViewModel(
         val user = result.getOrNull()
         if (user != null) {
             if (AuthProfile(user, termsVersion).isEligible) {
-                postSideEffect(SignUpSideEffect.Completed)
+                // 제출 사이 약관 버전이 올랐을 수 있어 현재 프로필로 다시 판단한다.
+                onSignUpVerified(catching { authRepository.fetchProfile() })
             } else {
                 reduce { state.copy(isSubmitting = false, message = REQUIRED_INFO_MISSING) }
             }
@@ -111,6 +112,27 @@ class SignUpViewModel(
             is AuthDomainError.NotAuthenticated -> postSideEffect(SignUpSideEffect.SessionLost)
             is AuthDomainError.Offline -> reduce { state.copy(isSubmitting = false, message = SAVE_OFFLINE) }
             else -> reduce { state.copy(isSubmitting = false, message = SAVE_FAILED) }
+        }
+    }
+
+    /**
+     * 가입 직후 다시 읽은 프로필로 완료를 정한다. 약관 버전이 올라 조건 미달이면 체크를 지우고 남는다.
+     * 401이면 로그인으로 돌아가고, 오프라인 · 서버 오류는 가입이 이미 저장됐으므로 완료로 보고 다음 포그라운드 재확인에 맡긴다.
+     */
+    private suspend fun onSignUpVerified(result: Result<AuthProfile>) = subIntent {
+        val profile = result.getOrNull()
+        when {
+            profile != null && !profile.isEligible ->
+                reduce {
+                    state
+                        .applying(profile.user.nickname, profile.currentTermsVersion)
+                        .clearingRequiredTerms()
+                        .copy(isSubmitting = false, message = TERMS_CHANGED)
+                }
+
+            result.exceptionOrNull() is AuthDomainError.NotAuthenticated -> postSideEffect(SignUpSideEffect.SessionLost)
+
+            else -> postSideEffect(SignUpSideEffect.Completed)
         }
     }
 
