@@ -8,7 +8,7 @@ sealed interface LaunchLoginResult {
     /** "지금은 건너뛸게요"를 눌렀다. 저장하지 않아 다음 실행에 다시 뜬다. */
     data object Skipped : LaunchLoginResult
 
-    /** 재확인으로 뜬 가입 정보에서 뒤로 나왔다. 확정된 세션은 유지한다. */
+    /** 재확인으로 뜬 가입 정보를 닫았다(뒤로, 또는 가입 중 이 세션을 잃었다). 세션은 지우지 않고 재확인도 하지 않는다. */
     data object SignUpCancelled : LaunchLoginResult
 
     /**

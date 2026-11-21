@@ -61,7 +61,11 @@ fun AppFlow(coordinator: AppCoordinator = koinViewModel()) {
                             null
                         ) {
                             key(cover, state.coverEpoch) {
-                                LaunchLoginFlow(start = cover, onResult = coordinator::onLaunchLoginFinished)
+                                LaunchLoginFlow(
+                                    start = cover,
+                                    onResult = coordinator::onLaunchLoginFinished,
+                                    onTopChanged = coordinator::onAuthCoverTopChanged,
+                                )
                             }
                         }
                     }

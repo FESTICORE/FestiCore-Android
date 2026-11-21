@@ -1,8 +1,6 @@
 package io.festicore.feature.auth
 
 import androidx.lifecycle.ViewModel
-import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.domain.auth.AuthDomainError
 import io.festicore.domain.auth.AuthNicknameRule
 import io.festicore.domain.auth.AuthProfile
@@ -23,7 +21,10 @@ class SignUpViewModel(
     OrbitContainerHost<SignUpState, SignUpState, SignUpSideEffect> {
     override val container =
         orbitContainer<SignUpState, SignUpSideEffect>(
-            SignUpState(currentTermsVersion = route.currentTermsVersion).applying(route.nickname, route.currentTermsVersion),
+            // 예전 약관에 동의한 기존 회원은 가입이 아니라 재동의라는 점을 처음부터 알린다(iOS `SessionCoordinator.swift:336-338`).
+            SignUpState(currentTermsVersion = route.currentTermsVersion)
+                .applying(route.nickname, route.currentTermsVersion)
+                .copy(message = if (route.isReconsent) TERMS_CHANGED_RECONSENT else null),
         )
 
     fun onNicknameChanged(value: String) = intent {
@@ -67,17 +68,8 @@ class SignUpViewModel(
         submit(nickname, termsVersion)
     }
 
-    /** 뒤로(시스템 뒤로 포함). 저장한 로그인 세션을 지우고 첫 진입 로그인으로 돌아간다. */
-    fun onCloseTapped() = intent {
-        try {
-            authRepository.clearSession()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            FestiCoreLogger.error("가입 취소 중 세션을 지울 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
-        }
-        postSideEffect(SignUpSideEffect.Closed)
-    }
+    /** 뒤로(시스템 뒤로 포함). iOS와 같이 확정된 로그인 세션은 유지하고 흐름에 닫기를 알린다(`AuthCoordinator.swift:184-204`). */
+    fun onCloseTapped() = intent { postSideEffect(SignUpSideEffect.Closed) }
 
     private suspend fun submit(nickname: String, termsVersion: String) = subIntent {
         val result =

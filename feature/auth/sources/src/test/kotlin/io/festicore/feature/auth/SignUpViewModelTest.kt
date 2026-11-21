@@ -240,13 +240,19 @@ class SignUpViewModelTest {
     }
 
     @Test
-    fun `뒤로 가면 세션을 지우고 닫힘을 알린다`() = runTest {
+    fun `시나리오 2 - 뒤로 가면 세션을 유지하고 닫힘을 알린다`() = runTest {
         val repository = FakeAuthRepository()
         SignUpViewModel(route, repository).test(this) {
             containerHost.onCloseTapped()
             expectSideEffect(SignUpSideEffect.Closed)
         }
-        assertEquals(1, repository.clearCount)
+        assertEquals(0, repository.clearCount)
+    }
+
+    @Test
+    fun `예전 약관에 동의한 기존 회원이면 처음부터 재동의 문구를 보인다`() {
+        val state = SignUpViewModel(route.copy(isReconsent = true), FakeAuthRepository()).container.stateFlow.value
+        assertEquals(prefilled.copy(message = SignUpViewModel.TERMS_CHANGED_RECONSENT), state)
     }
 
     @Test
