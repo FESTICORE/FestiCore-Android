@@ -3,10 +3,11 @@ package io.festicore.feature.timetable.main
 import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetableLineupDay
 import io.festicore.domain.timetable.TimetableOverlap
+import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailState
 import java.time.Instant
 
-/** 서버 일정 동기화 상태. iOS `TimetableFeature.ScheduleSync`. 읽기 · 저장은 내 일정 동기화 PR에서 붙는다. */
+/** 서버 일정 동기화 상태. iOS `TimetableFeature.ScheduleSync`. */
 enum class TimetableScheduleSync {
     /** 축제가 없어 이 기기에만 표시한다. */
     Idle,
@@ -17,9 +18,16 @@ enum class TimetableScheduleSync {
     /** 서버와 맞춰져 바꿀 때마다 저장한다. */
     Ready,
 
-    /** 로그인 전이거나 연결이 없어 이 기기에만 표시한다. */
+    /** 로그인 전이거나 연결이 없어 이 기기에만 표시한다. 다음 진입 때 다시 읽는다. */
     LocalOnly,
 }
+
+/** 보낸 내 일정 저장 요청. iOS `TimetableFeature.ScheduleSave`. [generation]은 보낼 때의 계정 세대다. */
+data class TimetableScheduleSave(
+    val setIds: List<String>,
+    val clientAt: Instant,
+    val generation: Int,
+)
 
 /** iOS `TimetableFeature.ContentStatus`. */
 enum class TimetableContentStatus {
@@ -73,14 +81,24 @@ data class TimetableState(
     val overlaps: List<TimetableOverlap> = emptyList(),
     /** 겹침 경고 중 고른 날에서 다른 내 일정과 겹치는 내 공연(iOS `isOverlapping`). 격자 블록이 `Overlap`으로 그린다. */
     val overlappingSetIds: Set<String> = emptySet(),
+    /** 내 일정 고르기가 위에 떠 있다(iOS `destination != nil`). 경로는 Coordinator가 가진다(설계 T8). */
+    val isPickOpen: Boolean = false,
+    val loadRequestId: Int = 0,
+    val accountGeneration: Int = 0,
+    val isSaving: Boolean = false,
+    /** 저장 중에 목록이 또 바뀌었다. 끝나면 마지막 목록으로 한 번 더 저장한다. */
+    val needsSave: Boolean = false,
+    val lastClientAt: Instant? = null,
+    /** 결과를 알 수 없는 저장. 목록이 그대로면 같은 요청으로 다시 보낸다. */
+    val uncertainSave: TimetableScheduleSave? = null,
 ) {
     val isPublished: Boolean get() = contentStatus == TimetableContentStatus.Published
 
     val selectedDay: TimetableDay? get() = days.getOrNull(selectedDayIndex)
 
-    /** 서버 일정과 맞춰져 있고 저장 중이 아닐 때만 내 일정 고르기를 연다. */
+    /** 서버 일정과 맞춰져 있고 저장 중이 아닐 때만 내 일정 고르기를 연다. 로그인 전 · 읽기 실패면 다른 기기 일정을 덮어쓰지 않도록 열지 않는다. */
     val canPickSchedule: Boolean
-        get() = festivalId != null && isPublished && scheduleSync == TimetableScheduleSync.Ready
+        get() = festivalId != null && isPublished && scheduleSync == TimetableScheduleSync.Ready && !isSaving
 
     /** 고른 날의 내 공연 수. */
     val mySetCount: Int get() = selectedDay?.sets?.count { it.id in mySetIds } ?: 0
@@ -104,9 +122,9 @@ sealed interface TimetableSideEffect {
     /** 공개 전 "알림 받기"(iOS `requestNotification`). 알림 설정 PR에서 처리한다. */
     data object RequestNotification : TimetableSideEffect
 
-    /** "내 일정 N개"(iOS `schedulePickTapped`). 고르기 경로는 고르기 PR에서 연다. */
-    data class SchedulePick(
-        val festivalId: String,
-        val selectedSetIds: Set<String>,
-    ) : TimetableSideEffect
+    /** "내 일정 N개"(iOS `schedulePickTapped`). Coordinator가 이 경로를 쌓는다. */
+    data class SchedulePick(val route: TimetableRoute.SchedulePick) : TimetableSideEffect
+
+    /** 축제 · 계정 · 팩이 바뀌어 열린 내 일정 고르기를 닫는다(iOS `destination = nil`). 결과는 돌려주지 않는다. */
+    data object CloseSchedulePick : TimetableSideEffect
 }

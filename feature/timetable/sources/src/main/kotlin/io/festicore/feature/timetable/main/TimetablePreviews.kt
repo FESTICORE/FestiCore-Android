@@ -6,9 +6,12 @@ import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetableLineupArtist
 import io.festicore.domain.timetable.TimetableLineupDay
 import io.festicore.domain.timetable.TimetableOverlap
+import io.festicore.domain.timetable.TimetablePickOverlap
 import io.festicore.domain.timetable.TimetableSet
 import io.festicore.domain.timetable.TimetableStage
 import io.festicore.feature.timetable.TimetableSetListMode
+import io.festicore.feature.timetable.schedulepick.SchedulePickContent
+import io.festicore.feature.timetable.schedulepick.SchedulePickState
 import io.festicore.feature.timetable.setlist.TimetableSetListContent
 import io.festicore.feature.timetable.setlist.TimetableSetListState
 import java.time.Instant
@@ -120,4 +123,38 @@ private fun SetListChangesEmptyPreview() = TimetableSetListContent(
     onQueryChanged = {},
     onSetClicked = {},
     onBackClicked = {},
+)
+
+@Preview(name = "내 일정 고르기", heightDp = 900)
+@Composable
+private fun SchedulePickPreview() = SchedulePickContent(
+    state =
+        SchedulePickState(
+            festivalId = "preview",
+            days = PreviewDays,
+            selectedSetIds = setOf("noise-returns", "cryingbird"),
+            overlaps = mapOf("cryingbird" to TimetablePickOverlap("노이즈캔디 리턴즈", 35)),
+        ),
+    onDayTapped = {},
+    onSetTapped = {},
+    onNextTapped = {},
+    onSkipTapped = {},
+    onLaterTapped = {},
+)
+
+@Preview(name = "내 일정 고르기 · 빈 날 · 오류", heightDp = 700)
+@Composable
+private fun SchedulePickEmptyPreview() = SchedulePickContent(
+    state =
+        SchedulePickState(
+            festivalId = "preview",
+            days = PreviewDays,
+            selectedDayIndex = 1,
+            errorMessage = "내 일정을 저장하지 못했어요. 다시 시도해 주세요.",
+        ),
+    onDayTapped = {},
+    onSetTapped = {},
+    onNextTapped = {},
+    onSkipTapped = {},
+    onLaterTapped = {},
 )
