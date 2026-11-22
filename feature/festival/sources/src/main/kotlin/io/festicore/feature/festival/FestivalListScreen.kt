@@ -116,7 +116,7 @@ fun FestivalListScreen(
     }
 
     LaunchedEffect(Unit) { viewModel.onAppear() }
-    ForegroundEffect(viewModel::onForegroundChanged)
+    ForegroundEffect(onForegroundChanged = viewModel::onForegroundChanged, onBackgrounded = viewModel::onBackgrounded)
     BackHandler(enabled = state.isSearching, onBack = viewModel::onSearchClosed)
 
     FestivalListContent(
@@ -131,6 +131,7 @@ fun FestivalListScreen(
         onLoadMoreFestivals = viewModel::onLoadMoreFestivals,
         onSelectFestival = viewModel::onSelectFestival,
         onTicketLinkTapped = viewModel::onTicketLinkTapped,
+        onDownloadPack = viewModel::onDownloadPack,
         onRecentSearchSubmitted = viewModel::onRecentSearchSubmitted,
         onRecentSearchRemoved = viewModel::onRecentSearchRemoved,
         onRecentSearchesCleared = viewModel::onRecentSearchesCleared,
@@ -140,12 +141,13 @@ fun FestivalListScreen(
 
 /**
  * 앱이 배경으로 갔다 돌아올 때만 알린다(iOS `scenePhase` 변화). 화면이 처음 붙을 때 받는 시작 알림은 넘긴다.
- * 첫 진입은 [FestivalListViewModel.onAppear]가 맡는다.
+ * 첫 진입은 [FestivalListViewModel.onAppear]가 맡는다. `ON_STOP`은 iOS `background`라 포그라운드 해제 뒤 [onBackgrounded]도 보낸다.
  */
 @Composable
-private fun ForegroundEffect(onForegroundChanged: (Boolean) -> Unit) {
+private fun ForegroundEffect(onForegroundChanged: (Boolean) -> Unit, onBackgrounded: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnForegroundChanged by rememberUpdatedState(onForegroundChanged)
+    val currentOnBackgrounded by rememberUpdatedState(onBackgrounded)
     DisposableEffect(lifecycleOwner) {
         var stopped = false
         val observer =
@@ -154,6 +156,7 @@ private fun ForegroundEffect(onForegroundChanged: (Boolean) -> Unit) {
                     Lifecycle.Event.ON_STOP -> {
                         stopped = true
                         currentOnForegroundChanged(false)
+                        currentOnBackgrounded()
                     }
 
                     Lifecycle.Event.ON_START -> if (stopped) currentOnForegroundChanged(true)
@@ -194,6 +197,7 @@ fun FestivalListContent(
     onLoadMoreFestivals: () -> Unit = {},
     onSelectFestival: (String) -> Unit = {},
     onTicketLinkTapped: (String) -> Unit = {},
+    onDownloadPack: (String) -> Unit = {},
     onRecentSearchSubmitted: (String) -> Unit = {},
     onRecentSearchRemoved: (String) -> Unit = {},
     onRecentSearchesCleared: () -> Unit = {},
@@ -203,6 +207,7 @@ fun FestivalListContent(
         remember(state.toast, state.toastRevision) {
             when (state.toast) {
                 FestivalListToast.TicketLinkMissing -> FCToastItem(R.drawable.ic_circle_info_16, "예매처 정보가 없습니다")
+                FestivalListToast.PackDownloadFailed -> FCToastItem(R.drawable.ic_circle_info_16, "팩을 받지 못했어요. 다시 시도해 주세요")
                 null -> null
             }
         }
@@ -244,6 +249,7 @@ fun FestivalListContent(
                     onLoadMoreFestivals = onLoadMoreFestivals,
                     onSelectFestival = onSelectFestival,
                     onTicketLinkTapped = onTicketLinkTapped,
+                    onDownloadPack = onDownloadPack,
                 )
             }
         }
@@ -261,6 +267,7 @@ private fun ListMode(
     onLoadMoreFestivals: () -> Unit,
     onSelectFestival: (String) -> Unit,
     onTicketLinkTapped: (String) -> Unit,
+    onDownloadPack: (String) -> Unit,
 ) {
     val visibleFestivals =
         FestivalListPresentation.sorted(
@@ -309,8 +316,10 @@ private fun ListMode(
                                 now = now,
                                 imageRevision = state.imageRevision,
                                 isBooked = festival.id in state.bookedFestivalIds,
+                                download = FestivalListPresentation.packDownloadDisplay(state.packDownloads, festival.id),
                                 onSelect = { onSelectFestival(festival.id) },
                                 onTicketLink = { onTicketLinkTapped(festival.id) },
+                                onDownloadPack = { onDownloadPack(festival.id) },
                             )
                         }
                         val cursor = state.nextCursor
@@ -340,7 +349,7 @@ private fun ListEmptyCard(
     onRefreshRequested: () -> Unit,
     onListFilterChanged: (FestivalListFilter) -> Unit,
 ) {
-    if (state.catalog.isEmpty()) {
+    if (state.festivals.isEmpty()) {
         FCEmptyCard(
             icon = R.drawable.ic_bell,
             title = "불러온 페스티벌이 없어요",
@@ -365,8 +374,10 @@ private fun FestivalCard(
     now: Instant,
     imageRevision: Int,
     isBooked: Boolean,
+    download: FestivalListPresentation.PackDownloadDisplay?,
     onSelect: () -> Unit,
     onTicketLink: () -> Unit,
+    onDownloadPack: () -> Unit,
 ) {
     FCFestivalCard(
         title = festival.name,
@@ -378,7 +389,7 @@ private fun FestivalCard(
                 .clip(CardShape)
                 .clickable(onClick = onSelect)
                 .testTag(FestivalAccessibilityId.card(festival.id)),
-        pack = pack(festival),
+        pack = pack(festival, download, onDownloadPack),
         isBooked = isBooked,
         // 북마크는 로그인 · 대기 예약 흐름과 함께 옮긴다(설계 D3). 그 전에는 버튼을 숨긴다.
         onBookmark = null,
@@ -395,11 +406,18 @@ private fun cardStatus(festival: FestivalOverview, now: Instant): FCFestivalCard
         FestivalListPresentation.CardStatus.Ended -> FCFestivalCardStatus.Ended()
     }
 
-/** 팩 받기는 팩 단계 전까지 눌러도 아무것도 하지 않는다(설계 D2 a). */
-private fun pack(festival: FestivalOverview): FCFestivalCardPack = when (val copy = FestivalListPresentation.packCopy(festival)) {
-    is FestivalListPresentation.PackCopy.Unavailable -> FCFestivalCardPack.Unavailable(copy.text)
-    is FestivalListPresentation.PackCopy.Ready -> FCFestivalCardPack.Ready(title = copy.title, onClick = {})
-    is FestivalListPresentation.PackCopy.Received -> FCFestivalCardPack.Received(copy.text)
+/** 받는 중이면 진행 표시, 아니면 팩 문구(iOS `FestivalListView.pack(for:)`). */
+private fun pack(
+    festival: FestivalOverview,
+    download: FestivalListPresentation.PackDownloadDisplay?,
+    onDownloadPack: () -> Unit,
+): FCFestivalCardPack {
+    if (download != null) return FCFestivalCardPack.Downloading(progress = download.progress, text = download.text)
+    return when (val copy = FestivalListPresentation.packCopy(festival)) {
+        is FestivalListPresentation.PackCopy.Unavailable -> FCFestivalCardPack.Unavailable(copy.text)
+        is FestivalListPresentation.PackCopy.Ready -> FCFestivalCardPack.Ready(title = copy.title, onClick = onDownloadPack)
+        is FestivalListPresentation.PackCopy.Received -> FCFestivalCardPack.Received(copy.text)
+    }
 }
 
 private val LoadMoreSize = 20.dp

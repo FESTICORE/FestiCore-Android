@@ -1,7 +1,9 @@
 package io.festicore.feature.festival
 
+import io.festicore.domain.festival.CachedFestivalPack
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalOverview
+import io.festicore.domain.festival.PackDownloadProgress
 
 /** iOS `FestivalFeature.ViewState`. 새로고침 중이면 [Loading]. */
 enum class FestivalListViewState {
@@ -15,9 +17,10 @@ enum class FestivalListFilter {
     Booked,
 }
 
-/** 목록 위 토스트. iOS `FestivalFeature.Toast`의 목록 단계 범위. 북마크 · 팩 토스트는 그 단계에서 붙인다. */
+/** 목록 위 토스트. iOS `FestivalFeature.Toast`의 목록 단계 범위. 북마크 토스트는 그 단계에서 붙인다. */
 enum class FestivalListToast {
     TicketLinkMissing,
+    PackDownloadFailed,
 }
 
 /** S00 목록 State. iOS `FestivalFeature.State`에서 목록에 필요한 것만 옮긴다. */
@@ -45,16 +48,22 @@ data class FestivalListState(
     /** 갱신 실패 뒤 복구되면 포스터를 다시 받는다(iOS `imageRetryPending` · `imageRevision`). */
     val imageRetryPending: Boolean = false,
     val imageRevision: Int = 0,
+    /** 기기에 받은 팩(축제 ID → 팩). 팩 저장소의 공유 상태를 따른다(설계 D1). */
+    val cachedPacks: Map<String, CachedFestivalPack> = emptyMap(),
+    /** 받는 중인 축제 → 진행률(첫 진행 전이면 null). iOS `packDownloads`. */
+    val packDownloads: Map<String, PackDownloadProgress?> = emptyMap(),
+    /** 사용자가 바뀔 때마다 올려 이전 사용자의 받기 이벤트를 버린다(iOS `accountGeneration`). */
+    val accountGeneration: Int = 0,
     val isForeground: Boolean = true,
     val hasStarted: Boolean = false,
 ) {
-    val festivals: List<FestivalOverview> get() = catalog.map(FestivalListPresentation::overview)
+    val festivals: List<FestivalOverview> get() = FestivalListPresentation.festivals(catalog, cachedPacks)
 
     val trimmedQuery: String get() = query.trim()
 
     /** 첫 서버 갱신 전이거나, 불러오는 중인데 보일 목록이 없을 때(iOS `showsListSkeleton`). */
     val showsListSkeleton: Boolean get() = !hasFinishedFirstCatalogRefresh ||
-        (viewState == FestivalListViewState.Loading && catalog.isEmpty())
+        (viewState == FestivalListViewState.Loading && festivals.isEmpty())
 
     val hasCatalogFailure: Boolean get() = catalogCacheReadFailed || catalogRefreshFailed
 
@@ -63,7 +72,7 @@ data class FestivalListState(
         get() =
             when {
                 catalogCacheReadFailed -> "저장된 페스티벌 목록을 읽지 못했습니다 · 연결 후 다시 시도해 주세요"
-                catalogRefreshFailed && catalog.isEmpty() -> "페스티벌 목록을 불러오지 못했습니다 · 다시 시도해 주세요"
+                catalogRefreshFailed && festivals.isEmpty() -> "페스티벌 목록을 불러오지 못했습니다 · 다시 시도해 주세요"
                 catalogRefreshFailed -> "최신 페스티벌 목록을 불러오지 못했습니다 · 저장된 목록을 표시합니다"
                 else -> null
             }

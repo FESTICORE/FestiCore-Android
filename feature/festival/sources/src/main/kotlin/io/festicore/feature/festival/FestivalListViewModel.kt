@@ -2,35 +2,56 @@ package io.festicore.feature.festival
 
 import androidx.lifecycle.ViewModel
 import io.festicore.domain.auth.CurrentUserProvider
+import io.festicore.domain.festival.CachedFestivalPack
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalCatalogPage
 import io.festicore.domain.festival.FestivalCatalogUseCase
 import io.festicore.domain.festival.FestivalLibraryUseCase
+import io.festicore.domain.festival.FestivalPackUseCase
+import io.festicore.domain.festival.PackDownloadEvent
+import io.festicore.domain.festival.PackDownloadProgress
+import io.festicore.domain.festival.PackSyncResult
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.blockingIntent
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 /**
- * S00 페스티벌 목록. iOS `FestivalFeature`의 목록 부분만 옮긴다(라이브 보드 · 팩 · 북마크는 이후 단계).
+ * S00 페스티벌 목록. iOS `FestivalFeature`의 목록 부분만 옮긴다(라이브 보드 · 북마크는 이후 단계).
  * 함수 이름은 iOS `Action.View`와 같고, 순서는 view → async → inner를 따른다.
  * 카탈로그 요청(첫 쪽 · 다음 쪽 · 전체)은 한 번에 하나만 돈다. 새 요청은 진행 중인 것을 취소한다(iOS `CancelID.catalog` + `cancelInFlight`).
+ * 팩 받기는 축제마다 하나만 돈다(iOS `PackDownloadID`). 받은 팩은 팩 저장소의 공유 상태를 따라 목록에 합친다(설계 D1).
  */
 class FestivalListViewModel(
     private val catalogUseCase: FestivalCatalogUseCase,
     private val libraryUseCase: FestivalLibraryUseCase,
     private val currentUserProvider: CurrentUserProvider,
+    private val packUseCase: FestivalPackUseCase,
 ) : ViewModel(),
     OrbitContainerHost<FestivalListState, FestivalListState, FestivalListSideEffect> {
     override val container =
         orbitContainer<FestivalListState, FestivalListSideEffect>(FestivalListState()) {
-            // iOS `MainTabCoordinator`가 사용자가 바뀔 때 보내는 `reloadBookmarks(userID)`.
-            currentUserProvider.currentUserId.collect { onUserChanged(it) }
+            coroutineScope {
+                // 보드 · 다른 화면이 받거나 지운 팩도 목록에 바로 보인다(설계 D1).
+                launch {
+                    packUseCase.state.map { it.packs }.distinctUntilChanged().collect { packs ->
+                        reduce { state.copy(cachedPacks = packs) }
+                    }
+                }
+                // iOS `MainTabCoordinator`가 사용자가 바뀔 때 보내는 `reloadBookmarks(userID)` · `sessionChanged`.
+                currentUserProvider.currentUserId.collect { onUserChanged(it) }
+            }
         }
 
     private val catalogJob = AtomicReference<Job?>(null)
+    private val packDownloadJobs = ConcurrentHashMap<String, Job>()
 
     // MARK: - View
 
@@ -46,6 +67,12 @@ class FestivalListViewModel(
         if (isForeground) refreshCatalog()
     }
 
+    /** 앱이 배경으로 갔다(iOS `backgrounded`). 받는 중인 팩을 모두 취소한다. 포그라운드를 잃기만 해서는 취소하지 않는다. */
+    fun onBackgrounded() = intent {
+        cancelPackDownloads()
+        reduce { state.copy(packDownloads = emptyMap()) }
+    }
+
     fun onRefreshRequested() = intent {
         reduce { state.copy(viewState = FestivalListViewState.Loading, nextCursor = null) }
         refreshCatalog()
@@ -58,8 +85,14 @@ class FestivalListViewModel(
         loadCatalogPage(after = cursor)
     }
 
+    /** 라이브 탭을 골랐다(iOS `MainTabCoordinator` `.live` → `reloadCachedPacks`). 첫 진입은 [onAppear]가 읽는다. */
+    fun onReloadCachedPacks() = intent {
+        if (!state.hasStarted) return@intent
+        reloadCachedPacks()
+    }
+
     fun onSelectFestival(festivalId: String) = intent {
-        if (state.catalog.none { it.id == festivalId }) return@intent
+        if (state.festivals.none { it.id == festivalId }) return@intent
         postSideEffect(FestivalListSideEffect.FestivalSelected(festivalId))
     }
 
@@ -106,6 +139,15 @@ class FestivalListViewModel(
         if (filter == FestivalListFilter.Booked && state.nextCursor != null) refreshFullCatalog()
     }
 
+    /** 카드 "팩 받기" · "팩 업데이트"(iOS `downloadPack`). 발행됐고 받은 버전이 더 낮을 때만 받는다. */
+    fun onDownloadPack(festivalId: String) = intent {
+        if (!state.isForeground || festivalId in state.packDownloads) return@intent
+        val festival = state.festivals.firstOrNull { it.id == festivalId } ?: return@intent
+        if (festival.packVersion <= 0 || (festival.cachedPackVersion ?: -1) >= festival.packVersion) return@intent
+        reduce { state.copy(packDownloads = state.packDownloads + (festivalId to null)) }
+        downloadPack(festivalId, state.accountGeneration)
+    }
+
     /** 토스트가 2초 뒤 사라졌다(iOS `toastExpired`). 시간은 `FCToastHost`가 잰다. */
     fun onToastExpired() = intent { reduce { state.copy(toast = null) } }
 
@@ -121,8 +163,37 @@ class FestivalListViewModel(
     }
 
     private suspend fun loadCachedFestivals() = subIntent {
+        val packs = attempt { packUseCase.reloadCachedPacks() }
         val cached = attempt { catalogUseCase.cachedFestivals() }
-        onCachedLoaded(cached.orEmpty(), readFailed = cached == null)
+        onCachedLoaded(cached.orEmpty(), packs, readFailed = cached == null)
+    }
+
+    /** 저장된 팩을 다시 읽는다. 읽지 못하면 보이던 팩을 그대로 둔다(iOS `try?`). */
+    private suspend fun reloadCachedPacks() = subIntent {
+        val packs = attempt { packUseCase.reloadCachedPacks() } ?: return@subIntent
+        reduce { state.copy(cachedPacks = packs.associateBy { it.festivalId }) }
+    }
+
+    /** 축제마다 하나만 받는다. 같은 축제를 다시 받으면 이전 것을 취소한다(iOS `cancelInFlight`). */
+    private fun downloadPack(festivalId: String, generation: Int) {
+        val job =
+            intent {
+                try {
+                    packUseCase.downloadPack(festivalId).collect { event ->
+                        when (event) {
+                            PackDownloadEvent.Reset -> onPackDownloadProgress(festivalId, generation, null)
+                            is PackDownloadEvent.Progress -> onPackDownloadProgress(festivalId, generation, event.progress)
+                            is PackDownloadEvent.Finished -> onPackDownloadFinished(festivalId, generation, event.result)
+                        }
+                    }
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    onPackDownloadFailed(festivalId, generation)
+                }
+            }
+        packDownloadJobs.put(festivalId, job)?.cancel()
+        job.invokeOnCompletion { packDownloadJobs.remove(festivalId, job) }
     }
 
     /** 첫 쪽(limit 10). 다음 쪽이 없으면 갱신 완료, 있으면 첫 쪽으로 새로 시작한다. */
@@ -148,16 +219,53 @@ class FestivalListViewModel(
 
     // MARK: - Inner
 
-    private suspend fun onCachedLoaded(items: List<FestivalCatalogItem>, readFailed: Boolean) = subIntent {
-        val catalog = uniqueCatalog(items)
+    private suspend fun onCachedLoaded(
+        items: List<FestivalCatalogItem>,
+        packs: List<CachedFestivalPack>?,
+        readFailed: Boolean,
+    ) = subIntent {
         reduce {
-            state.copy(
-                catalog = catalog,
-                viewState = if (catalog.isNotEmpty()) FestivalListViewState.Loaded else state.viewState,
-                catalogCacheReadFailed = readFailed,
-            )
+            val loaded =
+                state.copy(
+                    catalog = uniqueCatalog(items),
+                    cachedPacks = packs?.associateBy { it.festivalId } ?: state.cachedPacks,
+                    catalogCacheReadFailed = readFailed,
+                )
+            if (loaded.festivals.isNotEmpty()) loaded.copy(viewState = FestivalListViewState.Loaded) else loaded
         }
         refreshCatalog()
+    }
+
+    /** 진행 이벤트(Reset이면 [progress] null). 사용자가 바뀌었거나 이미 끝난 받기면 버린다. */
+    private suspend fun onPackDownloadProgress(
+        festivalId: String,
+        generation: Int,
+        progress: PackDownloadProgress?,
+    ) = subIntent {
+        if (generation != state.accountGeneration || festivalId !in state.packDownloads) return@subIntent
+        reduce { state.copy(packDownloads = state.packDownloads + (festivalId to progress)) }
+    }
+
+    /** 저장까지 끝났으면 팩을 합치고, 재시도 대기 · 재접속으로 끝났으면 실패 토스트를 보인다. */
+    private suspend fun onPackDownloadFinished(
+        festivalId: String,
+        generation: Int,
+        result: PackSyncResult,
+    ) = subIntent {
+        if (generation != state.accountGeneration || festivalId !in state.packDownloads) return@subIntent
+        reduce {
+            val finished = state.copy(packDownloads = state.packDownloads - festivalId)
+            when (result) {
+                is PackSyncResult.Updated -> finished.copy(cachedPacks = finished.cachedPacks + (festivalId to result.pack))
+                is PackSyncResult.NotModified -> finished.copy(cachedPacks = finished.cachedPacks + (festivalId to result.pack))
+                is PackSyncResult.RetryAfter, PackSyncResult.Reconnecting -> finished.withPackFailureToast()
+            }
+        }
+    }
+
+    private suspend fun onPackDownloadFailed(festivalId: String, generation: Int) = subIntent {
+        if (generation != state.accountGeneration || festivalId !in state.packDownloads) return@subIntent
+        reduce { state.copy(packDownloads = state.packDownloads - festivalId).withPackFailureToast() }
     }
 
     private suspend fun onCatalogRefreshed(items: List<FestivalCatalogItem>) = subIntent {
@@ -189,9 +297,13 @@ class FestivalListViewModel(
         }
     }
 
-    /** iOS `reloadBookmarks(userID)`: 사용자가 바뀌면 검색 · 탭을 처음으로 돌리고 그 사용자의 최근 검색을 읽는다. */
+    /**
+     * iOS `reloadBookmarks(userID)` · `sessionChanged`: 사용자가 바뀌면 검색 · 탭을 처음으로 돌리고 그 사용자의 최근 검색을 읽는다.
+     * 받는 중인 팩은 취소하고 세대를 올려 늦게 온 이벤트를 버린다.
+     */
     private suspend fun onUserChanged(userId: String?) = subIntent {
         if (state.userId != userId) {
+            cancelPackDownloads()
             reduce {
                 state.copy(
                     userId = userId,
@@ -199,6 +311,8 @@ class FestivalListViewModel(
                     isSearching = false,
                     query = "",
                     recentSearches = emptyList(),
+                    packDownloads = emptyMap(),
+                    accountGeneration = state.accountGeneration + 1,
                 )
             }
         }
@@ -221,6 +335,14 @@ class FestivalListViewModel(
         imageRetryPending = false,
         imageRevision = if (state.imageRetryPending) state.imageRevision + 1 else state.imageRevision,
     )
+
+    private fun cancelPackDownloads() {
+        packDownloadJobs.values.forEach(Job::cancel)
+        packDownloadJobs.clear()
+    }
+
+    private fun FestivalListState.withPackFailureToast() =
+        copy(toast = FestivalListToast.PackDownloadFailed, toastRevision = toastRevision + 1)
 
     private fun launchCatalog(block: suspend () -> Unit) {
         val job = intent { block() }

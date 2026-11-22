@@ -26,6 +26,8 @@ fun FestivalFlow(
     val state by coordinator.collectAsState()
     val atRoot = state.routes.size == 1
     LaunchedEffect(atRoot) { onAtRootChanged(atRoot) }
+    // 라이브 탭을 고를 때마다 흐름이 다시 그려진다(iOS `MainTabCoordinator` `.live` → `reloadCachedPacks`).
+    LaunchedEffect(Unit) { listViewModel.onReloadCachedPacks() }
 
     NavDisplay(
         backStack = state.routes,
