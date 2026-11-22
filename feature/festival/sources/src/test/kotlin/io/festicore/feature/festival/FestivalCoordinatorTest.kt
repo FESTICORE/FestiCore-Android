@@ -47,7 +47,7 @@ class FestivalCoordinatorTest {
     }
 
     @Test
-    fun `존 지도 밖의 보드 경계 이동은 받아 두기만 한다`() = runTest {
+    fun `존 지도 · 알림함 밖의 보드 경계 이동은 받아 두기만 한다`() = runTest {
         FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
             containerHost.onLiveBoardBoundary(LiveBoardBoundary.FlagDirectory)
             expectState { copy(lastBoundary = LiveBoardBoundary.FlagDirectory) }
@@ -94,6 +94,78 @@ class FestivalCoordinatorTest {
             currentUser.currentUserId.value = "user-b"
             expectState { copy(routes = listOf(FestivalRoute.List, board)) }
             subscription.cancel()
+        }
+    }
+
+    // MARK: - 알림함 (iOS FestivalNotificationInboxRoutingTests)
+
+    private val inbox = FestivalRoute.NotificationInbox
+
+    @Test
+    fun opensInboxAndReturns() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider("user-a")).test(this, initialState = onBoard) {
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.NotificationInbox)
+            expectState { copy(routes = listOf(FestivalRoute.List, board, inbox)) }
+            // 이미 열려 있으면 다시 쌓지 않는다.
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.NotificationInbox)
+            containerHost.goBack()
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+        }
+    }
+
+    @Test
+    fun `알림함이 맨 위면 탭 바를 숨긴다`() {
+        assertTrue(onBoard.copy(routes = onBoard.routes + inbox).hidesTabBar)
+        assertFalse(onBoard.hidesTabBar)
+    }
+
+    @Test
+    fun accountChangeClearsInboxAndBadge() = runTest {
+        val currentUser = FakeCurrentUserProvider("user-a")
+        val initial = onBoard.copy(routes = onBoard.routes + inbox, pendingBoardFestivalId = "fst_2")
+        FestivalCoordinator(currentUser).test(this, initialState = initial) {
+            val subscription = runOnCreate()
+            currentUser.currentUserId.value = null
+            expectState { copy(routes = listOf(FestivalRoute.List, board), pendingBoardFestivalId = null) }
+            subscription.cancel()
+        }
+    }
+
+    @Test
+    fun switchedAccountClosesInbox() = runTest {
+        val currentUser = FakeCurrentUserProvider("user-a")
+        FestivalCoordinator(currentUser).test(this, initialState = onBoard.copy(routes = onBoard.routes + inbox)) {
+            val subscription = runOnCreate()
+            currentUser.currentUserId.value = "user-b"
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+            subscription.cancel()
+        }
+    }
+
+    @Test
+    fun `알림으로 보드 카탈로그에 있는 축제를 열면 알림함을 닫고 보드에 전환을 맡긴다`() = runTest {
+        val onInbox = onBoard.copy(routes = onBoard.routes + inbox, liveBoardFestivalIds = setOf("fst_1", "fst_2"))
+        FestivalCoordinator(FakeCurrentUserProvider("user-a")).test(this, initialState = onInbox) {
+            assertTrue(containerHost.onNotificationFestivalOpened("fst_2"))
+            expectState { copy(routes = listOf(FestivalRoute.List, board), pendingBoardFestivalId = "fst_2") }
+            containerHost.onPendingBoardFestivalConsumed()
+            expectState { copy(pendingBoardFestivalId = null) }
+        }
+    }
+
+    @Test
+    fun `보드 카탈로그에 없는 축제 알림은 알림함에 남는다`() = runTest {
+        val onInbox = onBoard.copy(routes = onBoard.routes + inbox, liveBoardFestivalIds = setOf("fst_1"))
+        FestivalCoordinator(FakeCurrentUserProvider("user-a")).test(this, initialState = onInbox) {
+            assertFalse(containerHost.onNotificationFestivalOpened("fst_other"))
+        }
+    }
+
+    @Test
+    fun `보드가 알린 축제 목록을 받아 둔다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
+            containerHost.onLiveBoardFestivalsChanged(setOf("fst_1"))
+            expectState { copy(liveBoardFestivalIds = setOf("fst_1")) }
         }
     }
 }

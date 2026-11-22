@@ -33,10 +33,12 @@ iOS 대응: `Projects/Feature/Festival/Sources/LiveBoard/`(`View/FestivalLiveBoa
 16. 세션: `CurrentUserProvider`가 바뀌면 세대를 올리고 스냅샷 · 공식 소식 · 내 일정을 비운 뒤 보이는 중이면 폴링 · 내 일정을 다시 시작한다. 같은 값이면 무시한다.
 17. 축제 바꾸기 시트(`FCSheet`): 헤더 탭 → 기기에 받은 팩이 있는 축제만 목록 정렬 규칙으로. 부제는 오늘이 팩 날이면 "오늘 · DAY n {시작 전|진행 중|종료}", 아니면 `[검색 배지, 장소]`. 고르면 시트를 닫고 같은 보드에서 축제를 바꾼다(보드 · 상세 · 내 일정 초기화 → 선택 저장 → 상세 · 팩 감시 · 폴링 · 내 일정 재시작). "전체 페스티벌 보기" = 시트 닫고 목록으로 pop.
 18. 팔로우 안내 닫기 → `FCDialog`(가운데 정렬) "이 안내를 숨길까요?" → "숨기기"면 그 축제 ID를 `FestiCore.hiddenFollowedFlagGuides`에 넣고 안내를 숨긴다.
-19. 탭 바: 보드가 맨 위면 보인다. 시트나 다이얼로그가 떠 있으면 숨긴다(`LiveBoardState.isPresentingModal` → `FestivalCoordinator.hidesTabBar`, 설계 D9). 표시 · 숨김은 애니메이션 없이 바로.
+19. 탭 바: 보드가 맨 위면 보인다. 시트나 다이얼로그가 떠 있으면 숨긴다(`LiveBoardState.isPresentingModal` → `FestivalCoordinator.hidesTabBar`, 설계 D9). 보드 위에 알림함이 쌓이면 숨기고 존 지도는 보인다. 표시 · 숨김은 애니메이션 없이 바로.
 20. 뒤로: 보드에 뒤로 버튼이 없다. 시스템 뒤로 · 예측 뒤로는 `NavDisplay`가 pop한다(설계 D7). 시트 · 다이얼로그가 떠 있으면 뒤로는 그것을 닫는다.
-21. 경계: 알림(로그인이면 알림함, 아니면 로그인) · 기수 · 존 칩 · 크루 열기 · 크루 만들기(비로그인이면 크루 로그인) · 모여!(로그인 ∧ 온라인 ∧ 크루 ∧ 종료 전) · 로그인 카드 · 깃발 찾기 · 가는 길 · 같이 귀가(= 크루 만들기)는 `LiveBoardSideEffect.Boundary`로 Coordinator에 알리고, Coordinator는 받아 두기만 한다(`lastBoundary`).
+21. 경계: 알림(로그인이면 알림함, 아니면 로그인) · 기수 · 존 칩 · 크루 열기 · 크루 만들기(비로그인이면 크루 로그인) · 모여!(로그인 ∧ 온라인 ∧ 크루 ∧ 종료 전) · 로그인 카드 · 깃발 찾기 · 가는 길 · 같이 귀가(= 크루 만들기)는 `LiveBoardSideEffect.Boundary`로 Coordinator에 알린다. 존 지도 · 알림함은 Coordinator가 쌓고, 나머지는 받아 두기만 한다(`lastBoundary`).
 22. 귀가 카드: 받은 팩의 `directions`(마지막 셔틀 · 막차, 셔틀 정류장, 역 · 역 도보 분)만 쓴다. 출발편은 지금 걸어 닿는 막차 → 셔틀 → 첫 미출발편(`HH:mm`은 18시 이후에 본 06시 전 값이면 다음 날). 줄은 ISO 시각일 때만 보인다(iOS와 같음).
+23. 알림 배지 · 배너(설계 E7, iOS `FestivalFeature+NotificationUnreadCount`): 로그인일 때 보드가 보일 때와 세션이 바뀔 때 공유 배지(`UserNotificationBadgeUseCase.refresh`)를 다시 조회한다(새 조회가 이전 조회를 취소). 종 아이콘 `FCTopBar(badgeCount = 안 읽은 수)`(0이면 없음, 99 초과 "99+"). 24시간 안의 최신 안 읽은 알림이 있으면 상단 바 · 오프라인 배지 아래(좌우 16 · 위아래 8)에 배너: 40×40 `primaryNormal` `r12` 칸의 아이콘 16(`primaryOnPrimary`), 제목 `baseCalloutBold` `labelNormal` + 오른쪽 시각 `baseCaption1Regular` `labelAssistive`, 본문 `baseFootnoteRegular` `labelNeutral` 2줄, 간격 12/4, 안쪽 16, 배경 `backgroundElevated` `r20`. 배너 탭 = 종 탭, 동작 이름 "알림함으로 이동합니다". 시각은 알림함과 같은 규칙(기기 시각). 계정이 바뀌면 배지 0 · 배너 제거 · 조회 취소(`clear`). 비로그인이면 공유 값이 있어도 보이지 않는다.
+24. 알림함에서 다른 축제 알림을 열면(설계 E8) Coordinator가 넘긴 대기 축제로 같은 보드에서 바꾼다(같은 축제면 그대로). 보드는 바꿀 수 있는 축제 ID(`festivals`)를 Coordinator에 알린다.
 
 ## 엣지 케이스
 
@@ -57,9 +59,9 @@ iOS 대응: `Projects/Feature/Festival/Sources/LiveBoard/`(`View/FestivalLiveBoa
 ## iOS와 다른 점
 
 - 뒤로 버튼 · 왼쪽 가장자리 드래그 대신 시스템 뒤로(설계 D7).
-- 알림 배지 · 24시간 새 알림 배너는 없다(설계 D11). 알림 아이콘은 콜백만.
 - 귀가 도보 분은 서버 역 도보 분만 쓴다. Apple 지도 계산 · 위치 권한 · 길찾기는 없다(설계 D6). 받은 팩 문서에서 바로 읽어 귀가 로딩 스켈레톤이 없다(iOS는 팩 상세를 따로 읽는 동안 높이 204 스켈레톤).
-- "모여!" 시트 · 크루 · 존 지도 · 알림함 · 기수 보드 · 준비 안내는 콜백만(경계).
+- "모여!" 시트 · 크루 · 기수 보드 · 준비 안내는 콜백만(경계). 존 지도 · 알림함은 화면이 있다(`zone-map-screen.md` · `notification-inbox-screen.md`).
+- 배지는 보드 State가 아닌 공유 저장소 하나에 있다(설계 E7). 알림함 삭제 뒤 배지는 Coordinator 전달 없이 같은 저장소로 바뀐다.
 - 보드에서 받기를 시작하지 않으므로 보드 토스트(팩 실패)는 없다. 받는 중 진행률은 목록과 같은 공유 상태다.
 - 세션은 `CurrentUserProvider` 하나로 본다. iOS의 "사용자 ID를 확인하지 못한 세션"은 Android에서 비로그인과 같다.
 - 크루 아바타 라이트 톤 고정은 하지 않았다(`FCAvatar`가 테마를 따른다).
@@ -69,3 +71,4 @@ iOS 대응: `Projects/Feature/Festival/Sources/LiveBoard/`(`View/FestivalLiveBoa
 ## 변경 이력
 
 - 2026-11-22: 첫 작성(L4 보드 화면 · L5 연결).
+- 2026-11-22: 알림 배지 · 24시간 배너 · 알림함 연결(N2 · N4).

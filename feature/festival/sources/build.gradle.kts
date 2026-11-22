@@ -14,6 +14,7 @@ dependencies {
     api(project(":feature:festival:interface"))
     implementation(project(":domain:festival:interface"))
     implementation(project(":domain:auth:interface"))
+    implementation(project(":domain:usernotification:interface"))
     implementation(project(":ui:designkit"))
     implementation(project(":ui:sharedui"))
     implementation(libs.lib("compose-foundation"))

@@ -20,4 +20,8 @@ sealed interface FestivalRoute : NavKey {
         val festivalId: String,
         val zoneId: String?,
     ) : FestivalRoute
+
+    /** 알림함(iOS `notificationInbox`). 보드 종 아이콘 · 새 알림 배너에서 연다. 로그인이 필요하고 탭 바를 숨긴다. */
+    @Serializable
+    data object NotificationInbox : FestivalRoute
 }
