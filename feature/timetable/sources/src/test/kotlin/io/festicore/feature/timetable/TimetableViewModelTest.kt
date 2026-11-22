@@ -16,6 +16,7 @@ import io.festicore.feature.timetable.main.dayOffsetForSwipe
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailContent
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailState
 import java.time.Instant
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -28,15 +29,17 @@ import org.orbitmvi.orbit.test.test
 
 /**
  * 타임테이블 ViewModel. iOS `TimetableFeatureTests`의 화면 · 시계 · 팩 동기화 사례와 `TimetableScheduleTests`의 시트 · 토스트 사례를 같은 이름으로 옮긴다.
- * 분석 이벤트 사례는 분석 모듈이 없어 뺀다(설계 T10). 서버 읽기 · 저장 사례는 동기화 PR(S2)에서 옮긴다.
+ * 분석 이벤트 사례는 분석 모듈이 없어 뺀다(설계 T10). 서버 읽기 · 저장 사례는 `TimetableScheduleSyncTest`에 있다.
  */
 class TimetableViewModelTest {
     private val clock = MutableClock(BEFORE_FESTIVAL)
     private val sleeper = TestSleeper()
     private val boardSelection = FakeBoardSelectionUseCase()
     private val mapper = FakeMapper()
+    private val schedule = FakeScheduleUseCase()
 
-    private fun viewModel() = TimetableViewModel(boardSelection, mapper, FakeOverlapCalculator(), clock, sleeper::sleep)
+    private fun viewModel() =
+        TimetableViewModel(boardSelection, schedule, FakeCurrentUserProvider(), mapper, FakeOverlapCalculator(), clock, sleeper::sleep)
 
     private fun minute(value: Int, day: Int = 0): Instant = FIRST_DAY.plusSeconds(day * 86_400L + value * 60L)
 
@@ -284,6 +287,8 @@ class TimetableViewModelTest {
         val days = sample().days
         mapper.days = mapOf("fst" to days)
         clock.now = Instant.parse("2026-11-01T03:13:00Z")
+        // 축제가 정해지면 내 일정을 읽는다. 이 사례는 내용 상태만 보므로 읽기를 끝내지 않는다.
+        schedule.fetch = { awaitCancellation() }
         viewModel().test(this, initialState = TimetableState()) {
             runOnCreate()
             assertEquals(TimetableContentStatus.NoFestival, awaitState().contentStatus)
@@ -573,6 +578,8 @@ class TimetableViewModelTest {
             assertEquals("next", state.festivalId)
             assertTrue(state.mySetIds.isEmpty())
             assertNull(state.setDetail)
+            // 새 축제의 서버 일정을 읽는다.
+            assertEquals(TimetableScheduleSync.Ready, awaitState().scheduleSync)
             sleeper.release(TimetableViewModel.TOAST_DURATION)
             expectNoItems()
         }

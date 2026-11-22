@@ -34,6 +34,8 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
 import io.festicore.domain.timetable.TimetableDay
+import io.festicore.feature.timetable.SchedulePickResult
+import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailSheet
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButtonStyle
@@ -65,14 +67,19 @@ private const val SKELETON_COUNT = 3
 /**
  * S02 타임테이블(iOS `TimetableView`). 화면이 보이는 동안(`STARTED`) 1초 시계를 돌린다(iOS `task` · `onDisappear`).
  * 상위 흐름이 처리할 일은 콜백으로 넘긴다(iOS `TimetableDelegate`). 공연 상세 시트도 이 화면이 띄운다(설계 T7).
+ * 내 일정 고르기는 [onSchedulePick]으로 경로를 쌓고 [onCloseSchedulePick]으로 닫는다. Coordinator가 받은 결과는
+ * [schedulePickResult]로 넘기면 ViewModel에 전하고 [onSchedulePickResultConsumed]로 비운다(설계 T8 대기 값).
  */
 @Composable
 fun TimetableScreen(
     onSearch: () -> Unit,
     onShowChanges: () -> Unit,
     onRequestNotification: () -> Unit,
-    onSchedulePick: (festivalId: String, selectedSetIds: Set<String>) -> Unit,
+    onSchedulePick: (TimetableRoute.SchedulePick) -> Unit,
+    onCloseSchedulePick: () -> Unit,
     modifier: Modifier = Modifier,
+    schedulePickResult: SchedulePickResult? = null,
+    onSchedulePickResultConsumed: () -> Unit = {},
     viewModel: TimetableViewModel = koinViewModel(),
 ) {
     val state by viewModel.collectAsState()
@@ -81,8 +88,14 @@ fun TimetableScreen(
             TimetableSideEffect.Search -> onSearch()
             TimetableSideEffect.ShowChanges -> onShowChanges()
             TimetableSideEffect.RequestNotification -> onRequestNotification()
-            is TimetableSideEffect.SchedulePick -> onSchedulePick(sideEffect.festivalId, sideEffect.selectedSetIds)
+            is TimetableSideEffect.SchedulePick -> onSchedulePick(sideEffect.route)
+            TimetableSideEffect.CloseSchedulePick -> onCloseSchedulePick()
         }
+    }
+    LaunchedEffect(schedulePickResult) {
+        val result = schedulePickResult ?: return@LaunchedEffect
+        viewModel.onSchedulePickResult(result)
+        onSchedulePickResultConsumed()
     }
     LifecycleStartEffect(viewModel) {
         viewModel.onClockStarted()

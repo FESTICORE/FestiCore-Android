@@ -1,8 +1,12 @@
 package io.festicore.feature.timetable
 
+import io.festicore.domain.auth.CurrentUserProvider
 import io.festicore.domain.festival.FestivalBoardSelection
 import io.festicore.domain.festival.FestivalBoardSelectionUseCase
 import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.FestivalSchedule
+import io.festicore.domain.festival.FestivalScheduleSaved
+import io.festicore.domain.festival.FestivalScheduleUseCase
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
 import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetableLineupArtist
@@ -179,11 +183,63 @@ internal class FakeOverlapCalculator : TimetableOverlapCalculator {
         }
     }
 
+    /** iOS `SchedulePickFeature.State.overlap(of:)`: 같은 날 먼저(또는 같은 시각에) 시작한 고른 공연 중 가장 많이 겹친 것. */
     override fun pickOverlap(
         day: TimetableDay,
         selectedSetIds: Set<String>,
         set: TimetableSet,
-    ): TimetablePickOverlap? = null
+    ): TimetablePickOverlap? {
+        if (set.id !in selectedSetIds) return null
+        return day.sets
+            .filter { it.id != set.id && it.id in selectedSetIds && it.start <= set.start }
+            .mapNotNull { other ->
+                val minutes = minOf(other.end, set.end) - maxOf(other.start, set.start)
+                if (minutes > 0) TimetablePickOverlap(other.artist, minutes) else null
+            }.maxByOrNull { it.minutes }
+    }
+}
+
+/** 내 일정 대역(iOS `ScheduleServiceSpy`). 읽기는 [fetchResults]를 차례로 쓰고 비면 빈 일정, 저장은 받은 목록을 그대로 돌려준다. */
+internal class FakeScheduleUseCase(
+    fetchResults: List<Result<FestivalSchedule>> = emptyList(),
+    var fetch: (suspend (String) -> FestivalSchedule)? = null,
+    var replace: (suspend (String, List<String>, Instant) -> FestivalSchedule)? = null,
+) : FestivalScheduleUseCase {
+    private val fetchResults = fetchResults.toMutableList()
+    var fetchCount = 0
+    val replaced = mutableListOf<Replaced>()
+    val notified = mutableListOf<FestivalScheduleSaved>()
+
+    data class Replaced(
+        val festivalId: String,
+        val setIds: List<String>,
+        val clientAt: Instant,
+    )
+
+    override suspend fun mySchedule(festivalId: String): FestivalSchedule {
+        fetchCount += 1
+        fetch?.let { return it(festivalId) }
+        return if (fetchResults.isEmpty()) FestivalSchedule(emptyList()) else fetchResults.removeAt(0).getOrThrow()
+    }
+
+    override suspend fun saveMySchedule(
+        festivalId: String,
+        setIds: List<String>,
+        clientAt: Instant,
+    ): FestivalSchedule {
+        replaced += Replaced(festivalId, setIds, clientAt)
+        return replace?.invoke(festivalId, setIds, clientAt) ?: FestivalSchedule(setIds)
+    }
+
+    override val savedSchedules: Flow<FestivalScheduleSaved> = MutableSharedFlow()
+
+    override suspend fun notifyMyScheduleSaved(saved: FestivalScheduleSaved) {
+        notified += saved
+    }
+}
+
+internal class FakeCurrentUserProvider(userId: String? = null) : CurrentUserProvider {
+    override val currentUserId = MutableStateFlow(userId)
 }
 
 /** 매퍼 대역. 문서 ID별로 정해 둔 날짜 · 라인업을 돌려주고, 받은 직전 날짜를 기록한다. */
