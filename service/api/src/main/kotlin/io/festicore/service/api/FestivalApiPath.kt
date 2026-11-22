@@ -4,6 +4,9 @@ package io.festicore.service.api
 object FestivalApiPath {
     const val FESTIVALS = "api/v1/festivals"
 
+    /** 팩 요청(`pack.get`)과 변경 알림(`pack.updated`)을 주고받는 WebSocket. 인증 없음, handshake 재시도 0. iOS `FestivalAPI.packUpdates`. */
+    const val PACK_UPDATES = "$FESTIVALS/updates"
+
     /** 축제 상세(온라인 팩 문서). iOS `FestivalDetailRequest`. */
     fun detail(festivalId: String) = "$FESTIVALS/$festivalId"
 
