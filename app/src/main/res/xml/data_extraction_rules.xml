@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ 클라우드 백업 · 기기 간 이전에서 앱 데이터를 모두 뺀다.
+  세션 토큰은 이 기기 Keystore 키로 암호화돼 다른 기기에서 풀 수 없고, 캐시 · 팩은 서버에서 다시 받는다(allowBackup=false와 같은 뜻).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
