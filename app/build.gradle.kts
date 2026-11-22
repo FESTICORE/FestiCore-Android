@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":service:auth"))
     implementation(project(":service:device"))
     implementation(project(":service:festivalcatalog"))
+    implementation(project(":service:pack"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":domain:festival:sources"))
     implementation(project(":ui:designkit"))

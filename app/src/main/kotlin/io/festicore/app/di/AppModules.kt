@@ -19,6 +19,7 @@ import io.festicore.service.auth.SessionExpiryEvents
 import io.festicore.service.auth.di.serviceAuthModule
 import io.festicore.service.device.di.serviceDeviceModule
 import io.festicore.service.festivalcatalog.di.serviceFestivalCatalogModule
+import io.festicore.service.pack.di.servicePackModule
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.bind
@@ -48,6 +49,7 @@ val appModules: List<Module> = listOf(
     serviceAuthModule(baseUrl = BuildConfig.BASE_URL),
     serviceDeviceModule,
     serviceFestivalCatalogModule(baseUrl = BuildConfig.BASE_URL),
+    servicePackModule(baseUrl = BuildConfig.BASE_URL),
     domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),
     domainFestivalModule,
     onboardingFeatureModule,
