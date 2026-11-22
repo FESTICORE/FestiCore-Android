@@ -487,16 +487,23 @@ class LiveBoardViewModel(
     }
 
     /**
-     * 공유 팩 상태가 바뀌었다(설계 D1). 받는 중 진행률을 따르고, 선택 축제 팩이 새로 생기거나 사라지면 표시 팩과 감시를 맞춘다.
-     * 같은 팩이면 감시 결과([onPackReceived])가 맡는다.
+     * 공유 팩 상태가 바뀌었다(설계 D1). 받는 중 진행률을 따르고, 선택 축제 팩이 새로 생기거나 사라지면 표시 팩과 감시를 맞추고,
+     * 같은 축제 팩이 다른 버전 · 내용으로 바뀌면(목록에서 받기 · 다시 읽기) 표시 팩을 새로 그린다.
      */
     private suspend fun onPackStateChanged(packState: FestivalPackState) = subIntent {
-        val hadSelected = state.cachedPacks[state.festivalId] != null
+        val previous = state.cachedPacks[state.festivalId]
         reduce { state.copy(cachedPacks = packState.packs, packDownloads = packState.downloads) }
-        val hasSelected = state.cachedPacks[state.festivalId] != null
-        if (state.hasStarted && hadSelected != hasSelected) {
-            reduce { showCachedPack(state) }
-            watchSelectedPack()
+        val current = state.cachedPacks[state.festivalId]
+        if (!state.hasStarted) return@subIntent
+        when {
+            // 선택 축제 팩이 새로 생기거나 사라졌다: 표시 팩과 감시를 맞춘다.
+            (previous == null) != (current == null) -> {
+                reduce { showCachedPack(state) }
+                watchSelectedPack()
+            }
+
+            // 목록 · 다시 읽기로 같은 축제 팩이 새 버전 · 내용으로 바뀌었다: 표시 팩만 새로 그린다(감시는 그대로).
+            previous != null && current != null && previous != current -> reduce { showCachedPack(state) }
         }
     }
 
