@@ -19,6 +19,12 @@ interface FestivalPackRepository {
     /** 단발 팩 받기. 진행과 저장 완료를 보내고, 받는 중 · 실패를 [state]에 남긴다. 수집을 멈추면 취소된다. */
     fun downloadPack(festivalId: String): Flow<PackDownloadEvent>
 
+    /** 기기에 저장한 한 축제 팩. 없으면 null. 네트워크에 연결하지 않는다. */
+    suspend fun cachedPack(festivalId: String): CachedFestivalPack?
+
+    /** 연결 하나로 한 번 맞추고 닫는다. 받거나 확인한 팩은 [state]에 반영한다. */
+    suspend fun syncPack(festivalId: String): PackSyncResult
+
     /** 기기에 저장한 팩을 지운다. 없으면 아무것도 하지 않는다. */
     suspend fun deletePack(festivalId: String)
 }

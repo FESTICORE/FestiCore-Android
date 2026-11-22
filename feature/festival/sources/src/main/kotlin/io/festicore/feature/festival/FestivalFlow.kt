@@ -10,12 +10,14 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.festival.liveboard.LiveBoardScreen
+import io.festicore.feature.festival.zonemap.ZoneMapScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
 
 /**
- * 라이브 탭 루트(iOS `FestivalCoordinatorView`). [onHidesTabBarChanged]로 탭 바를 숨길지 알린다.
+ * 라이브 탭 루트(iOS `FestivalCoordinatorView`). [onHidesTabBarChanged]로 탭 바를 숨길지, [onFlagTabRequested]로 깃발 탭 전환을 알린다.
  * 상위(메인 탭)는 그 값으로 탭 바를 숨긴다(iOS `MainTabCoordinator.shouldHideTabBar`: 스택이 목록뿐이거나 보드에 시트 · 알림창이 떠 있음).
  * Coordinator와 목록 ViewModel은 이 흐름을 그린 범위(메인 탭 항목)에 둔다. 탭을 바꿔 흐름이 화면에서 빠져도 목록 상태가 남는다.
  * 보드 ViewModel은 스택 항목 범위라 pop하면 정리된다.
@@ -26,10 +28,16 @@ import org.orbitmvi.orbit.compose.collectAsState
 fun FestivalFlow(
     onHidesTabBarChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    onFlagTabRequested: () -> Unit = {},
     coordinator: FestivalCoordinator = koinViewModel(),
     listViewModel: FestivalListViewModel = koinViewModel(),
 ) {
     val state by coordinator.collectAsState()
+    coordinator.collectSideEffect { sideEffect ->
+        when (sideEffect) {
+            FestivalCoordinatorSideEffect.FlagTabRequested -> onFlagTabRequested()
+        }
+    }
     LaunchedEffect(state.hidesTabBar) { onHidesTabBarChanged(state.hidesTabBar) }
     // 라이브 탭을 고를 때마다 흐름이 다시 그려진다(iOS `MainTabCoordinator` `.live` → `reloadCachedPacks`).
     LaunchedEffect(Unit) { listViewModel.onReloadCachedPacks() }
@@ -67,6 +75,14 @@ fun FestivalFlow(
                         onBack = coordinator::goBack,
                         onBoundary = coordinator::onLiveBoardBoundary,
                         onPresentingModalChanged = coordinator::onLiveBoardPresentingModalChanged,
+                    )
+                }
+                entry<FestivalRoute.ZoneMap> { key ->
+                    ZoneMapScreen(
+                        viewModel = koinViewModel { parametersOf(key.festivalId, key.zoneId) },
+                        foregroundLifecycleOwner = flowLifecycleOwner,
+                        onBack = coordinator::goBack,
+                        onFlagDirectoryRequested = coordinator::onZoneMapFlagDirectoryRequested,
                     )
                 }
             },

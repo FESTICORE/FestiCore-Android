@@ -14,12 +14,13 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.isSuccess
 import kotlinx.serialization.SerializationException
 
 /**
  * 축제 API 요청. 실패는 [NetworkError], Bearer 요청은 [AuthSessionError]도 던진다. 재시도하지 않는다.
  * iOS `FestivalListRequest` · `FestivalDetailRequest` · `FestivalLiveRequest` · `FestivalFlagsRequest` ·
- * `FestivalOfficialNewsRequest` · `ScheduleGetRequest`. [mySchedule] · 로그인 중 [live]만 Bearer 대상이다.
+ * `FestivalOfficialNewsRequest` · `ScheduleGetRequest` · `FestivalPackRequest.version`. [mySchedule] · 로그인 중 [live]만 Bearer 대상이다.
  */
 class FestivalApi(private val client: HttpClient) {
     /** `GET api/v1/festivals?after=&limit=`. [after]가 null이면 첫 쪽. 커서는 받은 그대로 보낸다(URL 인코딩은 Ktor). */
@@ -58,6 +59,27 @@ class FestivalApi(private val client: HttpClient) {
             handle = { response -> response.toLiveResponse() },
         )
     }
+
+    /**
+     * `GET api/v1/festivals/{id}/pack/version`. 인증 없음. 응답에 `message`가 없어(stage 확인) 공통 봉투 대신 `code` · `data`만 읽는다
+     * (iOS `FestivalPackVersionResponseDTO`). `code != "SUCCESS"`면 [NetworkError.InvalidResponse], 2xx가 아니면 [NetworkError.Http].
+     */
+    suspend fun packVersion(festivalId: String): FestivalPackVersionDto = client.festiCoreExchange(
+        block = {
+            method = HttpMethod.Get
+            url(FestivalApiPath.packVersion(festivalId))
+        },
+        handle = { response ->
+            val text = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                val error = text.errorBodyOrNull()
+                throw NetworkError.Http(response.status.value, error?.code, error?.message)
+            }
+            val body = FestiCoreJson.decodeFromString(FestivalPackVersionResponseDto.serializer(), text)
+            if (body.code != SUCCESS) throw NetworkError.InvalidResponse(body.code, body.message.orEmpty())
+            body.data ?: throw NetworkError.Decoding(SerializationException("data가 없습니다"))
+        },
+    )
 
     /** `GET api/v1/festivals/{id}/flags`. 인증 없음. */
     suspend fun flags(festivalId: String): FestivalFlagsDto = client.festiCoreRequest {

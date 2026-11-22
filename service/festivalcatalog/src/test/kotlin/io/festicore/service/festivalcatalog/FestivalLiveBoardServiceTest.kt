@@ -249,4 +249,55 @@ class FestivalLiveBoardServiceTest {
         assertTrue(failure { FestivalScheduleService(api).mySchedule("fst a") } is FestivalLiveBoardServiceError.InvalidFestivalId)
         assertTrue(requests.isEmpty())
     }
+
+    @Test
+    fun `마지막 조회 결과를 그대로 돌려주고 받은 적이 없으면 null이다`() = runTest {
+        assertNull(service.cachedFetch("fst_a"))
+
+        val fetched = service.refresh("fst_a")
+        live = { json("", HttpStatusCode.NotModified) }
+        now = now.plusSeconds(35)
+        val reused = service.refresh("fst_a")
+        val requestCount = requests.size
+
+        assertEquals(reused, service.cachedFetch("fst_a"))
+        assertEquals(fetched.board, service.cachedFetch("fst_a")?.board)
+        assertEquals(listOf("flg_a"), service.cachedFetch("fst_a")?.flags?.map { it.id })
+        assertEquals(now, service.cachedFetch("fst_a")?.receivedAt)
+        assertNull(service.cachedFetch("fst_other"))
+        assertEquals(requestCount, requests.size)
+    }
+
+    @Test
+    fun `비로그인 조회 결과도 돌려준다`() = runTest {
+        sessionId = null
+        val fetched = service.refresh("fst_a")
+
+        assertEquals(fetched, service.cachedFetch("fst_a"))
+    }
+
+    @Test
+    fun `세션이 바뀌면 이전 세션의 조회 결과를 돌려주지 않는다`() = runTest {
+        service.refresh("fst_a")
+        sessionId = "session-2"
+
+        assertNull(service.cachedFetch("fst_a"))
+        sessionId = "session-1"
+        assertTrue(service.cachedFetch("fst_a") != null)
+
+        sessionId = "session-2"
+        service.refresh("fst_a")
+        sessionId = "session-1"
+        assertNull(service.cachedFetch("fst_a"))
+    }
+
+    @Test
+    fun `미공개 응답을 받으면 그 축제의 조회 결과를 지운다`() = runTest {
+        service.refresh("fst_a")
+        live = { json("""{"code":"FESTIVAL_NOT_FOUND","data":null,"message":"x"}""", HttpStatusCode.NotFound) }
+
+        failure { service.refresh("fst_a") }
+
+        assertNull(service.cachedFetch("fst_a"))
+    }
 }

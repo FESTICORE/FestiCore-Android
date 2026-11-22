@@ -12,6 +12,9 @@ interface FestivalLiveBoardUseCase {
     /** 축제의 현재 공개 깃발 상태 · 내 팔로우 · 크루를 다시 조회한다. */
     suspend fun liveBoard(festivalId: String): FestivalLiveBoardSnapshot
 
+    /** 마지막으로 받은 라이브 상태(현재 세션 것만). 존 지도 첫 화면을 채운다(설계 E3). */
+    suspend fun cachedLiveBoard(festivalId: String): FestivalLiveBoardSnapshot?
+
     /** 축제 공식 인스타그램 최근 게시물. */
     suspend fun officialNews(festivalId: String): FestivalOfficialNews
 

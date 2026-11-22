@@ -28,6 +28,7 @@ internal class FakeLiveBoardUseCase(
     var liveBoard: suspend (String) -> FestivalLiveBoardSnapshot = { snapshot(it) },
     var officialNews: suspend (String) -> FestivalOfficialNews = { FestivalOfficialNews.Unavailable },
     var detail: suspend (String) -> FestivalPackDocument = { awaitCancellation() },
+    var cached: suspend (String) -> FestivalLiveBoardSnapshot? = { null },
 ) : FestivalLiveBoardUseCase {
     val liveBoardCalls = mutableListOf<String>()
     val officialNewsCalls = mutableListOf<String>()
@@ -43,6 +44,8 @@ internal class FakeLiveBoardUseCase(
     }
 
     override suspend fun festivalDetail(festivalId: String): FestivalPackDocument = detail(festivalId)
+
+    override suspend fun cachedLiveBoard(festivalId: String): FestivalLiveBoardSnapshot? = cached(festivalId)
 
     companion object {
         fun snapshot(
@@ -62,6 +65,7 @@ internal class FakeLiveBoardUseCase(
 internal class FakeBoardPackUseCase(
     initial: FestivalPackState = FestivalPackState(),
     private val updates: (String) -> Flow<PackSyncResult> = { emptyFlow() },
+    var sync: suspend (String) -> PackSyncResult = { error("사용하지 않음") },
 ) : FestivalPackUseCase {
     override val state = MutableStateFlow(initial)
     val watched = mutableListOf<String>()
@@ -74,6 +78,8 @@ internal class FakeBoardPackUseCase(
     }
 
     override fun downloadPack(festivalId: String): Flow<PackDownloadEvent> = emptyFlow()
+
+    override suspend fun syncPack(festivalId: String): PackSyncResult = sync(festivalId)
 }
 
 internal class FakeScheduleUseCase(var schedule: suspend (String) -> FestivalSchedule = { FestivalSchedule(emptyList()) }) :

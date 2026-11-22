@@ -21,6 +21,14 @@ data class FestivalPackDocument(
     val ticketLinks: List<TicketLink>? = null,
     /** 가는 길 중 귀가 카드에 쓰는 값. 형식이 틀리거나 없으면 null. */
     val directions: Directions? = null,
+    /** 존 지도 배경 이미지. 화면은 쓰지 않는다(iOS와 같음, 설계 E2). */
+    val mapImageUrl: String? = null,
+    /** 지도 너비/높이. */
+    val mapAspect: Double? = null,
+    /** 지도 데이터가 바뀔 때만 바뀌는 버전. */
+    val mapVersion: String? = null,
+    /** 지도 위 무대 머리글 자리. */
+    val mapStages: List<MapStage>? = null,
 ) {
     fun zoneName(id: String?): String? = id?.let { zoneId -> zones?.firstOrNull { it.id == zoneId }?.name }
 
@@ -64,6 +72,29 @@ data class FestivalPackDocument(
     data class Zone(
         val id: String,
         val name: String,
+        /** 존 카드 보조 문구(예: 무대 앞). */
+        val kind: String? = null,
+        /** 존 지도 정렬 순서. */
+        val order: Int? = null,
+        val area: Area? = null,
+        /** 영역 오른쪽 위 표지(예: TENT 무대). */
+        val landmark: String? = null,
+    )
+
+    /** 지도 왼쪽 위 기준 0~1 비율 사각형. */
+    data class Area(
+        val x: Double,
+        val y: Double,
+        val width: Double,
+        val height: Double,
+    )
+
+    /** 무대 머리글 자리(0~1 비율, 높이는 화면 고정). */
+    data class MapStage(
+        val stageId: String,
+        val x: Double,
+        val y: Double,
+        val width: Double,
     )
 
     data class Source(

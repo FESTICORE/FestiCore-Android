@@ -13,4 +13,10 @@ interface FestivalPackUseCase {
     fun packUpdates(festivalId: String): Flow<PackSyncResult>
 
     fun downloadPack(festivalId: String): Flow<PackDownloadEvent>
+
+    /**
+     * 팩을 한 번 맞춘 뒤 목록도 새로 받는다(목록 실패는 무시). iOS `FestivalPackDetailUseCase.updatePack`(설계 E5).
+     * `Updated` · `NotModified`만 성공이고 `RetryAfter` · `Reconnecting`은 호출한 쪽이 실패로 본다. 실패는 [FestivalPackError].
+     */
+    suspend fun syncPack(festivalId: String): PackSyncResult
 }

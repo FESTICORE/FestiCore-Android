@@ -160,7 +160,7 @@ fun LiveBoardScreen(
 
 /** 앱이 배경으로 갔다 돌아올 때만 알린다(iOS `scenePhase`). 처음 붙을 때 받는 시작 알림은 넘긴다. */
 @Composable
-private fun ForegroundEffect(lifecycleOwner: LifecycleOwner, onForegroundChanged: (Boolean) -> Unit) {
+internal fun ForegroundEffect(lifecycleOwner: LifecycleOwner, onForegroundChanged: (Boolean) -> Unit) {
     val current by rememberUpdatedState(onForegroundChanged)
     DisposableEffect(lifecycleOwner) {
         var stopped = false
