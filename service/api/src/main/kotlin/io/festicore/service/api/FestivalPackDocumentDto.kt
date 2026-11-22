@@ -5,8 +5,8 @@ import kotlinx.serialization.builtins.serializer
 
 /**
  * 축제 팩 문서. `GET api/v1/festivals/{id}` 응답 `data`이자 팩 본문. iOS `FestivalPackDocument`가 읽는 키만 받는다
- * (`timezone` · `packVersion` · `rules` · `directions` 등은 `ignoreUnknownKeys`로 버린다).
- * `eventPeriod` · `source` · `note`는 형식이 틀리면 null, `zones` · `ticketLinks`는 손상 원소만 버린다. 나머지 배열은 원소 하나가 틀리면 문서 전체가 실패한다(iOS와 같음).
+ * (`timezone` · `packVersion` · `rules` 등은 `ignoreUnknownKeys`로 버린다). `directions`는 귀가 카드가 쓰는 키만 받는다(iOS `FestivalPackDetailDTO`).
+ * `eventPeriod` · `source` · `note` · `directions`는 형식이 틀리면 null, `zones` · `ticketLinks`는 손상 원소만 버린다. 나머지 배열은 원소 하나가 틀리면 문서 전체가 실패한다(iOS와 같음).
  */
 @Serializable
 data class FestivalPackDocumentDto(
@@ -28,6 +28,26 @@ data class FestivalPackDocumentDto(
     val source: FestivalPackSourceDto? = null,
     @Serializable(with = FestivalTicketLinkListSerializer::class)
     val ticketLinks: List<FestivalTicketLinkDto>? = null,
+    @Serializable(with = FestivalPackDirectionsOrNullSerializer::class)
+    val directions: FestivalPackDirectionsDto? = null,
+)
+
+/** 가는 길 중 귀가 카드가 쓰는 값. 마지막 셔틀 · 막차 시각은 서버 문자열 그대로(ISO 또는 `HH:mm`). */
+@Serializable
+data class FestivalPackDirectionsDto(
+    val lastShuttleAt: String? = null,
+    val lastTrainAt: String? = null,
+    val shuttle: FestivalPackDirectionsSectionDto? = null,
+    val transit: FestivalPackDirectionsSectionDto? = null,
+)
+
+@Serializable
+data class FestivalPackDirectionsSectionDto(
+    /** 대중교통의 가까운 역 */
+    val stationName: String? = null,
+    /** 셔틀 정류장 */
+    val stopName: String? = null,
+    val walkMinutes: Int? = null,
 )
 
 @Serializable
@@ -91,5 +111,7 @@ object StringOrNullSerializer : OrNullSerializer<String>(String.serializer())
 object FestivalEventPeriodOrNullSerializer : OrNullSerializer<FestivalEventPeriodDto>(FestivalEventPeriodDto.serializer())
 
 object FestivalPackSourceOrNullSerializer : OrNullSerializer<FestivalPackSourceDto>(FestivalPackSourceDto.serializer())
+
+object FestivalPackDirectionsOrNullSerializer : OrNullSerializer<FestivalPackDirectionsDto>(FestivalPackDirectionsDto.serializer())
 
 object FestivalPackZoneListSerializer : LossyListSerializer<FestivalPackZoneDto>(FestivalPackZoneDto.serializer())

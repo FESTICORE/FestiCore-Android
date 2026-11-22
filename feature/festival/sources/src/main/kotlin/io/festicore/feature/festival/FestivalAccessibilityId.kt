@@ -4,6 +4,7 @@ package io.festicore.feature.festival
 internal object FestivalAccessibilityId {
     const val LIST_SKELETON = "festivalListSkeleton"
     const val SEARCH_SKELETON = "festivalSearchSkeleton"
+    const val LIVE_BOARD_SKELETON = "festivalLiveBoardSkeleton"
 
     fun card(festivalId: String): String = "festivalCard_$festivalId"
 }

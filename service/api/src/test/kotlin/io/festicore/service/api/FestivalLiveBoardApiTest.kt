@@ -83,6 +83,26 @@ class FestivalLiveBoardApiTest {
     }
 
     @Test
+    fun `팩 문서의 가는 길은 귀가 값만 읽고 형식이 틀리면 null이다`() {
+        val dto = document(
+            ""","directions":{"lastShuttleAt":"23:10","lastTrainAt":"2026-11-20T23:40:00+09:00",""" +
+                """"shuttle":{"stopName":"정문","body":"x"},"transit":{"stationName":"잠실역","walkMinutes":12},"memo":"m"}""",
+        )
+        val broken = document(""","directions":{"transit":{"walkMinutes":"12분"}}""")
+
+        assertEquals(
+            FestivalPackDirectionsDto(
+                lastShuttleAt = "23:10",
+                lastTrainAt = "2026-11-20T23:40:00+09:00",
+                shuttle = FestivalPackDirectionsSectionDto(stopName = "정문"),
+                transit = FestivalPackDirectionsSectionDto(stationName = "잠실역", walkMinutes = 12),
+            ),
+            dto.directions,
+        )
+        assertNull(broken.directions)
+    }
+
+    @Test
     fun `팩 문서의 공연 원소가 틀리면 문서 전체가 해석 실패다`() = runTest {
         val error = failure {
             api(success("""{"id":"fst_a","sets":[{"id":"s1","artist":1}]}""")).detail("fst_a")

@@ -19,6 +19,8 @@ data class FestivalPackDocument(
     val zones: List<Zone>? = null,
     val source: Source? = null,
     val ticketLinks: List<TicketLink>? = null,
+    /** 가는 길 중 귀가 카드에 쓰는 값. 형식이 틀리거나 없으면 null. */
+    val directions: Directions? = null,
 ) {
     fun zoneName(id: String?): String? = id?.let { zoneId -> zones?.firstOrNull { it.id == zoneId }?.name }
 
@@ -41,6 +43,17 @@ data class FestivalPackDocument(
         val date: String?,
         val startsAt: String?,
         val endsAt: String?,
+    )
+
+    /** iOS `FestivalPackDetail.Directions`에서 귀가 카드가 읽는 값만. */
+    data class Directions(
+        /** 서버가 적은 그대로의 마지막 셔틀 · 막차 시각(ISO 또는 `HH:mm`). */
+        val lastShuttleAt: String? = null,
+        val lastTrainAt: String? = null,
+        val shuttleStopName: String? = null,
+        val transitStationName: String? = null,
+        /** 서버가 적은 역까지 도보 분. */
+        val transitWalkMinutes: Int? = null,
     )
 
     data class TicketLink(

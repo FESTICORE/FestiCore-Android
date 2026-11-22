@@ -30,8 +30,8 @@ class MainTabScreenTest {
     @Test
     fun `라이브 스택이 목록뿐이면 탭 바를 숨긴다`() {
         composeRule.setContent {
-            MainTabScreen(liveContent = { onAtRootChanged ->
-                LaunchedEffect(Unit) { onAtRootChanged(true) }
+            MainTabScreen(liveContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(true) }
                 Text("라이브 목록")
             })
         }
@@ -44,8 +44,8 @@ class MainTabScreenTest {
     fun `라이브 스택이 쌓이면 탭 바가 보이고 탭을 바꿔 다시 만들어도 선택이 유지된다`() {
         val restoration = StateRestorationTester(composeRule)
         restoration.setContent {
-            MainTabScreen(liveContent = { onAtRootChanged ->
-                LaunchedEffect(Unit) { onAtRootChanged(false) }
+            MainTabScreen(liveContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(false) }
                 Text("라이브 보드")
             })
         }
