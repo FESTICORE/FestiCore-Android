@@ -35,7 +35,7 @@ build-logic/               convention plugin
 | `festicore.android.application` | `app` | 앱(applicationId `io.festiCore.co`), flavor `stage`(`.stage` 접미사) · `prod`, Compose · Koin · Navigation 3 |
 
 - 모듈 `build.gradle.kts`에는 `plugins { id("festicore.android.library") }`와 의존성만 쓴다. 공통 설정을 복사하지 않는다.
-- SDK · JDK · 앱 ID · 버전 이름은 `build-logic/src/main/kotlin/io/festicore/buildlogic/Catalog.kt`의 `AndroidConfig` 한 곳에 둔다(compileSdk 37 · targetSdk 36 · minSdk 24 · JDK 21).
+- SDK · JDK · 앱 ID · 버전 이름은 `build-logic/src/main/kotlin/io/festicore/buildlogic/Catalog.kt`의 `AndroidConfig` 한 곳에 둔다(compileSdk 37 · targetSdk 36 · minSdk 26 · JDK 21).
 - 플러그인 클래스는 `build-logic`이 한 번 올리므로 루트 `build.gradle.kts`는 두지 않는다.
 - 환경 값(앱 이름 · applicationId 접미사 · `BASE_URL`)은 `app/config/{stage,prod}.properties`에 두고 `BuildConfig.IS_STAGE` · `BuildConfig.BASE_URL`로 읽는다.
 
