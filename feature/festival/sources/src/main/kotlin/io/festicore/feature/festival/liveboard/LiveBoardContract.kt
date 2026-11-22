@@ -7,6 +7,7 @@ import io.festicore.domain.festival.FestivalOfficialNews
 import io.festicore.domain.festival.FestivalOverview
 import io.festicore.domain.festival.FestivalPackDocument
 import io.festicore.domain.festival.PackDownloadProgress
+import io.festicore.domain.usernotification.UserNotificationItem
 import io.festicore.feature.festival.FestivalListPresentation
 import java.time.Instant
 
@@ -72,6 +73,10 @@ data class LiveBoardState(
     val mySchedule: LiveBoardMySchedule? = null,
     val myScheduleUnavailable: Boolean = false,
     val myScheduleRequestId: Int = 0,
+    /** 종 아이콘 배지(iOS `notificationUnreadCount`). 공유 배지 상태를 따른다(설계 E7). */
+    val notificationUnreadCount: Int = 0,
+    /** 24시간 안의 최신 안 읽은 알림 배너(iOS `notificationBanner`). */
+    val notificationBanner: UserNotificationItem? = null,
     /** 선택 축제의 빈 팔로우 깃발 안내를 숨겼는지. */
     val isFollowedFlagGuideHidden: Boolean = false,
     /** 축제 바꾸기 시트. null이면 닫힘. */
@@ -116,7 +121,7 @@ data class LiveBoardState(
     val isPresentingModal: Boolean get() = switcher != null || isFollowGuideDialogPresented
 }
 
-/** 보드가 연결만 알리고 Coordinator가 받아 두는 이동(설계 "경계만 표시"). 대상 화면은 다음 문서에서 만든다. */
+/** 보드가 알리는 이동. Coordinator가 대상 화면을 쌓거나(존 지도 · 알림함), 대상이 아직 없으면 받아 두기만 한다(설계 "경계만 표시"). */
 sealed interface LiveBoardBoundary {
     data object NotificationInbox : LiveBoardBoundary
 

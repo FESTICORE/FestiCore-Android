@@ -13,15 +13,24 @@ data class FestivalCoordinatorState(
     val selectedFestivalId: String? = null,
     /** 맨 위 라이브 보드에 시트 · 다이얼로그가 떠 있다. */
     val isLiveBoardPresentingModal: Boolean = false,
-    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(알림함 · 크루 등). 존 지도는 화면을 쌓는다. */
+    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(크루 등). 존 지도 · 알림함은 화면을 쌓는다. */
     val lastBoundary: LiveBoardBoundary? = null,
+    /** 맨 위 보드가 바꿀 수 있는 축제 ID(보드 카탈로그). 알림이 연 축제가 여기 없으면 알림함에 팝업을 띄운다(iOS `board.catalog`). */
+    val liveBoardFestivalIds: Set<String> = emptySet(),
+    /** 알림함에서 연 축제. 보드가 받아 그 축제로 바꾼 뒤 비운다(설계 E8). */
+    val pendingBoardFestivalId: String? = null,
 ) {
     /**
      * 탭 바를 숨길지(iOS `MainTabCoordinator.shouldHideTabBar`의 라이브 탭 부분). 스택이 목록뿐이면 숨기고,
-     * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있으면 숨긴다(설계 D9). 존 지도는 탭 바를 보인다.
+     * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있거나 알림함이 맨 위면 숨긴다(설계 D9 · "탭 바 표시"). 존 지도는 탭 바를 보인다.
      */
     val hidesTabBar: Boolean
-        get() = routes.size == 1 || (routes.lastOrNull() is FestivalRoute.LiveBoard && isLiveBoardPresentingModal)
+        get() {
+            val top = routes.lastOrNull()
+            return routes.size == 1 ||
+                (top is FestivalRoute.LiveBoard && isLiveBoardPresentingModal) ||
+                top is FestivalRoute.NotificationInbox
+        }
 }
 
 /** 라이브 흐름 밖으로 나가는 이동. 상위(메인 탭)가 처리한다. */
@@ -33,7 +42,8 @@ sealed interface FestivalCoordinatorSideEffect {
 /**
  * 라이브 탭 흐름(iOS `FestivalCoordinator`). 첫 화면은 목록(`routes = [.festivalList]`)이다.
  * 목록에서 축제를 고르면 라이브 보드를 쌓고(iOS `routes.push(.liveBoard)`), 보드의 뒤로 · "전체 페스티벌 보기"는 pop이다.
- * 보드 크루 존 칩은 존 지도를 쌓는다(이미 있으면 무시). 계정이 바뀌면 계정의 팔로우 · 크루를 보여 주는 존 지도를 스택에서 뺀다(iOS `clearAccountData`, 설계 E9).
+ * 보드 크루 존 칩은 존 지도를, 종 아이콘 · 새 알림 배너는 알림함을 쌓는다(이미 있으면 무시).
+ * 계정이 바뀌면 계정의 팔로우 · 크루를 보여 주는 존 지도와 이전 계정의 알림함을 스택에서 뺀다(iOS `clearAccountData`, 설계 E9).
  */
 class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) :
     ViewModel(),
@@ -70,12 +80,18 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
         reduce { state.copy(isLiveBoardPresentingModal = isPresenting) }
     }
 
-    /** 보드의 경계 이동. 존 지도는 쌓고(iOS `zoneMapRequested`), 대상 화면이 아직 없는 나머지는 받아 두기만 한다. */
+    /** 보드의 경계 이동. 존 지도 · 알림함은 쌓고(iOS `zoneMapRequested` · `notificationInboxRequested`), 대상 화면이 아직 없는 나머지는 받아 두기만 한다. */
     fun onLiveBoardBoundary(boundary: LiveBoardBoundary) = intent {
         when (boundary) {
             is LiveBoardBoundary.ZoneMap -> {
                 if (state.routes.any { it is FestivalRoute.ZoneMap }) return@intent
                 reduce { state.copy(routes = state.routes + FestivalRoute.ZoneMap(boundary.festivalId, boundary.zoneId)) }
+            }
+
+            // 보드가 세션을 확인하고 보낸다(비로그인은 Login 경계).
+            LiveBoardBoundary.NotificationInbox -> {
+                if (state.routes.any { it is FestivalRoute.NotificationInbox }) return@intent
+                reduce { state.copy(routes = state.routes + FestivalRoute.NotificationInbox) }
             }
 
             else -> reduce { state.copy(lastBoundary = boundary) }
@@ -88,7 +104,38 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
         postSideEffect(FestivalCoordinatorSideEffect.FlagTabRequested)
     }
 
+    /** 보드가 바꿀 수 있는 축제 목록이 바뀌었다(알림 열기 판단용). */
+    fun onLiveBoardFestivalsChanged(festivalIds: Set<String>) = intent {
+        reduce { state.copy(liveBoardFestivalIds = festivalIds) }
+    }
+
+    /**
+     * 알림함에서 라이브 보드 알림을 열었다(iOS `notificationInbox(.delegate(.rowOpened))`). 보드에 그 축제가 없으면 `false`를 돌려주고
+     * 알림함에 남는다. 있으면 알림함을 pop하고 보드에 축제 전환을 맡긴다(설계 E8, 같은 축제면 보드가 무시한다).
+     */
+    fun onNotificationFestivalOpened(festivalId: String): Boolean {
+        val current = container.stateFlow.value
+        if (current.routes.none { it is FestivalRoute.LiveBoard } || festivalId !in current.liveBoardFestivalIds) return false
+        intent {
+            reduce {
+                state.copy(
+                    routes = state.routes.filterNot { it is FestivalRoute.NotificationInbox },
+                    pendingBoardFestivalId = festivalId,
+                )
+            }
+        }
+        return true
+    }
+
+    /** 보드가 대기 축제를 받았다. */
+    fun onPendingBoardFestivalConsumed() = intent { reduce { state.copy(pendingBoardFestivalId = null) } }
+
     private fun onAccountChanged() = intent {
-        reduce { state.copy(routes = state.routes.filterNot { it is FestivalRoute.ZoneMap }) }
+        reduce {
+            state.copy(
+                routes = state.routes.filterNot { it is FestivalRoute.ZoneMap || it is FestivalRoute.NotificationInbox },
+                pendingBoardFestivalId = null,
+            )
+        }
     }
 }

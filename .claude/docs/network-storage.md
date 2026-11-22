@@ -44,3 +44,4 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - 401은 `TokenRefresher`(Mutex) 한 경로로만 갱신한다. 세션이 없거나 sessionId가 바뀌면 재전송하지 않고 `AuthSessionError.NotAuthenticated`, revision만 바뀌었으면 refresh 없이 현재 토큰으로 한 번 재요청한다. refresh 401은 세션을 지우고 `SessionExpiryEvents`에 한 번 알린다. 오프라인 · 5xx는 세션을 유지하고 그 `NetworkError`로 실패한다.
 - 세션이 없거나 기대 sessionId와 다른 Bearer 요청은 보내지 않는다. 공개 API는 `AuthSession`(isLoggedIn · currentSessionId · saveLogin · clear)과 `SessionExpiryEvents`다.
 - HttpClient는 `serviceAuthModule(baseUrl)`이 인증 플러그인을 붙여 등록하고, app은 `BuildConfig.BASE_URL`만 넘긴다.
+- 내 알림(`UserNotificationApi`, `domain/usernotification`)은 모든 요청을 현재 세션 ID에 묶어 보낸다(`bearerAuthorization(expectedSessionId)`, 재시도 0). 읽음 · 삭제(`POST`)는 `festiCoreExchange`로 보내 2xx면 본문을 보지 않는다(204 빈 본문 포함). 로컬 저장은 없고 배지는 메모리 공유 상태다(`domain/usernotification/.spec/user-notification.md`).

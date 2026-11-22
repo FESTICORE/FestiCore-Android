@@ -10,6 +10,8 @@ import io.festicore.domain.festival.FestivalPackState
 import io.festicore.domain.festival.FestivalSchedule
 import io.festicore.domain.festival.FestivalScheduleError
 import io.festicore.domain.festival.PackSyncResult
+import io.festicore.domain.usernotification.UserNotificationBadge
+import io.festicore.domain.usernotification.UserNotificationItem
 import io.festicore.feature.festival.FakeCatalogUseCase
 import io.festicore.feature.festival.FakeCurrentUserProvider
 import java.time.Instant
@@ -58,6 +60,7 @@ class LiveBoardViewModelTest {
         preference: FakePreferenceUseCase = FakePreferenceUseCase(),
         user: FakeCurrentUserProvider = FakeCurrentUserProvider(),
         catalog: List<FestivalCatalogItem> = listOf(item, other),
+        badge: FakeNotificationBadgeUseCase = FakeNotificationBadgeUseCase(),
     ) = LiveBoardViewModel(
         festivalId = "fst",
         initialCatalog = catalog,
@@ -67,6 +70,7 @@ class LiveBoardViewModelTest {
         scheduleUseCase = schedule,
         preferenceUseCase = preference,
         currentUserProvider = user,
+        notificationBadgeUseCase = badge,
         clock = clock,
         sleep = sleeper::sleep,
     )
@@ -534,6 +538,72 @@ class LiveBoardViewModelTest {
             containerHost.onAppear()
             val failed = awaitBoard { it.onlineDetailFailed }
             assertNull(failed.onlineDetail)
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    // MARK: - 알림 배지 · 배너 (iOS FestivalNotificationBadgeTests의 보드 부분, 나머지 4건은 domain UserNotificationBadgeStoreTest)
+
+    private val banner =
+        UserNotificationItem(
+            id = "new",
+            type = "crew",
+            festivalId = "fst",
+            title = "모여! · 민지",
+            body = "리벳 스테이지 앞으로 모여 주세요",
+            createdAt = Instant.parse("2026-10-20T05:59:00Z"),
+            readAt = null,
+            route = null,
+        )
+
+    @Test
+    fun notificationEntryAndAccountChange() = runTest {
+        val user = FakeCurrentUserProvider("user-a")
+        val badge = FakeNotificationBadgeUseCase(refreshResult = UserNotificationBadge(3, banner))
+        viewModel(user = user, badge = badge).test(this) {
+            runOnCreate()
+            containerHost.onAppear()
+            awaitBoard { it.notificationUnreadCount == 3 && it.notificationBanner == banner }
+            assertEquals(1, badge.refreshCount)
+            containerHost.onNotificationTapped()
+            assertEquals(LiveBoardSideEffect.Boundary(LiveBoardBoundary.NotificationInbox), awaitEffect())
+
+            user.currentUserId.value = null
+            awaitBoard { !it.hasSession && it.notificationUnreadCount == 0 && it.notificationBanner == null && it.accountGeneration == 1 }
+            assertEquals(1, badge.clearCount)
+            containerHost.onNotificationTapped()
+            assertEquals(LiveBoardSideEffect.Boundary(LiveBoardBoundary.Login), awaitEffect())
+            cancelAndIgnoreRemainingItems()
+        }
+        // 비로그인으로 바뀌면 배지를 다시 조회하지 않는다.
+        assertEquals(1, badge.refreshCount)
+    }
+
+    @Test
+    fun `비로그인 보드는 배지를 조회하지 않고 공유 배지가 바뀌어도 보이지 않는다`() = runTest {
+        val badge = FakeNotificationBadgeUseCase()
+        viewModel(badge = badge).test(this) {
+            runOnCreate()
+            containerHost.onAppear()
+            awaitBoard { it.isVisible }
+            badge.badge.value = UserNotificationBadge(2, banner)
+            testScheduler.runCurrent()
+            cancelAndIgnoreRemainingItems()
+            assertEquals(0, containerHost.container.stateFlow.value.notificationUnreadCount)
+            assertNull(containerHost.container.stateFlow.value.notificationBanner)
+        }
+        assertEquals(0, badge.refreshCount)
+    }
+
+    @Test
+    fun `알림함이 연 다른 축제로 보드를 바꾸고 같은 축제면 그대로 둔다`() = runTest {
+        viewModel().test(this) {
+            runOnCreate()
+            containerHost.onAppear()
+            awaitBoard { it.isVisible }
+            containerHost.onNotificationFestivalRequested("fst")
+            containerHost.onNotificationFestivalRequested("fst_b")
+            awaitBoard { it.festivalId == "fst_b" }
             cancelAndIgnoreRemainingItems()
         }
     }

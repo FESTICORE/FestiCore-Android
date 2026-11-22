@@ -87,6 +87,8 @@ private val DoneSkeletonHeight = 164.dp
  * - 포그라운드는 [foregroundLifecycleOwner](스택 항목이 아닌 흐름 바깥 수명 주기)로 본다. 스택 항목 수명 주기는 위에 화면이 쌓여도 내려간다.
  * - 뒤로 버튼은 없다. 시스템 뒤로 · 예측 뒤로는 `NavDisplay`가 맡는다(설계 D7). 그래서 자기 `BackHandler`를 두지 않는다.
  * - [onPresentingModalChanged]로 시트 · 다이얼로그가 떠 있는지 알린다(탭 바 숨김, 설계 D9).
+ * - [onFestivalsChanged]로 바꿀 수 있는 축제 ID를 알리고, [pendingFestivalId](알림함에서 연 축제)를 받으면 그 축제로 바꾼 뒤
+ *   [onPendingFestivalConsumed]를 부른다(설계 E8).
  */
 @Composable
 fun LiveBoardScreen(
@@ -96,6 +98,9 @@ fun LiveBoardScreen(
     onBoundary: (LiveBoardBoundary) -> Unit,
     onPresentingModalChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    onFestivalsChanged: (Set<String>) -> Unit = {},
+    pendingFestivalId: String? = null,
+    onPendingFestivalConsumed: () -> Unit = {},
     clock: Clock = Clock.systemUTC(),
 ) {
     val state by viewModel.collectAsState()
@@ -118,6 +123,16 @@ fun LiveBoardScreen(
     val currentOnPresentingModalChanged by rememberUpdatedState(onPresentingModalChanged)
     LaunchedEffect(state.isPresentingModal) { currentOnPresentingModalChanged(state.isPresentingModal) }
     DisposableEffect(Unit) { onDispose { currentOnPresentingModalChanged(false) } }
+
+    val festivalIds = remember(state.festivals) { state.festivals.map { it.id }.toSet() }
+    val currentOnFestivalsChanged by rememberUpdatedState(onFestivalsChanged)
+    LaunchedEffect(festivalIds) { currentOnFestivalsChanged(festivalIds) }
+    val currentOnPendingFestivalConsumed by rememberUpdatedState(onPendingFestivalConsumed)
+    LaunchedEffect(pendingFestivalId) {
+        val festivalId = pendingFestivalId ?: return@LaunchedEffect
+        viewModel.onNotificationFestivalRequested(festivalId)
+        currentOnPendingFestivalConsumed()
+    }
 
     // iOS `TimelineView(.periodic(by: 30))`: 화면 시각을 30초마다 다시 계산한다.
     var deviceNow by remember { mutableStateOf(clock.instant()) }
@@ -324,11 +339,11 @@ private fun Board(
     val now = LiveBoardPresentation.serverNow(state.snapshot?.serverAt, state.clockAnchorAt, deviceNow)
     val phase = LiveBoardPresentation.phase(pack, festival, now)
 
-    // Figma S01 A2: 기수 계정이면 로고 옆에 기수 버튼을 둔다. 알림 배지는 알림함 문서 전까지 0(설계 D11).
+    // Figma S01 A2: 기수 계정이면 로고 옆에 기수 버튼을 둔다. 배지는 안 읽은 알림 수(iOS `badgeCount(notificationUnreadCount)`).
     FCTopBar(
         style = if (state.bearerFlagId != null) FCTopBarStyle.LogoBearer else FCTopBarStyle.Logo,
         backgroundColor = FestiCoreSemanticColor.backgroundNormal,
-        badgeCount = 0,
+        badgeCount = state.notificationUnreadCount,
         onTrailingAction = onNotificationTapped,
         onBearer = if (state.bearerFlagId != null) onBearerTapped else null,
     )
@@ -336,6 +351,14 @@ private fun Board(
         FCOfflineBadge(
             message =
                 if (state.receivedAt == null) "오프라인 · 저장된 정보" else LiveBoardPresentation.offlineText(state.receivedAt, deviceNow),
+        )
+    }
+    state.notificationBanner?.let { notification ->
+        LiveBoardNotificationBanner(
+            notification = notification,
+            now = deviceNow,
+            onClick = onNotificationTapped,
+            modifier = Modifier.padding(horizontal = FestiCoreSpacing.paddingP16, vertical = FestiCoreSpacing.paddingP8),
         )
     }
     Column(

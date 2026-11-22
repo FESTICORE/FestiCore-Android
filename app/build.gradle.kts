@@ -21,6 +21,7 @@ dependencies {
     implementation(project(":service:pack"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":domain:festival:sources"))
+    implementation(project(":domain:usernotification:sources"))
     implementation(project(":ui:designkit"))
     implementation(project(":ui:animation"))
     implementation(project(":ui:sharedui"))

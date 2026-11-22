@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.festicore.feature.festival.inbox.NotificationInboxScreen
 import io.festicore.feature.festival.liveboard.LiveBoardScreen
 import io.festicore.feature.festival.zonemap.ZoneMapScreen
 import org.koin.compose.viewmodel.koinViewModel
@@ -75,6 +76,9 @@ fun FestivalFlow(
                         onBack = coordinator::goBack,
                         onBoundary = coordinator::onLiveBoardBoundary,
                         onPresentingModalChanged = coordinator::onLiveBoardPresentingModalChanged,
+                        onFestivalsChanged = coordinator::onLiveBoardFestivalsChanged,
+                        pendingFestivalId = state.pendingBoardFestivalId,
+                        onPendingFestivalConsumed = coordinator::onPendingBoardFestivalConsumed,
                     )
                 }
                 entry<FestivalRoute.ZoneMap> { key ->
@@ -83,6 +87,13 @@ fun FestivalFlow(
                         foregroundLifecycleOwner = flowLifecycleOwner,
                         onBack = coordinator::goBack,
                         onFlagDirectoryRequested = coordinator::onZoneMapFlagDirectoryRequested,
+                    )
+                }
+                entry<FestivalRoute.NotificationInbox> {
+                    NotificationInboxScreen(
+                        viewModel = koinViewModel(),
+                        onBack = coordinator::goBack,
+                        onFestivalOpened = coordinator::onNotificationFestivalOpened,
                     )
                 }
             },

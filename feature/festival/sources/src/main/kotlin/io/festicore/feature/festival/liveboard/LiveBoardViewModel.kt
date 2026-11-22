@@ -15,6 +15,8 @@ import io.festicore.domain.festival.FestivalPackState
 import io.festicore.domain.festival.FestivalPackUseCase
 import io.festicore.domain.festival.FestivalScheduleUseCase
 import io.festicore.domain.festival.PackSyncResult
+import io.festicore.domain.usernotification.UserNotificationBadge
+import io.festicore.domain.usernotification.UserNotificationBadgeUseCase
 import io.festicore.feature.festival.FestivalListPresentation
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
@@ -30,7 +32,8 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 /**
  * S01 라이브 보드(설계 D1: 목록과 별도 ViewModel). iOS 보드 route의 `FestivalFeature`(보드 부분)와 자식 `FestivalLiveBoardFeature`를 합친다.
  * 함수 이름은 iOS `Action.View`와 같고, 순서는 view → async → inner를 따른다.
- * 라이브 상태 폴링(35초) · 공식 소식(300초) · 팩 감시 · 상세 · 내 일정은 각각 하나만 돈다. 새로 시작하면 이전 것을 취소한다(iOS `cancelInFlight`).
+ * 알림 배지 · 배너는 공유 저장소(설계 E7)를 따르고, 보일 때 · 세션이 바뀔 때 다시 조회한다(iOS `FestivalFeature+NotificationUnreadCount`).
+ * 라이브 상태 폴링(35초) · 공식 소식(300초) · 팩 감시 · 상세 · 내 일정 · 배지 조회는 각각 하나만 돈다. 새로 시작하면 이전 것을 취소한다(iOS `cancelInFlight`).
  * [sleep]은 테스트에서 기다림을 조절하려고 주입한다.
  */
 class LiveBoardViewModel(
@@ -42,6 +45,7 @@ class LiveBoardViewModel(
     private val scheduleUseCase: FestivalScheduleUseCase,
     private val preferenceUseCase: FestivalLiveBoardPreferenceUseCase,
     private val currentUserProvider: CurrentUserProvider,
+    private val notificationBadgeUseCase: UserNotificationBadgeUseCase,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -59,6 +63,7 @@ class LiveBoardViewModel(
             coroutineScope {
                 // 목록이 받거나 지운 팩 · 받는 중 진행률도 보드에 바로 보인다(설계 D1).
                 launch { packUseCase.state.collect { onPackStateChanged(it) } }
+                launch { notificationBadgeUseCase.badge.collect { onNotificationBadgeChanged(it) } }
                 currentUserProvider.currentUserId.collect { onSessionChanged(hasSession = it != null, userId = it) }
             }
         }
@@ -68,6 +73,7 @@ class LiveBoardViewModel(
     private val packWatchJob = AtomicReference<Job?>(null)
     private val onlineDetailJob = AtomicReference<Job?>(null)
     private val myScheduleJob = AtomicReference<Job?>(null)
+    private val notificationUnreadCountJob = AtomicReference<Job?>(null)
 
     // MARK: - View
 
@@ -82,6 +88,7 @@ class LiveBoardViewModel(
             startLiveBoard()
         }
         loadOnlineDetail()
+        loadNotificationUnreadCount()
     }
 
     /** 보드가 화면에서 빠졌다(iOS `liveBoardOnDisappear`). 폴링 · 공식 소식 · 상세를 멈춘다. 팩 감시는 그대로 둔다. */
@@ -166,6 +173,14 @@ class LiveBoardViewModel(
 
     fun onNotificationTapped() = intent {
         boundary(if (state.hasSession) LiveBoardBoundary.NotificationInbox else LiveBoardBoundary.Login)
+    }
+
+    /**
+     * 알림함에서 다른 축제 알림을 열었다(설계 E8, iOS Coordinator가 보드에 보내는 `selectFestival`).
+     * 이미 고른 축제면 아무것도 하지 않는다.
+     */
+    fun onNotificationFestivalRequested(festivalId: String) = intent {
+        if (festivalId != state.festivalId) selectFestival(festivalId)
     }
 
     fun onBearerTapped() = intent {
@@ -338,6 +353,15 @@ class LiveBoardViewModel(
         }
     }
 
+    /** 로그인이면 배지 · 배너를 다시 조회한다. 새로 부르면 이전 조회를 취소한다(iOS `loadNotificationUnreadCount`, `cancelInFlight`). */
+    private suspend fun loadNotificationUnreadCount() = subIntent {
+        if (!state.hasSession) {
+            notificationUnreadCountJob.getAndSet(null)?.cancel()
+            return@subIntent
+        }
+        replace(notificationUnreadCountJob) { notificationBadgeUseCase.refresh() }
+    }
+
     /** 선택 축제 팩 변경을 따라간다. 받은 팩이 없거나 백그라운드면 멈춘다(iOS `watchSelectedPack`). */
     private suspend fun watchSelectedPack() = subIntent {
         val festivalId = state.festivalId
@@ -507,10 +531,23 @@ class LiveBoardViewModel(
         }
     }
 
-    /** 세션이 바뀌었다(iOS `sessionChanged`). 세대를 올리고 이전 계정의 보드 · 일정을 비운 뒤 다시 부른다. */
+    /** 공유 배지가 바뀌었다(설계 E7). 비로그인이면 보이지 않는다(iOS `guard state.hasSession`). */
+    private suspend fun onNotificationBadgeChanged(badge: UserNotificationBadge) = subIntent {
+        reduce {
+            if (state.hasSession) {
+                state.copy(notificationUnreadCount = badge.unreadCount, notificationBanner = badge.banner)
+            } else {
+                state.copy(notificationUnreadCount = 0, notificationBanner = null)
+            }
+        }
+    }
+
+    /** 세션이 바뀌었다(iOS `sessionChanged`). 세대를 올리고 이전 계정의 보드 · 일정 · 배지를 비운 뒤 다시 부른다. */
     private suspend fun onSessionChanged(hasSession: Boolean, userId: String?) = subIntent {
         if (state.hasSession == hasSession && state.sessionUserId == userId) return@subIntent
         stopLiveBoard()
+        notificationUnreadCountJob.getAndSet(null)?.cancel()
+        notificationBadgeUseCase.clear()
         reduce {
             state.copy(
                 hasSession = hasSession,
@@ -525,10 +562,13 @@ class LiveBoardViewModel(
                 officialNewsFestivalId = null,
                 mySchedule = null,
                 myScheduleUnavailable = false,
+                notificationUnreadCount = 0,
+                notificationBanner = null,
             )
         }
         if (state.isVisible) watchLiveBoard()
         if (state.isVisible) loadMySchedule()
+        if (state.isVisible) loadNotificationUnreadCount()
     }
 
     // MARK: - 도우미

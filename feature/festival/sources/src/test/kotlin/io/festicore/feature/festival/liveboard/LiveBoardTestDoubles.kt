@@ -11,6 +11,8 @@ import io.festicore.domain.festival.FestivalSchedule
 import io.festicore.domain.festival.FestivalScheduleUseCase
 import io.festicore.domain.festival.PackDownloadEvent
 import io.festicore.domain.festival.PackSyncResult
+import io.festicore.domain.usernotification.UserNotificationBadge
+import io.festicore.domain.usernotification.UserNotificationBadgeUseCase
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -150,5 +152,32 @@ internal suspend fun BoardTest.awaitEffect(): LiveBoardSideEffect {
     while (true) {
         val item = awaitItem()
         if (item is Item.SideEffectItem) return item.value
+    }
+}
+
+/** 공유 배지 가짜 구현. 호출 횟수만 센다. [refreshResult]가 있으면 [refresh] 때 그 값으로 바꾼다. */
+internal class FakeNotificationBadgeUseCase(var refreshResult: UserNotificationBadge? = null) : UserNotificationBadgeUseCase {
+    override val badge = MutableStateFlow(UserNotificationBadge())
+    var refreshCount = 0
+    var clearCount = 0
+    val markedRead = mutableListOf<String>()
+    var unreadCountRefreshCount = 0
+
+    override suspend fun refresh() {
+        refreshCount += 1
+        refreshResult?.let { badge.value = it }
+    }
+
+    override suspend fun refreshUnreadCount() {
+        unreadCountRefreshCount += 1
+    }
+
+    override fun markReadInBackground(id: String) {
+        markedRead += id
+    }
+
+    override fun clear() {
+        clearCount += 1
+        badge.value = UserNotificationBadge()
     }
 }
