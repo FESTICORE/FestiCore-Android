@@ -108,7 +108,7 @@ private fun HomeWithCovers(state: AppCoordinatorState, coordinator: AppCoordinat
                     .graphicsLayer { translationX = mainTabOffset * size.width }
                     .then(if (state.authCover != null) Modifier.clearAndSetSemantics {} else Modifier),
         ) {
-            MainTabScreen(liveContent = { onAtRootChanged -> FestivalFlow(onAtRootChanged = onAtRootChanged) })
+            MainTabScreen(liveContent = { onHidesTabBarChanged -> FestivalFlow(onHidesTabBarChanged = onHidesTabBarChanged) })
         }
         AnimatedVisibility(
             visible = state.launchLogin,

@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleOwner
 import io.festicore.domain.festival.FestivalOverview
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.card.FCCardAction
@@ -116,7 +116,6 @@ fun FestivalListScreen(
     }
 
     LaunchedEffect(Unit) { viewModel.onAppear() }
-    ForegroundEffect(onForegroundChanged = viewModel::onForegroundChanged, onBackgrounded = viewModel::onBackgrounded)
     BackHandler(enabled = state.isSearching, onBack = viewModel::onSearchClosed)
 
     FestivalListContent(
@@ -142,10 +141,14 @@ fun FestivalListScreen(
 /**
  * 앱이 배경으로 갔다 돌아올 때만 알린다(iOS `scenePhase` 변화). 화면이 처음 붙을 때 받는 시작 알림은 넘긴다.
  * 첫 진입은 [FestivalListViewModel.onAppear]가 맡는다. `ON_STOP`은 iOS `background`라 포그라운드 해제 뒤 [onBackgrounded]도 보낸다.
+ * [lifecycleOwner]는 스택 바깥(라이브 흐름) 것을 받는다. 목록 항목 수명 주기는 보드를 쌓으면 내려가 받는 중인 팩을 취소하기 때문이다.
  */
 @Composable
-private fun ForegroundEffect(onForegroundChanged: (Boolean) -> Unit, onBackgrounded: () -> Unit) {
-    val lifecycleOwner = LocalLifecycleOwner.current
+internal fun ListForegroundEffect(
+    lifecycleOwner: LifecycleOwner,
+    onForegroundChanged: (Boolean) -> Unit,
+    onBackgrounded: () -> Unit,
+) {
     val currentOnForegroundChanged by rememberUpdatedState(onForegroundChanged)
     val currentOnBackgrounded by rememberUpdatedState(onBackgrounded)
     DisposableEffect(lifecycleOwner) {

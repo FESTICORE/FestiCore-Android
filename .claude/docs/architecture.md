@@ -50,7 +50,7 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Feature/FeatureAssembly` · `Service/ServiceAssembly` · `Core/CoreAssembly` | 각 모듈 `di/` + `app` 목록 | 조립 모듈을 따로 두지 않는다 |
 | `Feature/Auth` | `feature/auth` | Google 로그인만. Apple 로그인 제외 |
 | `Feature/Onboarding` | `feature/onboarding` | |
-| `Feature/Festival` | `feature/festival` | 목록 · 라이브 보드 · 알림함. 지금은 S00 목록만 옮겼다: `FestivalFlow`(라이브 탭 루트) · `FestivalCoordinator` · `FestivalListViewModel` · `FestivalListPresentation`. 예매처는 Custom Tabs(`androidx.browser`, Apache-2.0). 라이브 스택이 목록뿐이면 `MainTabScreen`이 탭 바를 숨긴다. 동작은 `feature/festival/.spec/festival-list-screen.md` |
+| `Feature/Festival` | `feature/festival` | 목록 · 라이브 보드 · 알림함. S00 목록(`FestivalFlow` 라이브 탭 루트 · `FestivalCoordinator` · `FestivalListViewModel` · `FestivalListPresentation`)과 S01 라이브 보드(`liveboard/`: `FestivalRoute.LiveBoard` · `LiveBoardViewModel` · `LiveBoardPresentation` · `LiveBoardScreenModel` · `HomeDeparture` · `FestivalSwitcherSheet`)를 옮겼다. 예매처 · 인스타그램은 Custom Tabs(`androidx.browser`, Apache-2.0). 탭 바는 `FestivalCoordinatorState.hidesTabBar`(목록뿐 · 보드 시트/다이얼로그)일 때 `MainTabScreen`이 숨긴다. 알림함 · 존 지도 · 크루 등은 보드가 콜백만 보낸다. 동작은 `feature/festival/.spec/festival-list-screen.md` · `live-board-screen.md` |
 | `Feature/Timetable` | `feature/timetable` | |
 | `Feature/Profile` | `feature/profile` | |
 | `Feature/Bearer` | `feature/bearer` | |
@@ -62,7 +62,7 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Service/FestiCoreConfig` · `FestiCoreDevice` · `FestiCorePack` | `service/{config,device,pack}` | `service/device`: 설치 기기 ID(`DeviceInstallationService`, `SecureStorage` 키 `deviceID`)만 옮겼다. 서버 기기 등록은 아직. `service/pack`: 팩 WebSocket 동기화(`PackSyncService` · `NetworkPackSyncService` · `PackWire` · `ReconnectBackoff`)와 축제별 JSON 파일 저장(`PackCache`, `AtomicFile`, `filesDir/festicore/packs/{id}.json`). `servicePackModule(baseUrl)`. 규칙은 `service/pack/.spec/pack-sync.md` |
 | `Service/FestiCoreFestivalCatalog` | `service/festivalcatalog` | 목록 쪽 조회 · 전체 갱신 · JSON 파일 캐시(`AtomicFile`, `filesDir/festicore/festival-catalog.json`) · 썸네일 주소 결합. 상세(`festivalDetail`) · 라이브(`FestivalLiveBoardService`, 세션별 ETag · 429 대기 메모리 캐시) · 공식 소식 · 내 일정 읽기도 둔다(`service/auth` · `service/device` 의존). 캐시 규칙은 `service/festivalcatalog/.spec/catalog-cache.md`, 라이브 규칙은 `domain/festival/.spec/live-board.md` |
 | `Core/FestiCoreNetwork` | `core/network` | Ktor. WebSocket은 `FestiCoreWebSocketClient`(Ktor `WebSockets` 플러그인 + OkHttp 엔진) |
-| `Core/FestiCoreStorage` | `core/datastore` · `core/database` | 보안 값 · 설정 / Room |
+| `Core/FestiCoreStorage` | `core/datastore` · `core/database` | 보안 값 · 설정 / Room. 라이브 보드 선택 축제 · 팔로우 안내 숨김은 `LiveBoardPreferenceStore`(iOS `UserDefaults` 키 그대로) |
 | `Core/FestiCoreLogger` · `FestiCoreUtility` · `FestiCoreLocation` | `core/{logger,utility,location}` | |
 | `UI/FestiCoreDesignKit` · `UI/FestiCoreDesignSystem` | `ui/designkit` | 토큰은 FestiCore-DesignSystem에서 생성 |
 | `UI/FestiCoreSharedUI` | `ui/sharedui` | `FCRemoteImage`(원격 이미지, Coil 3 `coil-compose` + `coil-network-okhttp`, Apache-2.0)만 옮겼다. 로더는 Koin이 아닌 Coil 싱글톤이고 `app`이 `installFestiCoreImageLoader`로 설정한다. 동작은 `ui/sharedui/.spec/remote-image.md`. SVG 처리기 · 토스트 프리셋은 아직 옮기지 않았다 |

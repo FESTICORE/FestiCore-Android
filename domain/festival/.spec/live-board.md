@@ -44,7 +44,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/Interface/Sources/{Entity/FestivalLi
 
 ## 제약 / 가정
 
-- `/live`의 `setOverrides` · `/flags`의 `photoUrl` · `bio` · `planVisible` · 상세의 `timezone` · `packVersion` · `directions` 등은 iOS가 읽지 않아 받지 않는다(`ignoreUnknownKeys`). 귀가(`directions`)는 L4에서 받은 팩으로 읽는다.
+- `/live`의 `setOverrides` · `/flags`의 `photoUrl` · `bio` · `planVisible` · 상세의 `timezone` · `packVersion` 등은 iOS가 읽지 않아 받지 않는다(`ignoreUnknownKeys`). 귀가용 `directions`는 `lastShuttleAt` · `lastTrainAt` · `shuttle.stopName` · `transit.stationName` · `transit.walkMinutes`만 `FestivalPackDocument.Directions`로 받고, 형식이 틀리면 통째로 null이다(iOS `FestivalPackDetailDTO` `try?`). 보드는 받은 팩의 값만 쓴다.
 - iOS `FestivalLiveBoardError.deviceNotRegistered`는 깃발 화면에서만 쓰여 옮기지 않았다. 대신 연결 · 서버 실패를 `Unavailable`로 묶었다.
 - 내 일정 저장(PUT)과 `stale` 오류는 Timetable 문서에서 옮긴다.
 - 로그인 응답(`me` · 크루 · 팔로우 · 기수 · 내 일정), 429 `Retry-After` 실제 값, 게시물 있는 인스타그램 응답은 stage에서 보지 못했다. 테스트는 iOS DTO 형태의 가짜 값이다.

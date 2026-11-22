@@ -20,6 +20,16 @@ internal fun FestivalPackDocumentDto.toDomain() = FestivalPackDocument(
     zones = zones?.map { FestivalPackDocument.Zone(it.id, it.name) },
     source = source?.let { FestivalPackDocument.Source(it.name, it.url, it.verifiedAt) },
     ticketLinks = ticketLinks?.map { FestivalPackDocument.TicketLink(it.label, it.url) },
+    directions =
+        directions?.let {
+            FestivalPackDocument.Directions(
+                lastShuttleAt = it.lastShuttleAt,
+                lastTrainAt = it.lastTrainAt,
+                shuttleStopName = it.shuttle?.stopName,
+                transitStationName = it.transit?.stationName,
+                transitWalkMinutes = it.transit?.walkMinutes,
+            )
+        },
 )
 
 private fun FestivalPackPerformanceDto.toDomain() = FestivalPackDocument.Performance(
