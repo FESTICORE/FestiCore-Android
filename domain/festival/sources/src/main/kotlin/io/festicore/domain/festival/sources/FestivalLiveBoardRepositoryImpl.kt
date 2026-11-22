@@ -19,6 +19,12 @@ internal class FestivalLiveBoardRepositoryImpl(
         fetch.board.toDomain(fetch.flags, catalogService::imageUrl, fetch.receivedAt)
     }
 
+    override suspend fun cachedLiveBoard(festivalId: String): FestivalLiveBoardSnapshot? = mapLiveBoardErrors {
+        liveBoardService.cachedFetch(festivalId)?.let { fetch ->
+            fetch.board.toDomain(fetch.flags, catalogService::imageUrl, fetch.receivedAt)
+        }
+    }
+
     override suspend fun officialNews(festivalId: String): FestivalOfficialNews = mapLiveBoardErrors {
         officialNewsService.officialNews(festivalId).toDomain()
     }

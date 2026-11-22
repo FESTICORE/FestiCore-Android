@@ -10,6 +10,9 @@ object FestivalApiPath {
     /** 축제 상세(온라인 팩 문서). iOS `FestivalDetailRequest`. */
     fun detail(festivalId: String) = "$FESTIVALS/$festivalId"
 
+    /** 현재 발행 팩 버전 · 지도 버전. 인증 없음. iOS `FestivalPackRequest.version`. */
+    fun packVersion(festivalId: String) = "$FESTIVALS/$festivalId/pack/version"
+
     /** 라이브 상태. iOS `FestivalLiveRequest`. */
     fun live(festivalId: String) = "$FESTIVALS/$festivalId/live"
 

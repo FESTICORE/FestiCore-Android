@@ -268,4 +268,6 @@ internal class FakePackUseCase(
         downloaded += festivalId
         return download(festivalId)
     }
+
+    override suspend fun syncPack(festivalId: String): PackSyncResult = error("사용하지 않음")
 }

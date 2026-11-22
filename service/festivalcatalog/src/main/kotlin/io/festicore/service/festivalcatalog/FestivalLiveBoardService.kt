@@ -26,6 +26,7 @@ data class FestivalLiveBoardFetch(
  * - 세션이 바뀌면 ETag 캐시 · 429 대기를 비운다. 응답 뒤 세션이 바뀌었으면 [FestivalLiveBoardServiceError.InvalidResponse].
  * - 429면 `Retry-After`(없거나 숫자가 아니면 35초, 최소 1초) 동안 요청하지 않고 [FestivalLiveBoardServiceError.RateLimited].
  * - 본문 `FESTIVAL_NOT_FOUND`면 그 축제 캐시를 지우고 [FestivalLiveBoardServiceError.FestivalNotFound].
+ * - 마지막으로 성공한 조회 결과를 세션별로 들고 있다가 [cachedFetch]로 돌려준다(존 지도 첫 화면, 설계 E3).
  * 그 밖의 실패는 [NetworkError](401 포함, 토큰 갱신은 인증 플러그인).
  */
 class FestivalLiveBoardService(
@@ -42,6 +43,9 @@ class FestivalLiveBoardService(
     private val lock = Mutex()
     private val cachedBoards = mutableMapOf<String, CachedBoard>()
     private val retryNotBefore = mutableMapOf<String, Instant>()
+
+    /** 세션([cachedSessionId])의 마지막 성공 결과. 비로그인 조회도 남긴다(ETag 캐시와 달리 재요청에 쓰지 않는다). */
+    private val lastFetches = mutableMapOf<String, FestivalLiveBoardFetch>()
     private var cachedSessionId: String? = null
 
     suspend fun refresh(festivalId: String): FestivalLiveBoardFetch {
@@ -52,6 +56,7 @@ class FestivalLiveBoardService(
             if (cachedSessionId != sessionId) {
                 cachedBoards.clear()
                 retryNotBefore.clear()
+                lastFetches.clear()
                 cachedSessionId = sessionId
             }
             retryNotBefore[festivalId]?.let { retryAt ->
@@ -74,7 +79,7 @@ class FestivalLiveBoardService(
             throw FestivalLiveBoardServiceError.InvalidResponse()
         }
         val latestSessionId = currentSessionId()
-        lock.withLock {
+        return lock.withLock {
             if (cachedSessionId != sessionId || latestSessionId != sessionId) throw FestivalLiveBoardServiceError.InvalidResponse()
             if (sessionId != null) {
                 val newEtag = when (response) {
@@ -84,14 +89,24 @@ class FestivalLiveBoardService(
                 cachedBoards[festivalId] = CachedBoard(newEtag, board)
             }
             retryNotBefore.remove(festivalId)
+            FestivalLiveBoardFetch(board, flags, receivedAt).also { lastFetches[festivalId] = it }
         }
-        return FestivalLiveBoardFetch(board, flags, receivedAt)
+    }
+
+    /**
+     * 이 축제를 마지막으로 [refresh]해 받은 결과(라이브 DTO · 깃발 프로필 · 수신 시각, [refresh]가 돌려준 값 그대로). 네트워크를 쓰지 않는다.
+     * 받은 적이 없거나, 현재 세션이 그 결과를 받은 세션과 다르거나, 그 뒤 미공개 응답을 받았으면 null.
+     */
+    suspend fun cachedFetch(festivalId: String): FestivalLiveBoardFetch? {
+        val sessionId = currentSessionId()
+        return lock.withLock { if (cachedSessionId != sessionId) null else lastFetches[festivalId] }
     }
 
     /** [lock] 안에서 부른다. */
     private fun FestivalLiveResponse.toBoard(festivalId: String, sessionId: String?): FestivalLiveBoardDto = when (this) {
         is FestivalLiveResponse.FestivalNotFound -> {
             cachedBoards.remove(festivalId)
+            lastFetches.remove(festivalId)
             throw FestivalLiveBoardServiceError.FestivalNotFound()
         }
 

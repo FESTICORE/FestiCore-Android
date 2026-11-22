@@ -150,4 +150,48 @@ class FestivalApiTest {
 
         assertEquals(dto, FestiCoreJson.decodeFromString(FestivalItemDto.serializer(), json))
     }
+
+    @Test
+    fun `팩 버전은 message 없는 stage 응답을 읽고 인증 헤더 없이 보낸다`() = runTest {
+        val body =
+            """{"code":"SUCCESS","data":{"packVersion":56,"packUpdatedAt":"2026-11-12T15:01:26Z","etag":"\"b5fe\"",""" +
+                """"mapVersion":"zm-7fc315a33960"}}"""
+
+        val version = api(body).packVersion("fst_00e0f4f1d8065a93")
+
+        assertEquals(FestivalPackVersionDto(56, "zm-7fc315a33960"), version)
+        assertEquals("/api/v1/festivals/fst_00e0f4f1d8065a93/pack/version", requests.single().url.encodedPath)
+        assertEquals(HttpMethod.Get, requests.single().method)
+        assertNull(requests.single().headers[HttpHeaders.Authorization])
+        assertNull(api("""{"code":"SUCCESS","data":{"packVersion":1}}""").packVersion("fst_a").mapVersion)
+    }
+
+    @Test
+    fun `팩 버전 code가 SUCCESS가 아니면 InvalidResponse, 2xx가 아니면 Http다`() = runTest {
+        assertTrue(failure { api("""{"code":"FAIL","data":null}""").packVersion("fst_a") } is NetworkError.InvalidResponse)
+        val http = failure { api("""{"code":"NOT_FOUND","message":"x"}""", HttpStatusCode.NotFound).packVersion("fst_a") }
+        assertEquals("NOT_FOUND", (http as NetworkError.Http).code)
+    }
+
+    @Test
+    fun `팩 문서의 지도 값은 형식이 틀리면 null이고 무대 머리글은 손상 원소만 버린다`() {
+        val document = FestiCoreJson.decodeFromString(
+            FestivalPackDocumentDto.serializer(),
+            """{"id":"fst_a","mapImageUrl":3,"mapAspect":"wide","mapVersion":"zm-1",
+            "mapStages":[{"stageId":"stg_a","x":0.1,"y":0.02,"w":0.4},{"stageId":"stg_b"},null],
+            "zones":[{"id":"zon_a","name":"A","kind":"무대 앞","order":1,"area":{"x":0.1,"y":0.2,"w":0.3,"h":0.4},"landmark":"GATE"},
+                     {"id":"zon_b","name":"B","order":"first","area":{"x":"left"}}]}""",
+        )
+
+        assertNull(document.mapImageUrl)
+        assertNull(document.mapAspect)
+        assertEquals("zm-1", document.mapVersion)
+        assertEquals(listOf(FestivalPackMapStageDto("stg_a", 0.1, 0.02, 0.4)), document.mapStages)
+        assertEquals(FestivalPackZoneAreaDto(0.1, 0.2, 0.3, 0.4), document.zones?.get(0)?.area)
+        assertEquals("GATE", document.zones?.get(0)?.landmark)
+        // 지도 값이 틀린 존도 이름은 남긴다(보드 존 이름 찾기).
+        assertEquals("B", document.zones?.get(1)?.name)
+        assertNull(document.zones?.get(1)?.order)
+        assertNull(document.zones?.get(1)?.area)
+    }
 }

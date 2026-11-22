@@ -17,7 +17,17 @@ internal fun FestivalPackDocumentDto.toDomain() = FestivalPackDocument(
     sets = sets?.map { it.toDomain() },
     stages = stages?.map { FestivalPackDocument.Stage(it.id, it.name) },
     flagsEnabled = flagsEnabled,
-    zones = zones?.map { FestivalPackDocument.Zone(it.id, it.name) },
+    zones =
+        zones?.map { zone ->
+            FestivalPackDocument.Zone(
+                id = zone.id,
+                name = zone.name,
+                kind = zone.kind,
+                order = zone.order,
+                area = zone.area?.let { FestivalPackDocument.Area(it.x, it.y, it.w, it.h) },
+                landmark = zone.landmark,
+            )
+        },
     source = source?.let { FestivalPackDocument.Source(it.name, it.url, it.verifiedAt) },
     ticketLinks = ticketLinks?.map { FestivalPackDocument.TicketLink(it.label, it.url) },
     directions =
@@ -30,6 +40,10 @@ internal fun FestivalPackDocumentDto.toDomain() = FestivalPackDocument(
                 transitWalkMinutes = it.transit?.walkMinutes,
             )
         },
+    mapImageUrl = mapImageUrl,
+    mapAspect = mapAspect,
+    mapVersion = mapVersion,
+    mapStages = mapStages?.map { FestivalPackDocument.MapStage(it.stageId, it.x, it.y, it.w) },
 )
 
 private fun FestivalPackPerformanceDto.toDomain() = FestivalPackDocument.Performance(

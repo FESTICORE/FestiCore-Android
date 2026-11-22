@@ -10,6 +10,8 @@ import io.festicore.domain.festival.FestivalPackRepository
 import io.festicore.domain.festival.FestivalPackUseCase
 import io.festicore.domain.festival.FestivalScheduleRepository
 import io.festicore.domain.festival.FestivalScheduleUseCase
+import io.festicore.domain.festival.FestivalZoneMapRepository
+import io.festicore.domain.festival.FestivalZoneMapUseCase
 import io.festicore.domain.festival.sources.FestivalCatalogRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalCatalogUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalLibraryUseCaseImpl
@@ -20,6 +22,8 @@ import io.festicore.domain.festival.sources.FestivalPackRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalPackUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalScheduleRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalScheduleUseCaseImpl
+import io.festicore.domain.festival.sources.FestivalZoneMapRepositoryImpl
+import io.festicore.domain.festival.sources.FestivalZoneMapUseCaseImpl
 import org.koin.dsl.module
 
 val domainFestivalModule = module {
@@ -31,7 +35,9 @@ val domainFestivalModule = module {
     factory<FestivalLiveBoardPreferenceUseCase> { FestivalLiveBoardPreferenceUseCaseImpl(get()) }
     // 목록 · 보드가 같은 팩 상태를 보도록 하나만 둔다(설계 D1).
     single<FestivalPackRepository> { FestivalPackRepositoryImpl(get(), get()) }
-    factory<FestivalPackUseCase> { FestivalPackUseCaseImpl(get()) }
+    factory<FestivalPackUseCase> { FestivalPackUseCaseImpl(get(), get()) }
+    single<FestivalZoneMapRepository> { FestivalZoneMapRepositoryImpl(get()) }
+    factory<FestivalZoneMapUseCase> { FestivalZoneMapUseCaseImpl(get(), get()) }
     single<FestivalScheduleRepository> { FestivalScheduleRepositoryImpl(get()) }
     factory<FestivalScheduleUseCase> { FestivalScheduleUseCaseImpl(get()) }
 }

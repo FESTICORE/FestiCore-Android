@@ -64,6 +64,12 @@ internal class FestivalPackRepositoryImpl(
         }
         .onCompletion { mutableState.update { it.copy(downloads = it.downloads - festivalId) } }
 
+    override suspend fun cachedPack(festivalId: String): CachedFestivalPack? = mapPackErrors { service.cachedPack(festivalId)?.toDomain() }
+
+    override suspend fun syncPack(festivalId: String): PackSyncResult = mapPackErrors {
+        service.sync(festivalId).toDomain().also(::record)
+    }
+
     override suspend fun deletePack(festivalId: String) = mapPackErrors {
         service.deletePack(festivalId)
         mutableState.update { it.copy(packs = it.packs - festivalId) }
