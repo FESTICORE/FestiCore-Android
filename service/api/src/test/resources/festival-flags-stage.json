@@ -1,0 +1,51 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "items": [
+      {
+        "id": "flg_3c6c2661ba",
+        "name": "호락호락",
+        "thumbUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+        "photoUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+        "tags": [
+          "slam"
+        ],
+        "bio": null,
+        "followerCount": 1,
+        "planVisible": true,
+        "plan": [],
+        "homeZoneId": "zon_rivet_front_left"
+      },
+      {
+        "id": "flg_e5579574e9",
+        "name": "매창단",
+        "thumbUrl": "/api/v1/festivals/images/d6c3e2be-a345-4927-907f-27bcdb60a189.webp",
+        "photoUrl": "/api/v1/festivals/images/d6c3e2be-a345-4927-907f-27bcdb60a189.webp",
+        "tags": [
+          "sing"
+        ],
+        "bio": null,
+        "followerCount": 1,
+        "planVisible": true,
+        "plan": [],
+        "homeZoneId": "zon_wonder_front"
+      },
+      {
+        "id": "flg_74f56437e6",
+        "name": "빨간바지",
+        "thumbUrl": "/api/v1/festivals/images/d0571d4f-9b12-400c-be06-36462b36c7a7.webp",
+        "photoUrl": "/api/v1/festivals/images/d0571d4f-9b12-400c-be06-36462b36c7a7.webp",
+        "tags": [
+          "calm"
+        ],
+        "bio": null,
+        "followerCount": 0,
+        "planVisible": true,
+        "plan": [],
+        "homeZoneId": "zon_wonder_front"
+      }
+    ],
+    "packVersion": 56
+  },
+  "message": "성공적으로 처리되었습니다."
+}

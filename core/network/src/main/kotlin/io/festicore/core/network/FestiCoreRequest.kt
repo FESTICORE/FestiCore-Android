@@ -31,6 +31,15 @@ suspend inline fun <reified T> HttpClient.festiCoreRequest(noinline block: HttpR
     data as T
 }
 
+/**
+ * 상태 코드 · 헤더를 직접 봐야 하는 요청(ETag · 304 · 429 등). 2xx가 아닌 응답도 [handle]에 넘긴다.
+ * 전송 · 해석 실패는 [festiCoreRequest]와 같은 [NetworkError]로 바꾼다.
+ */
+suspend inline fun <T> HttpClient.festiCoreExchange(
+    noinline block: HttpRequestBuilder.() -> Unit,
+    crossinline handle: suspend (HttpResponse) -> T,
+): T = mapNetworkErrors { handle(request(block)) }
+
 @PublishedApi
 internal const val SUCCESS_CODE = "SUCCESS"
 

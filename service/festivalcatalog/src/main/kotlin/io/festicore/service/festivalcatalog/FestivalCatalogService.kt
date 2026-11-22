@@ -4,6 +4,7 @@ import io.festicore.core.network.NetworkError
 import io.festicore.service.api.FestivalApi
 import io.festicore.service.api.FestivalItemDto
 import io.festicore.service.api.FestivalListDto
+import io.festicore.service.api.FestivalPackDocumentDto
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -26,6 +27,17 @@ class FestivalCatalogService(
 
     /** 저장된 목록. 네트워크를 쓰지 않는다. */
     suspend fun cached(): List<FestivalItemDto> = cache.load()
+
+    /**
+     * 축제 상세(온라인 팩 문서). 저장하지 않는다. ID가 비었거나 `/` `?` `#`가 있거나 응답 ID가 다르면
+     * [FestivalLiveBoardServiceError.InvalidResponse], 그 밖의 실패는 [NetworkError]. iOS `festivalDetail(for:)`.
+     */
+    suspend fun festivalDetail(festivalId: String): FestivalPackDocumentDto {
+        if (festivalId.isEmpty() || festivalId.any { it in "/?#" }) throw FestivalLiveBoardServiceError.InvalidResponse()
+        val document = api.detail(festivalId)
+        if (document.id != festivalId) throw FestivalLiveBoardServiceError.InvalidResponse()
+        return document
+    }
 
     /** 처음부터 [REFRESH_LIMIT]씩 마지막 쪽까지 받아 중복 ID를 빼고 저장한다. 최대 [MAX_PAGES]쪽. */
     suspend fun refresh(): List<FestivalItemDto> {

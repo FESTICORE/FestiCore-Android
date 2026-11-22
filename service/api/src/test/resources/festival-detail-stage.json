@@ -1,0 +1,241 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "id": "fst_00e0f4f1d8065a93",
+    "name": "WONDERLIVET 2026 (원더리벳 2026)",
+    "venue": "KINTEX HALL 7/8/9/10",
+    "timezone": "Asia/Seoul",
+    "eventPeriod": {
+      "firstDate": "2026-11-20",
+      "lastDate": "2026-11-22"
+    },
+    "flagsEnabled": true,
+    "packVersion": 56,
+    "packUpdatedAt": "2026-11-12T15:01:26Z",
+    "rules": [
+      "유리병",
+      "캔"
+    ],
+    "mapImageUrl": null,
+    "mapAspect": 0.655,
+    "timetableStatus": "available",
+    "thumbUrl": "/api/v1/festivals/images/c3b583dc-d7a3-4bf5-a905-daaba4267336.webp",
+    "ticketLinks": [
+      {
+        "label": "멜론티켓",
+        "url": "https://ticket.melon.com/performance/index.htm?prodId=213793"
+      },
+      {
+        "label": "예스24",
+        "url": "https://ticket.yes24.com/Perf/59840"
+      }
+    ],
+    "days": [
+      {
+        "date": "2026-11-20",
+        "startsAt": "2026-11-20T12:00:00+09:00",
+        "endsAt": "2026-11-20T22:00:00+09:00"
+      },
+      {
+        "date": "2026-11-21",
+        "startsAt": "2026-11-21T12:00:00+09:00",
+        "endsAt": "2026-11-21T22:00:00+09:00"
+      },
+      {
+        "date": "2026-11-22",
+        "startsAt": "2026-11-22T12:00:00+09:00",
+        "endsAt": "2026-11-22T22:00:00+09:00"
+      }
+    ],
+    "source": {
+      "name": "공개 수집 카탈로그",
+      "url": "https://ticket.melon.com/performance/index.htm?prodId=213793",
+      "verifiedAt": "2026-11-01T03:08:48Z"
+    },
+    "stages": [
+      {
+        "id": "stg_883352855f72",
+        "name": "LIVET STAGE",
+        "order": 1
+      },
+      {
+        "id": "stg_71c176fa2495",
+        "name": "WONDER STAGE",
+        "order": 2
+      }
+    ],
+    "sets": [
+      {
+        "stageId": "stg_883352855f72",
+        "artist": "A I W E O",
+        "startsAt": "2026-11-20T12:00:00+09:00",
+        "endsAt": "2026-11-20T12:30:00+09:00",
+        "imageUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+        "id": "set_dcc99d63b2a2e102",
+        "note": null
+      },
+      {
+        "stageId": "stg_71c176fa2495",
+        "artist": "nishina",
+        "startsAt": "2026-11-20T12:30:00+09:00",
+        "endsAt": "2026-11-20T13:00:00+09:00",
+        "imageUrl": "/api/v1/festivals/images/632c9a35-200d-45d3-b309-186c43f3e534.webp",
+        "id": "set_aeb689e7d84f628b",
+        "note": null
+      }
+    ],
+    "artists": [
+      {
+        "name": "A I W E O",
+        "imageUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp"
+      },
+      {
+        "name": "nishina",
+        "imageUrl": "/api/v1/festivals/images/632c9a35-200d-45d3-b309-186c43f3e534.webp"
+      }
+    ],
+    "timetable": [
+      {
+        "stageId": "stg_883352855f72",
+        "artist": "A I W E O",
+        "startsAt": "2026-11-20T12:00:00+09:00",
+        "endsAt": "2026-11-20T12:30:00+09:00",
+        "imageUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+        "id": "set_dcc99d63b2a2e102",
+        "note": null,
+        "date": "2026-11-20",
+        "stageName": "LIVET STAGE"
+      },
+      {
+        "stageId": "stg_883352855f72",
+        "artist": "Conton Candy",
+        "startsAt": "2026-11-20T13:00:00+09:00",
+        "endsAt": "2026-11-20T13:35:00+09:00",
+        "imageUrl": "/api/v1/festivals/images/d0571d4f-9b12-400c-be06-36462b36c7a7.webp",
+        "id": "set_8406c578a0ee1e3b",
+        "note": null,
+        "date": "2026-11-20",
+        "stageName": "LIVET STAGE"
+      },
+      {
+        "stageId": "stg_71c176fa2495",
+        "artist": "nishina",
+        "startsAt": "2026-11-20T12:30:00+09:00",
+        "endsAt": "2026-11-20T13:00:00+09:00",
+        "imageUrl": "/api/v1/festivals/images/632c9a35-200d-45d3-b309-186c43f3e534.webp",
+        "id": "set_aeb689e7d84f628b",
+        "note": null,
+        "date": "2026-11-20",
+        "stageName": "WONDER STAGE"
+      }
+    ],
+    "zones": [
+      {
+        "id": "zon_rivet_front_left",
+        "name": "리벳 스테이지 앞 왼쪽",
+        "kind": "무대 앞",
+        "x": 0.2468,
+        "y": 0.1517,
+        "order": 1,
+        "area": {
+          "x": 0.0254,
+          "y": 0.07,
+          "w": 0.4427,
+          "h": 0.1633
+        },
+        "landmark": null
+      },
+      {
+        "id": "zon_rivet_center",
+        "name": "리벳 스테이지 중앙",
+        "kind": "무대 앞",
+        "x": 0.1628,
+        "y": 0.325,
+        "order": 2,
+        "area": {
+          "x": 0.0254,
+          "y": 0.2467,
+          "w": 0.2748,
+          "h": 0.1567
+        },
+        "landmark": null
+      }
+    ],
+    "mapStages": [
+      {
+        "stageId": "stg_883352855f72",
+        "x": 0.0254,
+        "y": 0.0033,
+        "w": 0.4427
+      }
+    ],
+    "mapVersion": "zm-7fc315a33960",
+    "flags": [
+      {
+        "id": "flg_3c6c2661ba",
+        "name": "호락호락",
+        "bio": null,
+        "followerCount": 1,
+        "planVisible": true,
+        "homeZoneId": "zon_rivet_front_left",
+        "thumbUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+        "photoUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+        "tags": [
+          "slam"
+        ],
+        "plan": []
+      }
+    ],
+    "directions": {
+      "shuttle": {
+        "body": "가까운 역과 행사장 정문 셔틀 정류장 사이를 15분 간격으로 운행해요.",
+        "links": [],
+        "stopName": "정문 셔틀 정류장",
+        "location": null
+      },
+      "transit": {
+        "body": "공연이 끝나면 역이 붐벼요. 막차 시각을 미리 확인하세요.",
+        "links": [],
+        "stationName": null,
+        "walkMinutes": null,
+        "location": null
+      },
+      "parking": {
+        "body": "행사장 주차장은 유료이고 공연 날에는 일찍 차요. 대중교통을 권해요.",
+        "links": []
+      },
+      "memo": "헤드라이너가 끝나면 셔틀 줄이 30분 넘게 길어져요. 막차 시각을 꼭 확인하세요.",
+      "lastShuttleAt": "2026-11-22T22:20:00+09:00",
+      "lastTrainAt": "2026-11-22T22:32:00+09:00",
+      "mapLinks": {
+        "naver": "https://map.naver.com/p/search/KINTEX%20HALL%207%2F8%2F9%2F10",
+        "kakao": "https://map.kakao.com/link/search/KINTEX%20HALL%207%2F8%2F9%2F10"
+      },
+      "location": {
+        "latitude": 37.66469544695199,
+        "longitude": 126.742064181796,
+        "label": "KINTEX HALL 7/8/9/10",
+        "source": {
+          "name": "멜론티켓",
+          "url": "https://ticket.melon.com/performance/index.htm?prodId=213793",
+          "verifiedAt": "2026-10-29T15:05:26.338425+00:00"
+        }
+      },
+      "source": {
+        "name": "공개 수집 카탈로그",
+        "url": "https://ticket.melon.com/performance/index.htm?prodId=213793",
+        "verifiedAt": "2026-11-01T03:08:48Z"
+      },
+      "lastDepartures": []
+    },
+    "checklist": [
+      {
+        "id": "chk_dev_ticket",
+        "label": "모바일 티켓",
+        "required": true,
+        "note": null
+      }
+    ]
+  },
+  "message": "성공적으로 처리되었습니다."
+}

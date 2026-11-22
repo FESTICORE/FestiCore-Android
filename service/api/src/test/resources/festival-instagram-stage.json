@@ -1,0 +1,14 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "festivalId": "fst_00e0f4f1d8065a93",
+    "available": false,
+    "account": {
+      "username": "wonderlivet",
+      "url": "https://www.instagram.com/wonderlivet/"
+    },
+    "fetchedAt": null,
+    "posts": []
+  },
+  "message": "성공적으로 처리되었습니다."
+}
