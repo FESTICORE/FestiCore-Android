@@ -168,4 +168,37 @@ class FestivalCoordinatorTest {
             expectState { copy(liveBoardFestivalIds = setOf("fst_1")) }
         }
     }
+
+    @Test
+    fun `딥링크 축제 열기는 목록 위를 비우고 그 축제 보드를 쌓는다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.NotificationInbox)
+            expectState { copy(routes = listOf(FestivalRoute.List, FestivalRoute.NotificationInbox)) }
+
+            containerHost.onDeeplinkFestivalOpened("fst_1")
+            expectState { copy(selectedFestivalId = "fst_1", routes = listOf(FestivalRoute.List, board)) }
+        }
+    }
+
+    @Test
+    fun `같은 보드가 열려 있으면 딥링크 축제를 보드에 대기로 넘긴다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
+            containerHost.onFestivalSelected("fst_1")
+            expectState { copy(selectedFestivalId = "fst_1", routes = listOf(FestivalRoute.List, board)) }
+
+            containerHost.onDeeplinkFestivalOpened("fst_1")
+            expectState { copy(pendingBoardFestivalId = "fst_1") }
+        }
+    }
+
+    @Test
+    fun `딥링크 축제 목록 열기는 목록만 남긴다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
+            containerHost.onFestivalSelected("fst_1")
+            expectState { copy(selectedFestivalId = "fst_1", routes = listOf(FestivalRoute.List, board)) }
+
+            containerHost.onDeeplinkFestivalListOpened()
+            expectState { copy(routes = listOf(FestivalRoute.List)) }
+        }
+    }
 }

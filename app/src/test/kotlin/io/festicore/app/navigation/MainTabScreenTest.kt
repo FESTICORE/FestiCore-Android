@@ -3,7 +3,12 @@ package io.festicore.app.navigation
 import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotSelected
@@ -15,6 +20,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import io.festicore.ui.designkit.component.navigation.FCTabBarTab
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,7 +38,7 @@ class MainTabScreenTest {
     @Test
     fun `라이브 스택이 목록뿐이면 탭 바를 숨긴다`() {
         composeRule.setContent {
-            MainTabScreen(liveContent = { onHidesTabBarChanged, _ ->
+            HoistedMainTabScreen(liveContent = { onHidesTabBarChanged, _ ->
                 LaunchedEffect(Unit) { onHidesTabBarChanged(true) }
                 Text("라이브 목록")
             })
@@ -46,7 +52,7 @@ class MainTabScreenTest {
     fun `라이브 스택이 쌓이면 탭 바가 보이고 탭을 바꿔 다시 만들어도 선택이 유지된다`() {
         val restoration = StateRestorationTester(composeRule)
         restoration.setContent {
-            MainTabScreen(liveContent = { onHidesTabBarChanged, _ ->
+            HoistedMainTabScreen(liveContent = { onHidesTabBarChanged, _ ->
                 LaunchedEffect(Unit) { onHidesTabBarChanged(false) }
                 Text("라이브 보드")
             })
@@ -67,7 +73,7 @@ class MainTabScreenTest {
     @Test
     fun `라이브 흐름이 깃발 탭을 요청하면 깃발 탭으로 바꾼다`() {
         composeRule.setContent {
-            MainTabScreen(liveContent = { onHidesTabBarChanged, onFlagTabRequested ->
+            HoistedMainTabScreen(liveContent = { onHidesTabBarChanged, onFlagTabRequested ->
                 LaunchedEffect(Unit) { onHidesTabBarChanged(false) }
                 Text("깃발 찾기", modifier = Modifier.clickable(onClick = onFlagTabRequested))
             })
@@ -78,4 +84,18 @@ class MainTabScreenTest {
         tab("깃발").assertIsSelected()
         tab("라이브").assertIsNotSelected()
     }
+}
+
+/** 앱에서는 `MainTabCoordinator`가 탭 선택을 가진다. 여기서는 같은 일을 하는 저장 상태로 감싼다. */
+@Composable
+private fun HoistedMainTabScreen(
+    liveContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit, onFlagTabRequested: () -> Unit) -> Unit,
+) {
+    var selection by rememberSaveable { mutableStateOf(FCTabBarTab.Live) }
+    MainTabScreen(
+        selection = selection,
+        onSelectionChange = { selection = it },
+        onFlagTabRequested = { selection = FCTabBarTab.Flag },
+        liveContent = liveContent,
+    )
 }

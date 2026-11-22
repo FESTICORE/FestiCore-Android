@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import io.festicore.core.datastore.FirstInstallOnboardingStore
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
+import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.AuthDomainError
 import io.festicore.domain.auth.AuthProfile
 import io.festicore.domain.auth.AuthRepository
@@ -17,6 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import org.orbitmvi.orbit.Container
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
@@ -43,6 +45,16 @@ data class AppCoordinatorState(
         get() = signUp != null || (launchLogin && coverTop is AuthRoute.SignUp)
 
     fun withoutCover(): AppCoordinatorState = copy(launchLogin = false, signUp = null, coverTop = null)
+
+    /** 대기 딥링크를 열 수 있다: 홈이고 덮개(로그인 · 가입)가 없다(iOS `deeplinkReceived`의 `home` · `!isMainTabCovered`). */
+    val canOpenDeeplink: Boolean
+        get() = routes == listOf(AppRoute.Home) && authCover == null
+}
+
+/** 루트 밖으로 나가는 일. 메인 탭이 처리한다. */
+sealed interface AppCoordinatorSideEffect {
+    /** 대기에서 꺼낸 딥링크를 메인 탭에서 연다(iOS `openDeeplink`). */
+    data class OpenDeeplink(val deeplink: FestiCoreDeeplink) : AppCoordinatorSideEffect
 }
 
 /**
@@ -59,11 +71,15 @@ class AppCoordinator(
     private val authRepository: AuthRepository,
     private val currentSessionId: suspend () -> String?,
     private val updateCurrentUserId: (String?) -> Unit,
+    private val deeplinkReceived: Flow<Unit>,
+    private val consumePendingDeeplink: suspend () -> FestiCoreDeeplink?,
 ) : ViewModel(),
-    OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, Nothing> {
-    override val container = orbitContainer<AppCoordinatorState, Nothing>(AppCoordinatorState()) {
-        intent { observeSessionExpiry() }
-    }
+    OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, AppCoordinatorSideEffect> {
+    override val container: Container<AppCoordinatorState, AppCoordinatorSideEffect> =
+        orbitContainer(AppCoordinatorState()) {
+            intent { observeSessionExpiry() }
+            intent { observeDeeplinks() }
+        }
 
     private val hasSplashStarted = AtomicBoolean(false)
     private val isCheckingProfile = AtomicBoolean(false)
@@ -97,13 +113,13 @@ class AppCoordinator(
             is LaunchLoginResult.Completed -> {
                 // 그 사이 세션이 바뀌었거나 없어졌으면 다른 세션의 사용자라 현재 사용자로 두지 않는다.
                 if (currentSessionId() == result.sessionId) updateCurrentUserId(result.userId)
-                reduce { state.withoutCover() }
+                closeCover()
             }
 
-            LaunchLoginResult.SignUpCancelled -> reduce { state.withoutCover() }
+            LaunchLoginResult.SignUpCancelled -> closeCover()
 
             LaunchLoginResult.Skipped -> {
-                reduce { state.withoutCover() }
+                closeCover()
                 recheckProfile()
             }
 
@@ -134,7 +150,7 @@ class AppCoordinator(
         if (result.expired) {
             reduce { state.copy(launchLogin = true, signUp = null, coverEpoch = state.coverEpoch + 1, coverTop = null) }
         } else {
-            reduce { state.withoutCover() }
+            closeCover()
         }
     }
 
@@ -159,6 +175,35 @@ class AppCoordinator(
 
     private suspend fun checkSession() = subIntent {
         enterHome(launchLogin = !isLoggedIn())
+    }
+
+    /**
+     * 새 딥링크 신호를 받으면 대기 값을 꺼내 본다. 열 수 있게 되는 순간(홈 진입 [enterHome] · 덮개 닫힘 [closeCover])에도 다시 꺼낸다
+     * (iOS `deeplinkReceived` · `AppCoordinator.swift:146-158` · `AppCoordinator+Route.swift:86-89`).
+     */
+    private suspend fun observeDeeplinks(): Unit = subIntent {
+        deeplinkReceived.collect { onDeeplinkReceived() }
+    }
+
+    /** 덮개를 닫는다. 메인 탭이 보이게 되면 대기 딥링크를 꺼낸다. */
+    private suspend fun closeCover() = subIntent {
+        reduce { state.withoutCover() }
+        onDeeplinkReceived()
+    }
+
+    /** 열 수 없으면 대기 값을 남겨 두고, 열 수 있게 되면 다시 꺼낸다. */
+    private fun onDeeplinkReceived() = intent {
+        if (!state.canOpenDeeplink) return@intent
+        val deeplink =
+            try {
+                consumePendingDeeplink()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                FestiCoreLogger.error("대기 딥링크를 꺼낼 수 없음: ${e::class.simpleName}", LogCategory.APP)
+                null
+            } ?: return@intent
+        postSideEffect(AppCoordinatorSideEffect.OpenDeeplink(deeplink))
     }
 
     /** 생성 때부터 만료를 구독한다. 구독 시점 세대는 이미 반영된 것으로 보고, 커질 때마다 한 번 처리한다. */
@@ -192,7 +237,7 @@ class AppCoordinator(
                 }
             }
 
-            else -> reduce { state.withoutCover() }
+            else -> closeCover()
         }
     }
 
@@ -201,6 +246,7 @@ class AppCoordinator(
         if (state.routes.lastOrNull() == AppRoute.Home) return@subIntent
         // 홈 전에 받은 만료(launchLogin)는 유지한다.
         reduce { state.copy(routes = listOf(AppRoute.Home), launchLogin = launchLogin || state.launchLogin) }
+        onDeeplinkReceived()
         if (!state.launchLogin) intent { recheckProfile() }
     }
 
@@ -248,7 +294,7 @@ class AppCoordinator(
             updateCurrentUserId(null)
             if (authRepository.hasSessionExpired(sessionId)) return@subIntent
             if (current != null) clearSessionIf(sessionId)
-            reduce { state.withoutCover() }
+            closeCover()
             return@subIntent
         }
         val profile = result.getOrNull()
@@ -256,7 +302,7 @@ class AppCoordinator(
         // iOS `handleProfileLoaded`와 같이 가입 조건과 관계없이 확인한 사용자를 둔다.
         updateCurrentUserId(profile.user.id)
         if (profile.isEligible) {
-            if (state.showsSignUp) reduce { state.withoutCover() }
+            if (state.showsSignUp) closeCover()
             return@subIntent
         }
         val route =

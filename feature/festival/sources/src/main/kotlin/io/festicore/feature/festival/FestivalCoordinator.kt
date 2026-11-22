@@ -127,6 +127,28 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
         return true
     }
 
+    /** 딥링크로 축제 목록을 연다(iOS `showFestivalList`). 목록 위 화면을 모두 뺀다. */
+    fun onDeeplinkFestivalListOpened() = intent {
+        reduce { state.copy(routes = listOf(FestivalRoute.List), isLiveBoardPresentingModal = false) }
+    }
+
+    /**
+     * 딥링크로 축제 라이브 보드를 연다(iOS `openWidgetFestival` → `widgetPackValidated`). 목록 위 화면을 빼고 그 축제 보드를 쌓는다.
+     * 같은 보드가 이미 열려 있으면 보드가 다른 축제로 바뀌었을 수 있어 대기 축제로 넘긴다(같은 축제면 보드가 무시한다).
+     * 저장된 팩이 없는 축제 · 캐시 오류 안내(iOS `widgetPackLookupFailed`)는 P0b에서 옮긴다.
+     */
+    fun onDeeplinkFestivalOpened(festivalId: String) = intent {
+        val routes = listOf(FestivalRoute.List, FestivalRoute.LiveBoard(festivalId))
+        reduce {
+            state.copy(
+                routes = routes,
+                selectedFestivalId = festivalId,
+                isLiveBoardPresentingModal = false,
+                pendingBoardFestivalId = if (state.routes == routes) festivalId else null,
+            )
+        }
+    }
+
     /** 보드가 대기 축제를 받았다. */
     fun onPendingBoardFestivalConsumed() = intent { reduce { state.copy(pendingBoardFestivalId = null) } }
 

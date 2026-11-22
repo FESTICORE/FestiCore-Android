@@ -1,6 +1,7 @@
 package io.festicore.app.navigation
 
 import io.festicore.core.datastore.FirstInstallOnboardingStore
+import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.AuthDomainError
 import io.festicore.domain.auth.AuthLoginResult
 import io.festicore.domain.auth.AuthProfile
@@ -14,6 +15,7 @@ import io.festicore.service.auth.SessionExpiry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
@@ -90,7 +92,34 @@ class AppCoordinatorTest {
         expiry: Flow<SessionExpiry> = emptyFlow(),
         auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
         users: CurrentUserStore = CurrentUserStore(),
-    ) = AppCoordinator(store, { loggedIn }, expiry, auth, { auth.sessionId }, users::update)
+        deeplinks: FakeDeeplinks? = null,
+    ) = AppCoordinator(
+        store,
+        { loggedIn },
+        expiry,
+        auth,
+        { auth.sessionId },
+        users::update,
+        deeplinks?.received ?: emptyFlow(),
+        { deeplinks?.consume() },
+    )
+
+    /** 대기 딥링크 하나와 새 딥링크 신호(앱의 `AppDeeplinkBridge` 대신). */
+    private class FakeDeeplinks {
+        val received = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        var pending: FestiCoreDeeplink? = null
+        var consumeCount = 0
+
+        fun receive(deeplink: FestiCoreDeeplink) {
+            pending = deeplink
+            received.tryEmit(Unit)
+        }
+
+        fun consume(): FestiCoreDeeplink? {
+            consumeCount++
+            return pending.also { pending = null }
+        }
+    }
 
     private val home = AppCoordinatorState(routes = listOf(AppRoute.Home))
 
@@ -253,7 +282,16 @@ class AppCoordinatorTest {
             delay(1)
             true
         }
-        AppCoordinator(FakeOnboardingStore(completed = true), isLoggedIn, expiry, auth, { auth.sessionId }, {}).test(this) {
+        AppCoordinator(
+            FakeOnboardingStore(completed = true),
+            isLoggedIn,
+            expiry,
+            auth,
+            { auth.sessionId },
+            {},
+            emptyFlow(),
+            { null },
+        ).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
             expectState { copy(launchLogin = true) }
@@ -854,5 +892,52 @@ class AppCoordinatorTest {
 
         /** 세션 s1에서 사용자 u1로 로그인(또는 가입)을 마쳤다. */
         val completed = LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")
+    }
+
+    @Test
+    fun `홈 전에 받은 딥링크는 대기했다가 홈에 들어가면 연다`() = runTest {
+        val deeplinks = FakeDeeplinks()
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, deeplinks = deeplinks).test(this) {
+            runOnCreate()
+            deeplinks.receive(FestiCoreDeeplink.Festival("fst_a"))
+            containerHost.onSplashAppeared()
+
+            expectState { copy(routes = listOf(AppRoute.Home)) }
+            expectSideEffect(AppCoordinatorSideEffect.OpenDeeplink(FestiCoreDeeplink.Festival("fst_a")))
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    @Test
+    fun `첫 진입 덮개가 있으면 대기했다가 덮개가 닫히면 연다`() = runTest {
+        val deeplinks = FakeDeeplinks()
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, deeplinks = deeplinks).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            deeplinks.receive(FestiCoreDeeplink.FestivalList)
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.Skipped)
+
+            expectState { copy(launchLogin = false) }
+            expectSideEffect(AppCoordinatorSideEffect.OpenDeeplink(FestiCoreDeeplink.FestivalList))
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(null, deeplinks.pending)
+    }
+
+    @Test
+    fun `덮개 없는 홈에서 받은 딥링크는 바로 연다`() = runTest {
+        val deeplinks = FakeDeeplinks()
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, deeplinks = deeplinks).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home)) }
+
+            deeplinks.receive(FestiCoreDeeplink.Festival("fst_b"))
+
+            expectSideEffect(AppCoordinatorSideEffect.OpenDeeplink(FestiCoreDeeplink.Festival("fst_b")))
+            cancelAndIgnoreRemainingItems()
+        }
     }
 }
