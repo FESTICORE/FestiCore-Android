@@ -1,0 +1,33 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "festivalId": "fst_00e0f4f1d8065a93",
+    "setOverrides": [],
+    "activeFlags": [
+      {
+        "flagId": "flg_4d2c186c24",
+        "status": "active",
+        "zoneId": "zon_fnb",
+        "activity": "train",
+        "updatedAt": "2026-11-08T10:41:40Z"
+      },
+      {
+        "flagId": "flg_31da303181",
+        "status": "active",
+        "zoneId": "zon_grass",
+        "activity": "calm",
+        "updatedAt": "2026-11-08T10:41:40Z"
+      },
+      {
+        "flagId": "flg_365ec2cf38",
+        "status": "resting",
+        "zoneId": "zon_slam",
+        "activity": "resting",
+        "updatedAt": "2026-11-08T10:41:39Z"
+      }
+    ],
+    "me": null,
+    "serverAt": "2026-11-22T00:43:06Z"
+  },
+  "message": "성공적으로 처리되었습니다."
+}

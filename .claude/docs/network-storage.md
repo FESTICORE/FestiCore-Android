@@ -7,6 +7,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - 클라이언트는 `createFestiCoreHttpClient(baseUrl, engine, json, configure)`로 만든다. `baseUrl`은 app이 `BuildConfig.BASE_URL`(끝이 `/`)로 넘기고, 요청 경로는 앞 `/` 없이 쓴다(`api/v1/me`). 인증 플러그인은 `configure`로 붙인다.
 - 요청은 `HttpClient.festiCoreRequest<T> { ... }`로 보낸다. 서버 응답 래퍼 `{code, message, data}`에서 `code == "SUCCESS"`일 때 `data`를 돌려준다.
 - 실패는 `NetworkError`를 던진다.
+- 상태 코드 · 헤더를 직접 봐야 하는 요청(ETag · 304 · 429)은 `HttpClient.festiCoreExchange(block, handle)`로 보내고 `handle`에서 응답을 읽는다. 전송 · 해석 실패는 같은 `NetworkError`로 바뀐다(예: `FestivalApi.live`).
 
 | 상황                              | 오류                                                              |
 | --------------------------------- | ----------------------------------------------------------------- |
@@ -24,7 +25,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 
 - `FirstInstallOnboardingStore`: 첫 설치 온보딩 완료 여부(DataStore Preferences).
 - `RecentSearchStore`: 사용자별 최근 검색어(DataStore Preferences, iOS와 같은 키 · `\n` 형식). 규칙은 `domain/festival/.spec/recent-search.md`.
-- `SecureStorage`: 토큰 같은 보안 값. Android Keystore AES/GCM으로 암호화해 DataStore에 저장한다. 복호화에 실패하면 `null`을 돌려주고 그 키를 지운다. 쓰기 실패는 `SecureStorageException`.
+- `SecureStorage`: 토큰 · 설치 기기 ID(키 `deviceID`, `service/device`) 같은 보안 값. Android Keystore AES/GCM으로 암호화해 DataStore에 저장한다. 복호화에 실패하면 `null`을 돌려주고 그 키를 지운다. 쓰기 실패는 `SecureStorageException`.
 - Keystore · DataStore · SharedPreferences는 이 모듈에서만 쓴다(`check-boundaries`가 막는다). 다른 모듈은 인터페이스를 주입받는다.
 - Robolectric은 AndroidKeyStore를 지원하지 않으므로 테스트는 가짜 `ValueCipher`를 주입한다. 실제 Keystore 동작은 기기 · 에뮬레이터에서 확인한다.
 

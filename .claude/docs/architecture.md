@@ -55,12 +55,12 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | `Feature/Profile` | `feature/profile` | |
 | `Feature/Bearer` | `feature/bearer` | |
 | `Feature/Web` | `feature/web` | `WebScreen`(앱 안 웹 화면, `android.webkit.WebView`). 진입 인자 `WebPage`는 `interface`. 문서(`document`) 범위만 옮겼다. 다른 feature 스택에 넣을 때는 app이 화면을 슬롯으로 넘긴다(예: `LaunchLoginFlow(legalDocument = ...)`) |
-| `Domain/{Auth,Bearer,Festival,Notice,Timetable,UserNotification}Domain` | `domain/{auth,bearer,festival,notice,timetable,usernotification}` | `domain/festival`: 목록(카탈로그) 엔티티 · `FestivalCatalogRepository` · `FestivalCatalogUseCase` · `FestivalLibraryUseCase`(최근 검색). 동작은 `domain/festival/.spec/festival-catalog.md` · `recent-search.md`. `domain/auth`: `CurrentUserProvider`(`domain/auth/.spec/current-user.md`) |
-| `Service/API` · `Service/APIEndpoint` | `service/api` | 경로 상수 · 인증 정책 · 요청 DTO. iOS는 축제 DTO가 `FestivalDomain`에 있지만 Android는 의존 방향 때문에 여기 둔다(`FestivalApi` · `FestivalItemDto`) |
+| `Domain/{Auth,Bearer,Festival,Notice,Timetable,UserNotification}Domain` | `domain/{auth,bearer,festival,notice,timetable,usernotification}` | `domain/festival`: 목록(카탈로그) 엔티티 · `FestivalCatalogRepository` · `FestivalCatalogUseCase` · `FestivalLibraryUseCase`(최근 검색), 라이브 보드 데이터(`FestivalPackDocument` · `FestivalLiveBoardSnapshot` · `FestivalOfficialNews` · `FestivalLiveBoardSchedule` · `FestivalLiveBoardUseCase` · `FestivalScheduleUseCase.mySchedule`). 동작은 `domain/festival/.spec/festival-catalog.md` · `recent-search.md` · `live-board.md`. `domain/auth`: `CurrentUserProvider`(`domain/auth/.spec/current-user.md`) |
+| `Service/API` · `Service/APIEndpoint` | `service/api` | 경로 상수 · 인증 정책 · 요청 DTO. iOS는 축제 DTO가 `FestivalDomain`에 있지만 Android는 의존 방향 때문에 여기 둔다(`FestivalApi` · `FestivalItemDto` · 상세 `FestivalPackDocumentDto` · 라이브 `FestivalLiveBoardDto` · 깃발 `FestivalFlagsDto` · 공식 소식 `FestivalOfficialNewsDto` · 내 일정 `FestivalScheduleDto`) |
 | `Service/FestiCoreAuth` | `service/auth` | 세션 · 토큰 갱신 |
 | `Service/FestiCoreAnalytics` | `service/analytics` | Sentry · Mixpanel |
-| `Service/FestiCoreConfig` · `FestiCoreDevice` · `FestiCorePack` | `service/{config,device,pack}` | |
-| `Service/FestiCoreFestivalCatalog` | `service/festivalcatalog` | 목록 쪽 조회 · 전체 갱신 · JSON 파일 캐시(`AtomicFile`, `filesDir/festicore/festival-catalog.json`) · 썸네일 주소 결합. 목록 · 이미지 경로만 옮겼다(상세 · 라이브 보드 · 깃발은 이후). 캐시 규칙은 `service/festivalcatalog/.spec/catalog-cache.md` |
+| `Service/FestiCoreConfig` · `FestiCoreDevice` · `FestiCorePack` | `service/{config,device,pack}` | `service/device`: 설치 기기 ID(`DeviceInstallationService`, `SecureStorage` 키 `deviceID`)만 옮겼다. 서버 기기 등록은 아직 |
+| `Service/FestiCoreFestivalCatalog` | `service/festivalcatalog` | 목록 쪽 조회 · 전체 갱신 · JSON 파일 캐시(`AtomicFile`, `filesDir/festicore/festival-catalog.json`) · 썸네일 주소 결합. 상세(`festivalDetail`) · 라이브(`FestivalLiveBoardService`, 세션별 ETag · 429 대기 메모리 캐시) · 공식 소식 · 내 일정 읽기도 둔다(`service/auth` · `service/device` 의존). 캐시 규칙은 `service/festivalcatalog/.spec/catalog-cache.md`, 라이브 규칙은 `domain/festival/.spec/live-board.md` |
 | `Core/FestiCoreNetwork` | `core/network` | Ktor |
 | `Core/FestiCoreStorage` | `core/datastore` · `core/database` | 보안 값 · 설정 / Room |
 | `Core/FestiCoreLogger` · `FestiCoreUtility` · `FestiCoreLocation` | `core/{logger,utility,location}` | |
