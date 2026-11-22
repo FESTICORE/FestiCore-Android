@@ -7,15 +7,17 @@ import io.festicore.service.api.UserNotificationApi
 import io.festicore.service.api.UserNotificationIdsBody
 
 /**
- * 내 알림 저장소(iOS `UserNotificationRepositoryImpl`). 요청마다 현재 세션을 확인하고 그 세션에 묶어 보낸다.
- * 세션이 없으면 보내지 않고 [UserNotificationError.Unauthenticated]. 로컬 저장은 없다.
+ * 내 알림 저장소(iOS `UserNotificationRepositoryImpl`). 조회는 현재 세션을 확인하고 그 세션에 묶어 보낸다.
+ * 읽음 · 삭제는 넘겨받은 세션(그 알림을 받은 쪽의 세션)에만 묶고 현재 세션을 다시 읽지 않는다.
+ * 세션이 없거나 바뀌었으면 보내지 않고 [UserNotificationError.Unauthenticated]. 로컬 저장은 없다.
  */
 internal class UserNotificationRepositoryImpl(
     private val api: UserNotificationApi,
     private val currentSessionId: suspend () -> String?,
 ) : UserNotificationRepository {
     override suspend fun notifications(before: String?): UserNotificationPage = mapErrors {
-        api.list(before, requireSession()).toDomain()
+        val session = requireSession()
+        api.list(before, session).toDomain(session)
     }
 
     override suspend fun unreadCount(): Int = mapErrors {
@@ -24,16 +26,13 @@ internal class UserNotificationRepositoryImpl(
         count
     }
 
-    override suspend fun markRead(ids: List<String>) = sendInBatches(ids) { body, session -> api.read(body, session) }
+    override suspend fun markRead(ids: List<String>, sessionId: String) = sendInBatches(ids) { body -> api.read(body, sessionId) }
 
-    override suspend fun delete(ids: List<String>) = sendInBatches(ids) { body, session -> api.delete(body, session) }
+    override suspend fun delete(ids: List<String>, sessionId: String) = sendInBatches(ids) { body -> api.delete(body, sessionId) }
 
-    private suspend fun sendInBatches(ids: List<String>, send: suspend (UserNotificationIdsBody, String) -> Unit) {
+    private suspend fun sendInBatches(ids: List<String>, send: suspend (UserNotificationIdsBody) -> Unit) {
         if (ids.isEmpty()) return
-        mapErrors {
-            val session = requireSession()
-            ids.chunked(MAX_IDS_PER_REQUEST).forEach { send(UserNotificationIdsBody(it), session) }
-        }
+        mapErrors { ids.chunked(MAX_IDS_PER_REQUEST).forEach { send(UserNotificationIdsBody(it)) } }
     }
 
     private suspend fun requireSession(): String = currentSessionId() ?: throw UserNotificationError.Unauthenticated()

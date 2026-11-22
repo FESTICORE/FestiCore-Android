@@ -42,16 +42,16 @@ class UserNotificationBadgeStoreTest {
 
     private class FakeRepository(
         var unreadCount: suspend () -> Int = { 0 },
-        var notifications: suspend (String?) -> UserNotificationPage = { UserNotificationPage(emptyList(), null) },
-        var markRead: suspend (List<String>) -> Unit = {},
+        var notifications: suspend (String?) -> UserNotificationPage = { UserNotificationPage(emptyList(), null, SESSION) },
+        var markRead: suspend (List<String>, String) -> Unit = { _, _ -> },
     ) : UserNotificationRepository {
         override suspend fun notifications(before: String?) = notifications.invoke(before)
 
         override suspend fun unreadCount() = unreadCount.invoke()
 
-        override suspend fun markRead(ids: List<String>) = markRead.invoke(ids)
+        override suspend fun markRead(ids: List<String>, sessionId: String) = markRead.invoke(ids, sessionId)
 
-        override suspend fun delete(ids: List<String>) = Unit
+        override suspend fun delete(ids: List<String>, sessionId: String) = Unit
     }
 
     private fun TestScope.store(repository: FakeRepository, now: Instant) =
@@ -79,7 +79,7 @@ class UserNotificationBadgeStoreTest {
         val latest = item("new", Instant.ofEpochSecond(100))
         val read = item("read", Instant.ofEpochSecond(200), readAt = Instant.ofEpochSecond(250))
         val repository =
-            FakeRepository(unreadCount = { 1 }, notifications = { UserNotificationPage(listOf(read, latest), null) })
+            FakeRepository(unreadCount = { 1 }, notifications = { UserNotificationPage(listOf(read, latest), null, SESSION) })
         val store = store(repository, Instant.ofEpochSecond(300))
         store.refresh()
         assertEquals(UserNotificationBadge(1, latest), store.badge.value)
@@ -90,12 +90,12 @@ class UserNotificationBadgeStoreTest {
         val pending = async { store.refresh() }
         runCurrent()
         store.clear()
-        gate.complete(UserNotificationPage(listOf(latest), null))
+        gate.complete(UserNotificationPage(listOf(latest), null, SESSION))
         pending.await()
         assertEquals(UserNotificationBadge(), store.badge.value)
 
         // 안 읽은 수가 0이 되면 배너도 지운다.
-        repository.notifications = { UserNotificationPage(listOf(latest), null) }
+        repository.notifications = { UserNotificationPage(listOf(latest), null, SESSION) }
         store.refresh()
         repository.unreadCount = { 0 }
         store.refreshUnreadCount()
@@ -105,7 +105,7 @@ class UserNotificationBadgeStoreTest {
     @Test
     fun oldUnreadNotificationIsNotBanner() = runTest {
         val old = item("old", Instant.EPOCH)
-        val repository = FakeRepository(unreadCount = { 1 }, notifications = { UserNotificationPage(listOf(old), null) })
+        val repository = FakeRepository(unreadCount = { 1 }, notifications = { UserNotificationPage(listOf(old), null, SESSION) })
         val store = store(repository, Instant.EPOCH.plus(UserNotificationBadgeUseCase.BANNER_LIFETIME.toJavaDuration()))
         store.refresh()
         assertEquals(1, store.badge.value.unreadCount)
@@ -118,15 +118,32 @@ class UserNotificationBadgeStoreTest {
         val repository =
             FakeRepository(
                 unreadCount = { 3 },
-                markRead = { ids ->
+                markRead = { ids, _ ->
                     calls += ids
                     throw UserNotificationError.Unavailable()
                 },
             )
         val store = store(repository, Instant.EPOCH)
-        store.markReadInBackground("new")
+        store.markReadInBackground("new", SESSION)
         advanceUntilIdle()
         assertEquals(listOf(listOf("new")), calls)
         assertEquals(3, store.badge.value.unreadCount)
+    }
+
+    /** 탭한 뒤 계정이 바뀌어도 읽음은 탭할 때 넘긴 세션으로 묶여 나가고, 이전 계정 재조회는 버린다. */
+    @Test
+    fun readStaysBoundToTappedSessionAfterAccountSwitch() = runTest {
+        val sent = mutableListOf<String>()
+        val repository = FakeRepository(unreadCount = { 4 }, markRead = { _, session -> sent += session })
+        val store = store(repository, Instant.EPOCH)
+        store.markReadInBackground("old-account", SESSION)
+        store.clear() // 코루틴이 돌기 전에 계정이 바뀌었다.
+        advanceUntilIdle()
+        assertEquals(listOf(SESSION), sent)
+        assertEquals(UserNotificationBadge(), store.badge.value)
+    }
+
+    private companion object {
+        const val SESSION = "s1"
     }
 }

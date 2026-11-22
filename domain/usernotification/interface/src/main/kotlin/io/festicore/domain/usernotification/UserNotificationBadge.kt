@@ -26,8 +26,11 @@ interface UserNotificationBadgeUseCase {
     /** 안 읽은 수만 다시 읽는다. 0 이하면 배너를 지운다(iOS 알림함 `refreshUnreadCount` → 보드 `notificationUnreadCountChanged`). */
     suspend fun refreshUnreadCount()
 
-    /** 앱 범위에서 읽음을 보내고 성공 · 실패와 관계없이 [refresh]한다(iOS `markNotificationRead`). */
-    fun markReadInBackground(id: String)
+    /**
+     * 앱 범위에서 [sessionId](그 알림을 받은 쪽의 세션)에 묶어 읽음을 보내고 성공 · 실패와 관계없이 [refresh]한다
+     * (iOS `markNotificationRead`). 그 사이 세션이 바뀌었으면 요청은 나가지 않는다.
+     */
+    fun markReadInBackground(id: String, sessionId: String)
 
     /** 계정이 바뀌었다. 배지 0 · 배너 없음, 진행 중 응답은 버린다. */
     fun clear()

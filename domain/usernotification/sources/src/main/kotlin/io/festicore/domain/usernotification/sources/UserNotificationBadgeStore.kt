@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 /**
  * 배지 공유 저장소(설계 E7, Koin `single`). 보드 · 알림함 ViewModel은 서로 부를 수 없어 이 값을 함께 본다.
  * [generation]은 [clear]마다 올라 이전 계정의 늦은 응답을 버린다(iOS `accountGeneration`).
- * 읽음 요청은 [scope](앱 범위)에서 돌아 알림함이 닫혀도 끝까지 간다.
+ * 읽음 요청은 [scope](앱 범위)에서 돌아 알림함이 닫혀도 끝까지 간다. 세션은 탭할 때 넘겨받은 값으로 묶는다.
  */
 internal class UserNotificationBadgeStore(
     private val repository: UserNotificationRepository,
@@ -50,10 +50,10 @@ internal class UserNotificationBadgeStore(
         applyCount(requested, count)
     }
 
-    override fun markReadInBackground(id: String) {
+    override fun markReadInBackground(id: String, sessionId: String) {
         val requested = generation.get()
         scope.launch {
-            attempt { repository.markRead(listOf(id)) }
+            attempt { repository.markRead(listOf(id), sessionId) }
             if (generation.get() == requested) refresh()
         }
     }

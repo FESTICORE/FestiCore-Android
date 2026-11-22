@@ -38,7 +38,7 @@ class UserNotificationDomainTest {
                  "createdAt":"2026-11-04T00:00:00.000Z","readAt":null,"route":"/festivals/fst_2026/live"}
                 ],"nextCursor":"opaque|cursor"}}""",
             )
-        val page = response.data?.toDomain() ?: return fail("data가 없다")
+        val page = response.data?.toDomain("s1") ?: return fail("data가 없다")
         assertEquals("opaque|cursor", page.nextCursor)
         assertEquals(1, page.items.size)
         assertEquals("fst_2026", page.items[0].festivalId)
@@ -76,16 +76,16 @@ class UserNotificationDomainTest {
 
     @Test
     fun useCaseForwardsRepositoryAndLiveDependenciesResolve() = runTest {
-        val expected = UserNotificationPage(items = emptyList(), nextCursor = "next")
+        val expected = UserNotificationPage(items = emptyList(), nextCursor = "next", sessionId = "s1")
         val repository =
             object : UserNotificationRepository {
                 override suspend fun notifications(before: String?) = expected
 
                 override suspend fun unreadCount() = 0
 
-                override suspend fun markRead(ids: List<String>) = Unit
+                override suspend fun markRead(ids: List<String>, sessionId: String) = Unit
 
-                override suspend fun delete(ids: List<String>) = Unit
+                override suspend fun delete(ids: List<String>, sessionId: String) = Unit
             }
         assertEquals(expected, UserNotificationUseCaseImpl(repository).notifications(null))
 

@@ -35,10 +35,11 @@ class NotificationInboxViewModelTest {
     )
 
     private class FakeNotificationUseCase(
-        var notifications: suspend (String?) -> UserNotificationPage = { UserNotificationPage(emptyList(), null) },
+        var notifications: suspend (String?) -> UserNotificationPage = { UserNotificationPage(emptyList(), null, SESSION) },
         var delete: suspend (List<String>) -> Unit = {},
     ) : UserNotificationUseCase {
         val requestedCursors = mutableListOf<String?>()
+        val deleteSessions = mutableListOf<String>()
 
         override suspend fun notifications(before: String?): UserNotificationPage {
             requestedCursors += before
@@ -47,9 +48,12 @@ class NotificationInboxViewModelTest {
 
         override suspend fun unreadCount() = 0
 
-        override suspend fun markRead(ids: List<String>) = Unit
+        override suspend fun markRead(ids: List<String>, sessionId: String) = Unit
 
-        override suspend fun delete(ids: List<String>) = delete.invoke(ids)
+        override suspend fun delete(ids: List<String>, sessionId: String) {
+            deleteSessions += sessionId
+            delete.invoke(ids)
+        }
     }
 
     private fun viewModel(
@@ -58,7 +62,7 @@ class NotificationInboxViewModelTest {
     ) = NotificationInboxViewModel(notifications, badge)
 
     private fun loaded(vararg items: UserNotificationItem) =
-        NotificationInboxState(load = NotificationInboxLoad.Loaded, items = items.toList())
+        NotificationInboxState(load = NotificationInboxLoad.Loaded, items = items.toList(), sessionId = SESSION)
 
     @Test
     fun sectionsUseSeoulCalendar() {
@@ -111,7 +115,7 @@ class NotificationInboxViewModelTest {
 
     @Test
     fun deletingLoadedPageFetchesNextItems() = runTest {
-        val notifications = FakeNotificationUseCase(notifications = { UserNotificationPage(listOf(item("remaining")), null) })
+        val notifications = FakeNotificationUseCase(notifications = { UserNotificationPage(listOf(item("remaining")), null, SESSION) })
         val badge = FakeNotificationBadgeUseCase()
         val initial =
             loaded(item("first")).copy(nextCursor = "next", isEditing = true, selectedIds = setOf("first"))
@@ -132,7 +136,7 @@ class NotificationInboxViewModelTest {
     @Test
     fun nextPageDeduplicatesItems() = runTest {
         val notifications =
-            FakeNotificationUseCase(notifications = { UserNotificationPage(listOf(item("first"), item("second")), null) })
+            FakeNotificationUseCase(notifications = { UserNotificationPage(listOf(item("first"), item("second")), null, SESSION) })
         viewModel(notifications).test(this, initialState = loaded(item("first")).copy(nextCursor = "next")) {
             containerHost.onLoadMoreTapped()
             expectState { copy(isLoadingMore = true) }
@@ -156,7 +160,7 @@ class NotificationInboxViewModelTest {
 
     @Test
     fun fullReloadPrunesSelection() = runTest {
-        val notifications = FakeNotificationUseCase(notifications = { UserNotificationPage(listOf(item("new")), null) })
+        val notifications = FakeNotificationUseCase(notifications = { UserNotificationPage(listOf(item("new")), null, SESSION) })
         val initial =
             NotificationInboxState(
                 load = NotificationInboxLoad.Failed,
@@ -167,7 +171,9 @@ class NotificationInboxViewModelTest {
         viewModel(notifications).test(this, initialState = initial) {
             containerHost.onRetryTapped()
             expectState { copy(load = NotificationInboxLoad.Loading) }
-            expectState { copy(items = listOf(item("new")), selectedIds = emptySet(), load = NotificationInboxLoad.Loaded) }
+            expectState {
+                copy(items = listOf(item("new")), selectedIds = emptySet(), load = NotificationInboxLoad.Loaded, sessionId = SESSION)
+            }
             assertFalse(containerHost.container.stateFlow.value.allLoadedSelected)
         }
     }
@@ -183,7 +189,7 @@ class NotificationInboxViewModelTest {
             // pop: 항목 ViewModel 범위가 끝나며 진행 중 요청이 취소된다.
             cancelAndIgnoreRemainingItems()
         }
-        late.complete(UserNotificationPage(listOf(item("other-account")), null))
+        late.complete(UserNotificationPage(listOf(item("other-account")), null, SESSION))
         testScheduler.runCurrent()
         assertEquals(emptyList<UserNotificationItem>(), inbox.container.stateFlow.value.items)
     }
@@ -201,7 +207,7 @@ class NotificationInboxViewModelTest {
         val unread = item("new", route = "/festivals/fst/live")
         val notifications =
             FakeNotificationUseCase(
-                notifications = { UserNotificationPage(listOf(unread, item("x")), null) },
+                notifications = { UserNotificationPage(listOf(unread, item("x")), null, SESSION) },
                 delete = { error("삭제 실패") },
             )
         viewModel(notifications, badge).test(this, initialState = loaded(unread, item("x"))) {
@@ -222,5 +228,39 @@ class NotificationInboxViewModelTest {
         }
         assertEquals(listOf("new"), badge.markedRead)
         assertEquals(1, badge.unreadCountRefreshCount)
+    }
+
+    /** 첫 쪽을 받은 뒤 계정이 바뀌어도 읽음 · 삭제는 첫 쪽 세션으로 묶여 새 세션으로 나가지 않는다. */
+    @Test
+    fun readAndDeleteStayBoundToLoadedSession() = runTest {
+        val badge = FakeNotificationBadgeUseCase()
+        val notifications =
+            FakeNotificationUseCase(
+                notifications = { before ->
+                    if (before == null) {
+                        UserNotificationPage(listOf(item("old")), "next", SESSION)
+                    } else {
+                        UserNotificationPage(listOf(item("more")), null, "s2") // 다음 쪽 전에 계정이 바뀌었다.
+                    }
+                },
+            )
+        viewModel(notifications, badge).test(this) {
+            containerHost.onAppear()
+            testScheduler.runCurrent()
+            containerHost.onLoadMoreTapped()
+            testScheduler.runCurrent()
+            containerHost.onRowTapped("old")
+            containerHost.onEditTapped()
+            containerHost.onRowTapped("more")
+            containerHost.onDeleteTapped()
+            testScheduler.runCurrent()
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(listOf(SESSION), badge.markedReadSessions)
+        assertEquals(listOf(SESSION), notifications.deleteSessions)
+    }
+
+    private companion object {
+        const val SESSION = "s1"
     }
 }

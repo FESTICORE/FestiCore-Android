@@ -52,8 +52,11 @@ class UserNotificationRepositoryTest {
                         },
                 ),
             ),
-        currentSessionId = { sessionId },
+        currentSessionId = { currentSession ?: sessionId },
     )
+
+    /** null이 아니면 [repository]의 `sessionId` 대신 이 값을 현재 세션으로 본다(계정 전환 흉내). */
+    private var currentSession: String? = null
 
     private val HttpRequestData.boundSession: String? get() = attributes.getOrNull(BearerAuthorizationKey)?.expectedSessionId
 
@@ -105,9 +108,9 @@ class UserNotificationRepositoryTest {
     fun readAndDeleteAccept204AndSplitAtBackendLimit() = runTest {
         val repository = repository(status = HttpStatusCode.NoContent)
         val ids = (0 until 101).map { "ntf_$it" }
-        repository.markRead(ids)
-        repository.delete(ids)
-        repository.markRead(emptyList())
+        repository.markRead(ids, sessionId)
+        repository.delete(ids, sessionId)
+        repository.markRead(emptyList(), sessionId)
 
         assertEquals(
             listOf(
@@ -124,6 +127,20 @@ class UserNotificationRepositoryTest {
     }
 
     @Test
+    fun readAndDeleteStayBoundToPageSessionAfterAccountSwitch() = runTest {
+        val listJson = """{"code":"SUCCESS","message":"OK","data":{"items":[],"nextCursor":null}}"""
+        val repository = repository(body = listJson)
+        val page = repository.notifications(null)
+        assertEquals(sessionId, page.sessionId)
+        currentSession = "00000000-0000-0000-0000-000000000002" // 탭과 요청 사이에 계정이 바뀌었다.
+        requests.clear()
+        repository.markRead(listOf("ntf_1"), page.sessionId)
+        repository.delete(listOf("ntf_1"), page.sessionId)
+        // 이전 세션에 묶인 채 나가 인증 플러그인이 새 세션 토큰으로 보내지 않는다(FestiCoreAuthPluginTest).
+        assertEquals(listOf(sessionId, sessionId), requests.map { it.boundSession })
+    }
+
+    @Test
     fun unauthorizedResponseMapsToUnauthenticated() = runTest {
         val unauthorized =
             repository(
@@ -131,9 +148,12 @@ class UserNotificationRepositoryTest {
                 body = """{"code":"UNAUTHORIZED","data":null,"message":"인증 토큰이 없습니다."}""",
             )
         assertFails<UserNotificationError.Unauthenticated> { unauthorized.notifications(null) }
-        assertFails<UserNotificationError.Unauthenticated> { unauthorized.markRead(listOf("ntf_1")) }
+        assertFails<UserNotificationError.Unauthenticated> { unauthorized.markRead(listOf("ntf_1"), sessionId) }
         assertFails<UserNotificationError.Unavailable> {
-            repository(status = HttpStatusCode.InternalServerError, body = """{"code":"ERROR","message":"x"}""").delete(listOf("ntf_1"))
+            repository(
+                status = HttpStatusCode.InternalServerError,
+                body = """{"code":"ERROR","message":"x"}""",
+            ).delete(listOf("ntf_1"), sessionId)
         }
     }
 

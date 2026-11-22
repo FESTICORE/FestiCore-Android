@@ -9,7 +9,7 @@ internal class UserNotificationUseCaseImpl(private val repository: UserNotificat
 
     override suspend fun unreadCount() = repository.unreadCount()
 
-    override suspend fun markRead(ids: List<String>) = repository.markRead(ids)
+    override suspend fun markRead(ids: List<String>, sessionId: String) = repository.markRead(ids, sessionId)
 
-    override suspend fun delete(ids: List<String>) = repository.delete(ids)
+    override suspend fun delete(ids: List<String>, sessionId: String) = repository.delete(ids, sessionId)
 }
