@@ -13,7 +13,8 @@ import java.time.format.DateTimeParseException
 import kotlin.coroutines.cancellation.CancellationException
 
 /** 한 항목이라도 시각이 틀리면 쪽 전체를 실패로 본다(iOS `UserNotificationDTO+Mapper`). */
-internal fun UserNotificationListDto.toDomain(): UserNotificationPage = UserNotificationPage(items.map { it.toDomain() }, nextCursor)
+internal fun UserNotificationListDto.toDomain(sessionId: String): UserNotificationPage =
+    UserNotificationPage(items.map { it.toDomain() }, nextCursor, sessionId)
 
 internal fun UserNotificationItemDto.toDomain(): UserNotificationItem {
     val created = IsoTime.parse(createdAt) ?: throw UserNotificationError.InvalidResponse()

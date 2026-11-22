@@ -161,6 +161,7 @@ internal class FakeNotificationBadgeUseCase(var refreshResult: UserNotificationB
     var refreshCount = 0
     var clearCount = 0
     val markedRead = mutableListOf<String>()
+    val markedReadSessions = mutableListOf<String>()
     var unreadCountRefreshCount = 0
 
     override suspend fun refresh() {
@@ -172,8 +173,9 @@ internal class FakeNotificationBadgeUseCase(var refreshResult: UserNotificationB
         unreadCountRefreshCount += 1
     }
 
-    override fun markReadInBackground(id: String) {
+    override fun markReadInBackground(id: String, sessionId: String) {
         markedRead += id
+        markedReadSessions += sessionId
     }
 
     override fun clear() {

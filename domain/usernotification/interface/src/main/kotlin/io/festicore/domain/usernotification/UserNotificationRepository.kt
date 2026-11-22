@@ -6,7 +6,9 @@ interface UserNotificationRepository {
 
     suspend fun unreadCount(): Int
 
-    suspend fun markRead(ids: List<String>)
+    /** [sessionId] 세션일 때만 보낸다. 세션이 바뀌었으면 보내지 않고 [UserNotificationError.Unauthenticated]. */
+    suspend fun markRead(ids: List<String>, sessionId: String)
 
-    suspend fun delete(ids: List<String>)
+    /** [sessionId] 세션일 때만 보낸다. 세션이 바뀌었으면 보내지 않고 [UserNotificationError.Unauthenticated]. */
+    suspend fun delete(ids: List<String>, sessionId: String)
 }

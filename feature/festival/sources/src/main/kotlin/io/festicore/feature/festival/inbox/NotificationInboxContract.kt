@@ -28,6 +28,8 @@ data class NotificationInboxState(
     val load: NotificationInboxLoad = NotificationInboxLoad.Idle,
     val items: List<UserNotificationItem> = emptyList(),
     val nextCursor: String? = null,
+    /** 첫 쪽을 받은 세션. 읽음 · 삭제는 이 세션에 묶어 보내 계정이 바뀌면 나가지 않는다. 다음 쪽은 바꾸지 않는다. */
+    val sessionId: String? = null,
     val isLoadingMore: Boolean = false,
     val isEditing: Boolean = false,
     val isDeleting: Boolean = false,

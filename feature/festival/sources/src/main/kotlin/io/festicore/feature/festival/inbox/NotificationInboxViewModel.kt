@@ -13,6 +13,7 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 /**
  * 알림함(iOS `NotificationInboxFeature`). 함수 이름은 iOS `Action.View`와 같고 순서는 view → async → inner를 따른다.
  * 읽음 요청과 배지 갱신은 공유 배지 저장소가 맡아 화면이 닫혀도 끝까지 간다(설계 E7).
+ * 읽음 · 삭제는 첫 쪽을 받은 세션에 묶는다(iOS `sessionBound`). 요청 때 현재 세션을 다시 읽지 않는다.
  * 쪽 조회 · 배지 조회는 각각 하나만 돈다(iOS `cancelInFlight`).
  */
 class NotificationInboxViewModel(
@@ -56,9 +57,10 @@ class NotificationInboxViewModel(
         if (current.load != NotificationInboxLoad.Loaded || !current.isEditing || current.items.isEmpty()) return@intent
         if (current.selectedIds.isEmpty() || current.isDeleting) return@intent
         val ids = current.items.map { it.id }.filter { it in current.selectedIds }
-        if (ids.isEmpty()) return@intent
+        val sessionId = current.sessionId
+        if (ids.isEmpty() || sessionId == null) return@intent
         reduce { state.copy(isDeleting = true) }
-        delete(ids)
+        delete(ids, sessionId)
     }
 
     /**
@@ -72,7 +74,8 @@ class NotificationInboxViewModel(
             reduce { state.copy(selectedIds = if (id in state.selectedIds) state.selectedIds - id else state.selectedIds + id) }
             return@intent
         }
-        val shouldRead = item.readAt == null && id !in state.attemptedReadIds
+        val sessionId = state.sessionId
+        val shouldRead = item.readAt == null && id !in state.attemptedReadIds && sessionId != null
         val festivalId = NotificationInboxPresentation.liveFestivalId(item)
         reduce {
             state.copy(
@@ -81,7 +84,7 @@ class NotificationInboxViewModel(
                 dialog = if (festivalId == null) NotificationInboxDialog.DestinationUnavailable else state.dialog,
             )
         }
-        if (shouldRead) badgeUseCase.markReadInBackground(id)
+        if (shouldRead && sessionId != null) badgeUseCase.markReadInBackground(id, sessionId)
         if (festivalId != null) postSideEffect(NotificationInboxSideEffect.FestivalOpened(festivalId))
     }
 
@@ -112,9 +115,9 @@ class NotificationInboxViewModel(
         onPageLoaded(page, before)
     }
 
-    private suspend fun delete(ids: List<String>) = subIntent {
+    private suspend fun delete(ids: List<String>, sessionId: String) = subIntent {
         try {
-            notificationUseCase.delete(ids)
+            notificationUseCase.delete(ids, sessionId)
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (_: Exception) {
@@ -145,6 +148,7 @@ class NotificationInboxViewModel(
                 selectedIds = state.selectedIds intersect ids,
                 isEditing = state.isEditing && items.isNotEmpty(),
                 nextCursor = page.nextCursor.takeIf { it != requestedCursor },
+                sessionId = if (requestedCursor == null) page.sessionId else state.sessionId,
                 load = NotificationInboxLoad.Loaded,
                 isLoadingMore = false,
             )
