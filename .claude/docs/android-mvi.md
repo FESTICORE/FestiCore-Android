@@ -170,7 +170,7 @@ fun `로그인 성공 시 홈으로 이동한다`() = runTest {
 
 ## 지원 범위
 
-- `minSdk 24`, 성능 · QA 기준 기기는 Galaxy S21급으로 한다.
+- `minSdk 26`(java.time · 가변 폰트 축을 그대로 쓰기 위해, 2026-11-22), 성능 · QA 기준 기기는 Galaxy S21급으로 한다.
 - 출시 후 Play Console에서 Android 11 미만 비중이 2~3% 아래로 내려가면 `minSdk 30`으로 올린다.
 
 ## 금지

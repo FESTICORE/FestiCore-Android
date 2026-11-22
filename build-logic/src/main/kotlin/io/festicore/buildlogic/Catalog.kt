@@ -15,7 +15,7 @@ fun VersionCatalog.lib(alias: String): Provider<MinimalExternalModuleDependency>
 object AndroidConfig {
     const val COMPILE_SDK = 37
     const val TARGET_SDK = 36
-    const val MIN_SDK = 24
+    const val MIN_SDK = 26
     const val JVM_TOOLCHAIN = 21
     const val APPLICATION_ID = "io.festiCore.co"
     const val VERSION_NAME = "1.0.0"

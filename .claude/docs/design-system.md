@@ -29,7 +29,7 @@ Text(
 - 화면 코드는 semantic 색만 쓴다. `Color(0x…)` 하드코딩은 `check-boundaries`가 막는다(생성 토큰 폴더 · 테스트만 허용). 새 색은 DesignSystem 토큰에 먼저 추가한다.
 - 생성 토큰 파일은 고치지 않는다. 포맷 검사(ktlint)에서도 뺀다.
 - 앱 루트는 `FestiCoreTheme`으로 감싼다.
-- 가변 폰트 굵기 축은 API 26 이상에서만 적용된다(minSdk 24).
+- 가변 폰트 굵기 축은 API 26 이상에서 적용된다(minSdk 26이라 모든 지원 기기에서 적용).
 
 ## 토큰 동기화
 
