@@ -1,5 +1,7 @@
 package io.festicore.feature.festival.liveboard
 
+import io.festicore.domain.festival.FestivalBoardSelection
+import io.festicore.domain.festival.FestivalBoardSelectionUseCase
 import io.festicore.domain.festival.FestivalLiveBoardPreferenceUseCase
 import io.festicore.domain.festival.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.FestivalLiveBoardUseCase
@@ -8,6 +10,7 @@ import io.festicore.domain.festival.FestivalPackDocument
 import io.festicore.domain.festival.FestivalPackState
 import io.festicore.domain.festival.FestivalPackUseCase
 import io.festicore.domain.festival.FestivalSchedule
+import io.festicore.domain.festival.FestivalScheduleSaved
 import io.festicore.domain.festival.FestivalScheduleUseCase
 import io.festicore.domain.festival.PackDownloadEvent
 import io.festicore.domain.festival.PackSyncResult
@@ -21,6 +24,7 @@ import kotlin.time.Duration
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import org.orbitmvi.orbit.test.Item
@@ -92,6 +96,33 @@ internal class FakeScheduleUseCase(var schedule: suspend (String) -> FestivalSch
         calls += festivalId
         return schedule(festivalId)
     }
+
+    override suspend fun saveMySchedule(
+        festivalId: String,
+        setIds: List<String>,
+        clientAt: Instant,
+    ): FestivalSchedule = error("보드는 내 일정을 저장하지 않는다")
+
+    /** 저장 알림. 테스트가 보낸다. */
+    override val savedSchedules = MutableSharedFlow<FestivalScheduleSaved>(extraBufferCapacity = 8)
+
+    override suspend fun notifyMyScheduleSaved(saved: FestivalScheduleSaved) = savedSchedules.emit(saved)
+}
+
+/** 보드 선택 공유 상태 가짜 구현. 보드가 쓴 값을 그대로 담는다. */
+internal class FakeBoardSelectionUseCase : FestivalBoardSelectionUseCase {
+    override val selection = MutableStateFlow<FestivalBoardSelection?>(null)
+    override val retryRequests: Flow<String> = emptyFlow()
+
+    override fun update(selection: FestivalBoardSelection) {
+        this.selection.value = selection
+    }
+
+    override fun clear() {
+        selection.value = null
+    }
+
+    override suspend fun requestRetry(festivalId: String) = Unit
 }
 
 internal class FakePreferenceUseCase : FestivalLiveBoardPreferenceUseCase {

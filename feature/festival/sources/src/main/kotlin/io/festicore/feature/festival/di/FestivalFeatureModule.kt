@@ -25,6 +25,7 @@ val festivalFeatureModule = module {
             preferenceUseCase = get(),
             currentUserProvider = get(),
             notificationBadgeUseCase = get(),
+            boardSelectionUseCase = get(),
         )
     }
     // 인자: 축제 ID, 처음 고를 존 ID(경로 값, null 가능). 둘 다 문자열이라 순서로 꺼낸다.

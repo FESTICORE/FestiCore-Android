@@ -6,8 +6,11 @@ import io.festicore.core.network.createFestiCoreHttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -212,5 +215,32 @@ class FestivalLiveBoardApiTest {
         assertEquals("/api/v1/me/schedule/fst_a", request.url.encodedPath)
         assertEquals(BearerAuthorization(), request.attributes[BearerAuthorizationKey])
         assertEquals(listOf("set_a", "set_b"), schedule.setIds)
+    }
+
+    @Test
+    fun `내 일정 저장은 세션에 묶인 Bearer PUT이고 본문은 setIds · clientAt이다`() = runTest {
+        val body = FestivalScheduleReplaceBody(listOf("set_1"), "2026-08-07T10:00:00.250+09:00")
+
+        val schedule = api(success("""{"setIds":["set_1"]}""")).replaceMySchedule("fst_a", body, expectedSessionId = "session-1")
+
+        val request = requests.single()
+        assertEquals(HttpMethod.Put, request.method)
+        assertEquals("/api/v1/me/schedule/fst_a", request.url.encodedPath)
+        assertEquals(BearerAuthorization("session-1"), request.attributes[BearerAuthorizationKey])
+        assertEquals(ContentType.Application.Json, request.body.contentType?.withoutParameters())
+        assertEquals("""{"setIds":["set_1"],"clientAt":"2026-08-07T10:00:00.250+09:00"}""", (request.body as TextContent).text)
+        assertEquals(listOf("set_1"), schedule.setIds)
+    }
+
+    @Test
+    fun `내 일정 저장 409는 상태 코드와 본문 code를 그대로 던진다`() = runTest {
+        val error =
+            failure {
+                api("""{"code":"STATUS_STALE","data":null,"message":"stale"}""", HttpStatusCode.Conflict)
+                    .replaceMySchedule("fst_a", FestivalScheduleReplaceBody(emptyList(), "2026-08-07T10:00:00.250+09:00"))
+            } as NetworkError.Http
+
+        assertEquals(409, error.status)
+        assertEquals("STATUS_STALE", error.code)
     }
 }

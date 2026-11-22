@@ -2,9 +2,11 @@ package io.festicore.domain.festival.sources
 
 import io.festicore.core.network.NetworkError
 import io.festicore.domain.festival.FestivalLiveBoardError
+import io.festicore.domain.festival.FestivalSchedule
 import io.festicore.domain.festival.FestivalScheduleError
 import io.festicore.service.api.AuthSessionError
 import io.festicore.service.festivalcatalog.FestivalLiveBoardServiceError
+import io.festicore.service.festivalcatalog.FestivalScheduleServiceError
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val FESTIVAL_NOT_FOUND = "FESTIVAL_NOT_FOUND"
@@ -40,11 +42,16 @@ internal inline fun <T> mapLiveBoardErrors(block: () -> T): T = try {
     throw e.toFestivalLiveBoardError()
 }
 
-/** 내 일정 오류. iOS `NetworkFestivalScheduleService.map`: 401 · 세션 없음 → Unauthorized, 400 · 잘못된 ID → Rejected, 나머지 Unavailable. */
+/**
+ * 내 일정 오류. iOS `NetworkFestivalScheduleService.map`: 401 · 세션 없음 → Unauthorized, 409 `STATUS_STALE`(서비스가 다시 읽음) → Stale,
+ * 400 · 잘못된 ID → Rejected, 나머지(429 · `code != SUCCESS` 포함) Unavailable.
+ */
 internal fun Throwable.toFestivalScheduleError(): Throwable = when (this) {
     is CancellationException, is FestivalScheduleError -> this
 
     is AuthSessionError -> FestivalScheduleError.Unauthorized()
+
+    is FestivalScheduleServiceError.Stale -> FestivalScheduleError.Stale(FestivalSchedule(schedule.setIds))
 
     is FestivalLiveBoardServiceError.InvalidFestivalId -> FestivalScheduleError.Rejected()
 

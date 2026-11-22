@@ -1,5 +1,6 @@
 package io.festicore.domain.festival.sources.di
 
+import io.festicore.domain.festival.FestivalBoardSelectionUseCase
 import io.festicore.domain.festival.FestivalCatalogRepository
 import io.festicore.domain.festival.FestivalCatalogUseCase
 import io.festicore.domain.festival.FestivalLibraryUseCase
@@ -12,6 +13,7 @@ import io.festicore.domain.festival.FestivalScheduleRepository
 import io.festicore.domain.festival.FestivalScheduleUseCase
 import io.festicore.domain.festival.FestivalZoneMapRepository
 import io.festicore.domain.festival.FestivalZoneMapUseCase
+import io.festicore.domain.festival.sources.FestivalBoardSelectionStore
 import io.festicore.domain.festival.sources.FestivalCatalogRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalCatalogUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalLibraryUseCaseImpl
@@ -21,6 +23,7 @@ import io.festicore.domain.festival.sources.FestivalLiveBoardUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalPackRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalPackUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalScheduleRepositoryImpl
+import io.festicore.domain.festival.sources.FestivalScheduleSavedEvents
 import io.festicore.domain.festival.sources.FestivalScheduleUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalZoneMapRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalZoneMapUseCaseImpl
@@ -39,5 +42,8 @@ val domainFestivalModule = module {
     single<FestivalZoneMapRepository> { FestivalZoneMapRepositoryImpl(get()) }
     factory<FestivalZoneMapUseCase> { FestivalZoneMapUseCaseImpl(get(), get()) }
     single<FestivalScheduleRepository> { FestivalScheduleRepositoryImpl(get()) }
-    factory<FestivalScheduleUseCase> { FestivalScheduleUseCaseImpl(get()) }
+    // 저장 알림 · 보드 선택은 타임테이블 · 보드가 함께 보도록 하나만 둔다(설계 T1 · T2).
+    single { FestivalScheduleSavedEvents() }
+    factory<FestivalScheduleUseCase> { FestivalScheduleUseCaseImpl(get(), get()) }
+    single<FestivalBoardSelectionUseCase> { FestivalBoardSelectionStore() }
 }

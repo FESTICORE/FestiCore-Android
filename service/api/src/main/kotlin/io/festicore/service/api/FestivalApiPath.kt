@@ -22,6 +22,6 @@ object FestivalApiPath {
     /** 공식 인스타그램 최근 게시물. iOS `FestivalOfficialNewsRequest`. */
     fun instagram(festivalId: String) = "$FESTIVALS/$festivalId/instagram"
 
-    /** 내 일정(로그인 필요). iOS `ScheduleGetRequest`. */
+    /** 내 일정(로그인 필요). 읽기 GET · 저장 PUT. iOS `ScheduleGetRequest` · `SchedulePutRequest`. */
     fun mySchedule(festivalId: String) = "api/v1/me/schedule/$festivalId"
 }

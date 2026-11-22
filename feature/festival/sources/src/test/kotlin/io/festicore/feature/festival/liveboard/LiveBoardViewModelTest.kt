@@ -1,6 +1,7 @@
 package io.festicore.feature.festival.liveboard
 
 import io.festicore.domain.festival.CachedFestivalPack
+import io.festicore.domain.festival.FestivalBoardSelection
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalLiveBoardError
 import io.festicore.domain.festival.FestivalLiveBoardUseCase
@@ -9,6 +10,7 @@ import io.festicore.domain.festival.FestivalPackDocument
 import io.festicore.domain.festival.FestivalPackState
 import io.festicore.domain.festival.FestivalSchedule
 import io.festicore.domain.festival.FestivalScheduleError
+import io.festicore.domain.festival.FestivalScheduleSaved
 import io.festicore.domain.festival.PackSyncResult
 import io.festicore.domain.usernotification.UserNotificationBadge
 import io.festicore.domain.usernotification.UserNotificationItem
@@ -61,6 +63,7 @@ class LiveBoardViewModelTest {
         user: FakeCurrentUserProvider = FakeCurrentUserProvider(),
         catalog: List<FestivalCatalogItem> = listOf(item, other),
         badge: FakeNotificationBadgeUseCase = FakeNotificationBadgeUseCase(),
+        selection: FakeBoardSelectionUseCase = FakeBoardSelectionUseCase(),
     ) = LiveBoardViewModel(
         festivalId = "fst",
         initialCatalog = catalog,
@@ -71,6 +74,7 @@ class LiveBoardViewModelTest {
         preferenceUseCase = preference,
         currentUserProvider = user,
         notificationBadgeUseCase = badge,
+        boardSelectionUseCase = selection,
         clock = clock,
         sleep = sleeper::sleep,
     )
@@ -604,6 +608,79 @@ class LiveBoardViewModelTest {
             containerHost.onNotificationFestivalRequested("fst")
             containerHost.onNotificationFestivalRequested("fst_b")
             awaitBoard { it.festivalId == "fst_b" }
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    // MARK: - 타임테이블 공유 (설계 T1 · T2)
+
+    @Test
+    fun `보드는 선택 축제와 표시 문서 · 연결 · 팩 확인 시각을 공유 상태에 쓴다`() = runTest {
+        val checkedAt = Instant.parse("2026-10-20T05:58:00Z")
+        val document = FestivalPackDocument(id = "fst", name = "원더리벳 2026")
+        val packs =
+            FakeBoardPackUseCase(
+                FestivalPackState(packs = mapOf("fst" to CachedFestivalPack("fst", 1, "v1", checkedAt = checkedAt, document = document))),
+            )
+        val selection = FakeBoardSelectionUseCase()
+        viewModel(packs = packs, selection = selection).test(this) {
+            runOnCreate()
+            containerHost.onAppear()
+            awaitBoard { it.selectedPack == document }
+            testScheduler.runCurrent()
+            val shared = selection.selection.value
+            assertEquals("fst", shared?.festivalId)
+            assertEquals(document, shared?.document)
+            assertEquals(checkedAt, shared?.packCheckedAt)
+            assertEquals(FestivalBoardSelection.Connection.Cached, shared?.connection)
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
+    @Test
+    fun `다른 축제의 문서는 공유하지 않는다`() {
+        val state = LiveBoardState(festivalId = "fst", onlineDetail = FestivalPackDocument(id = "fst_b"))
+
+        assertNull(state.toBoardSelection().document)
+    }
+
+    @Test
+    fun `타임테이블이 저장한 같은 축제의 내 일정을 보드에 반영하고 읽던 요청은 버린다`() = runTest {
+        val late = CompletableDeferred<FestivalSchedule>()
+        val schedule = FakeScheduleUseCase { late.await() }
+        viewModel(schedule = schedule, user = FakeCurrentUserProvider("usr_1")).test(this) {
+            runOnCreate()
+            containerHost.onAppear()
+            val loading = awaitBoard { it.myScheduleRequestId == 1 }
+            schedule.notifyMyScheduleSaved(FestivalScheduleSaved("fst", setOf("set_saved")))
+            val saved = awaitBoard { it.mySchedule != null }
+            assertEquals(LiveBoardMySchedule("fst", setOf("set_saved")), saved.mySchedule)
+            assertEquals(loading.myScheduleRequestId + 1, saved.myScheduleRequestId)
+            late.complete(FestivalSchedule(listOf("set_old")))
+            testScheduler.runCurrent()
+            cancelAndIgnoreRemainingItems()
+            assertEquals(LiveBoardMySchedule("fst", setOf("set_saved")), containerHost.container.stateFlow.value.mySchedule)
+        }
+    }
+
+    @Test
+    fun `다른 축제나 비로그인이면 저장 알림을 무시한다`() = runTest {
+        val schedule = FakeScheduleUseCase()
+        viewModel(schedule = schedule).test(this) {
+            runOnCreate()
+            testScheduler.runCurrent()
+            schedule.notifyMyScheduleSaved(FestivalScheduleSaved("fst", setOf("set_a")))
+            testScheduler.runCurrent()
+            assertNull(containerHost.container.stateFlow.value.mySchedule)
+            cancelAndIgnoreRemainingItems()
+        }
+        val user = FakeCurrentUserProvider("usr_1")
+        viewModel(schedule = schedule, user = user).test(this) {
+            runOnCreate()
+            testScheduler.runCurrent()
+            schedule.notifyMyScheduleSaved(FestivalScheduleSaved("fst_b", setOf("set_b")))
+            testScheduler.runCurrent()
+            assertNull(containerHost.container.stateFlow.value.mySchedule)
             cancelAndIgnoreRemainingItems()
         }
     }
