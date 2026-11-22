@@ -173,6 +173,30 @@ class LiveBoardViewModelTest {
     }
 
     @Test
+    fun `목록에서 같은 축제 팩이 새 버전으로 바뀌면 보드도 새 문서를 그린다`() = runTest {
+        val packs =
+            FakeBoardPackUseCase(
+                FestivalPackState(
+                    packs = mapOf("fst" to cached("fst", etag = "v1", document = FestivalPackDocument(id = "fst", name = "옛 이름"))),
+                ),
+            )
+        viewModel(packs = packs).test(this) {
+            // 공유 팩 상태 구독은 onCreate에서 시작한다.
+            runOnCreate()
+            containerHost.onAppear()
+            awaitBoard { it.selectedPack?.name == "옛 이름" }
+            packs.state.value =
+                FestivalPackState(
+                    packs = mapOf("fst" to cached("fst", etag = "v2", document = FestivalPackDocument(id = "fst", name = "새 이름"))),
+                )
+            awaitBoard { it.selectedPack?.name == "새 이름" }
+            cancelAndIgnoreRemainingItems()
+        }
+        // 같은 축제라 감시는 다시 시작하지 않는다.
+        assertEquals(listOf("fst"), packs.watched)
+    }
+
+    @Test
     fun `미발행 축제는 공개 전 상태를 표시하고 발행 후 자동으로 보드를 보여준다`() = runTest {
         var published = false
         val liveBoard =
