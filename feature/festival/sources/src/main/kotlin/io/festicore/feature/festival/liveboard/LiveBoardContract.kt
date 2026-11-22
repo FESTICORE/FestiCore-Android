@@ -1,6 +1,7 @@
 package io.festicore.feature.festival.liveboard
 
 import io.festicore.domain.festival.CachedFestivalPack
+import io.festicore.domain.festival.FestivalBoardSelection
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.FestivalOfficialNews
@@ -120,6 +121,25 @@ data class LiveBoardState(
     /** 시트 · 다이얼로그가 떠 있다. 상위는 이 값으로 탭 바를 숨긴다(설계 D9, iOS `MainTabCoordinator.shouldHideTabBar`). */
     val isPresentingModal: Boolean get() = switcher != null || isFollowGuideDialogPresented
 }
+
+/** 공유 선택 값. 표시 문서는 ID가 선택 축제와 같을 때만 넘긴다(iOS `MainTabCoordinator+Sync.syncTimetable`). */
+internal fun LiveBoardState.toBoardSelection() = FestivalBoardSelection(
+    festivalId = festivalId,
+    document = displayDocument?.takeIf { it.id == festivalId },
+    isOnlineDetailLoading = onlineDetailLoading,
+    isOnlineDetailFailed = onlineDetailFailed,
+    isPackWatchFailed = packWatchFailed,
+    connection = when (connection) {
+        LiveBoardConnection.Loading -> FestivalBoardSelection.Connection.Loading
+        LiveBoardConnection.Cached -> FestivalBoardSelection.Connection.Cached
+        LiveBoardConnection.Connecting -> FestivalBoardSelection.Connection.Connecting
+        LiveBoardConnection.Reconnecting -> FestivalBoardSelection.Connection.Reconnecting
+        LiveBoardConnection.Live -> FestivalBoardSelection.Connection.Live
+        LiveBoardConnection.Offline -> FestivalBoardSelection.Connection.Offline
+        LiveBoardConnection.Unavailable -> FestivalBoardSelection.Connection.Unavailable
+    },
+    packCheckedAt = cachedPacks[festivalId]?.checkedAt,
+)
 
 /** 보드가 알리는 이동. Coordinator가 대상 화면을 쌓거나(존 지도 · 알림함), 대상이 아직 없으면 받아 두기만 한다(설계 "경계만 표시"). */
 sealed interface LiveBoardBoundary {

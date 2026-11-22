@@ -27,7 +27,7 @@ fun serviceFestivalCatalogModule(baseUrl: String): Module = module {
         )
     }
     single { FestivalOfficialNewsService(get()) }
-    single { FestivalScheduleService(get()) }
+    single { FestivalScheduleService(api = get(), currentSessionId = get<AuthSession>()::currentSessionId) }
 }
 
 private const val CACHE_PATH = "festicore/festival-catalog.json"

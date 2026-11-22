@@ -3,6 +3,7 @@ package io.festicore.feature.festival.liveboard
 import androidx.lifecycle.ViewModel
 import io.festicore.domain.auth.CurrentUserProvider
 import io.festicore.domain.festival.CachedFestivalPack
+import io.festicore.domain.festival.FestivalBoardSelectionUseCase
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalCatalogUseCase
 import io.festicore.domain.festival.FestivalLiveBoardError
@@ -13,6 +14,7 @@ import io.festicore.domain.festival.FestivalOfficialNews
 import io.festicore.domain.festival.FestivalPackDocument
 import io.festicore.domain.festival.FestivalPackState
 import io.festicore.domain.festival.FestivalPackUseCase
+import io.festicore.domain.festival.FestivalScheduleSaved
 import io.festicore.domain.festival.FestivalScheduleUseCase
 import io.festicore.domain.festival.PackSyncResult
 import io.festicore.domain.usernotification.UserNotificationBadge
@@ -25,7 +27,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
@@ -46,12 +51,14 @@ class LiveBoardViewModel(
     private val preferenceUseCase: FestivalLiveBoardPreferenceUseCase,
     private val currentUserProvider: CurrentUserProvider,
     private val notificationBadgeUseCase: UserNotificationBadgeUseCase,
+    private val boardSelectionUseCase: FestivalBoardSelectionUseCase,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
     OrbitContainerHost<LiveBoardState, LiveBoardState, LiveBoardSideEffect> {
-    override val container =
-        orbitContainer<LiveBoardState, LiveBoardSideEffect>(
+    // 생성 블록이 자기 상태 흐름을 읽어 타입을 적는다.
+    override val container: OrbitContainer<LiveBoardState, LiveBoardState, LiveBoardSideEffect> =
+        orbitContainer(
             LiveBoardState(
                 festivalId = festivalId,
                 catalog = initialCatalog,
@@ -64,6 +71,11 @@ class LiveBoardViewModel(
                 // 목록이 받거나 지운 팩 · 받는 중 진행률도 보드에 바로 보인다(설계 D1).
                 launch { packUseCase.state.collect { onPackStateChanged(it) } }
                 launch { notificationBadgeUseCase.badge.collect { onNotificationBadgeChanged(it) } }
+                // 보드가 보여 주는 축제를 앱 범위 공유 상태에 쓴다. 타임테이블이 읽는다(설계 T1).
+                launch {
+                    container.stateFlow.map { it.toBoardSelection() }.distinctUntilChanged().collect(boardSelectionUseCase::update)
+                }
+                launch { scheduleUseCase.savedSchedules.collect { onMyScheduleSaved(it) } }
                 currentUserProvider.currentUserId.collect { onSessionChanged(hasSession = it != null, userId = it) }
             }
         }
@@ -444,6 +456,22 @@ class LiveBoardViewModel(
     ) = subIntent {
         if (!state.isCurrentScheduleRequest(festivalId, requestId, generation)) return@subIntent
         reduce { state.copy(mySchedule = LiveBoardMySchedule(festivalId, setIds), myScheduleUnavailable = false) }
+    }
+
+    /**
+     * 타임테이블 · 고르기가 저장한 내 일정(iOS `myScheduleSaved`, 설계 T2). 같은 축제이고 로그인 중일 때만 바꾸고,
+     * 읽던 요청은 요청 ID를 올려 버린다.
+     */
+    private suspend fun onMyScheduleSaved(saved: FestivalScheduleSaved) = subIntent {
+        if (state.festivalId != saved.festivalId || !state.hasSession) return@subIntent
+        myScheduleJob.getAndSet(null)?.cancel()
+        reduce {
+            state.copy(
+                myScheduleRequestId = state.myScheduleRequestId + 1,
+                mySchedule = LiveBoardMySchedule(saved.festivalId, saved.setIds),
+                myScheduleUnavailable = false,
+            )
+        }
     }
 
     /** 실패해도 이전 일정은 둔다(iOS와 같음). */

@@ -9,18 +9,21 @@ import io.festicore.core.network.festiCoreRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerializationException
 
 /**
  * 축제 API 요청. 실패는 [NetworkError], Bearer 요청은 [AuthSessionError]도 던진다. 재시도하지 않는다.
  * iOS `FestivalListRequest` · `FestivalDetailRequest` · `FestivalLiveRequest` · `FestivalFlagsRequest` ·
- * `FestivalOfficialNewsRequest` · `ScheduleGetRequest` · `FestivalPackRequest.version`. [mySchedule] · 로그인 중 [live]만 Bearer 대상이다.
+ * `FestivalOfficialNewsRequest` · `ScheduleGetRequest` · `SchedulePutRequest` · `FestivalPackRequest.version`. [mySchedule] · [replaceMySchedule] · 로그인 중 [live]만 Bearer 대상이다.
  */
 class FestivalApi(private val client: HttpClient) {
     /** `GET api/v1/festivals?after=&limit=`. [after]가 null이면 첫 쪽. 커서는 받은 그대로 보낸다(URL 인코딩은 Ktor). */
@@ -99,6 +102,24 @@ class FestivalApi(private val client: HttpClient) {
             method = HttpMethod.Get
             url(FestivalApiPath.mySchedule(festivalId))
             bearerAuthorization(expectedSessionId)
+        }
+    }
+
+    /**
+     * `PUT api/v1/me/schedule/{id}`. 내 일정 전체를 [body]로 바꾸고 저장된 일정을 돌려준다. Bearer 대상이고 [expectedSessionId] 세션일 때만 보낸다.
+     * 409 `STATUS_STALE`(더 최신 일정이 서버에 있음)도 [NetworkError.Http]로 그대로 던진다. iOS `SchedulePutRequest`.
+     */
+    suspend fun replaceMySchedule(
+        festivalId: String,
+        body: FestivalScheduleReplaceBody,
+        expectedSessionId: String? = null,
+    ): FestivalScheduleDto = unwrapAuth {
+        client.festiCoreRequest {
+            method = HttpMethod.Put
+            url(FestivalApiPath.mySchedule(festivalId))
+            bearerAuthorization(expectedSessionId)
+            contentType(ContentType.Application.Json)
+            setBody(body)
         }
     }
 
