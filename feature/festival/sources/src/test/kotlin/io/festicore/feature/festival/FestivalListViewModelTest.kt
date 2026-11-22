@@ -34,7 +34,7 @@ class FestivalListViewModelTest {
         catalog: FakeCatalogUseCase = FakeCatalogUseCase(),
         library: FakeLibraryUseCase = FakeLibraryUseCase(),
         currentUser: FakeCurrentUserProvider = FakeCurrentUserProvider(),
-    ) = FestivalListViewModel(catalog, library, currentUser)
+    ) = FestivalListViewModel(catalog, library, currentUser, FakePackUseCase())
 
     @Test
     fun listSkeletonShowsUntilFirstCatalogRefresh() = runTest {
@@ -197,11 +197,11 @@ class FestivalListViewModelTest {
 
             currentUser.currentUserId.value = "u1"
             // 사용자가 바뀌면 검색 · 탭을 처음으로 돌리고 이전 사용자의 최근 검색을 남기지 않는다(iOS `accountChangeResetsSearchAndSelectedFilter`).
-            expectState { copy(userId = "u1", isSearching = false, query = "", recentSearches = emptyList()) }
+            expectState { copy(userId = "u1", isSearching = false, query = "", recentSearches = emptyList(), accountGeneration = 1) }
             expectState { copy(recentSearches = listOf("펜타")) }
 
             currentUser.currentUserId.value = "u2"
-            expectState { copy(userId = "u2", recentSearches = emptyList()) }
+            expectState { copy(userId = "u2", recentSearches = emptyList(), accountGeneration = 2) }
             expectState { copy(recentSearches = listOf("원더")) }
             subscription.cancel()
         }

@@ -33,6 +33,10 @@ iOS 대응: `Projects/Feature/Festival/Sources/FestivalList/`(`View/FestivalView
 16. 좌우 밀기: 30 이상 움직이고 가로가 80 넘고 세로의 1.5배를 넘으면 왼쪽 = 예매 완료, 오른쪽 = 전체. 세로 스크롤과 함께 받는다.
 17. 탭 바: 라이브 스택이 목록뿐이면 메인 탭 바를 숨기고 자리도 비운다(iOS `shouldHideTabBar` · `shouldReserveTabBarSpace`). 목록 아래 여백은 20 + 내비게이션 바 높이.
 18. 갱신 실패 뒤 서버 성공으로 복구되면 포스터를 다시 받는다(`imageRevision`).
+19. 받은 팩 병합: 첫 진입에서 저장된 팩을 읽고(`reloadCachedPacks`), 이후 팩 저장소의 공유 상태(설계 D1)를 따른다. 라이브 탭을 다시 고르면 저장된 팩을 다시 읽는다(읽기 실패면 보이던 팩 유지). 카탈로그 항목에는 받은 팩 버전(`cachedPackVersion`)을 합치고, 카탈로그에 없는 받은 팩은 문서를 읽을 수 있는 것만 이름순(`Collator(KOREAN)`)으로 뒤에 붙인다(날짜는 팩 일자, 없으면 행사 기간; 예매처는 이름 있는 https 링크). 빈 카드 · 스켈레톤 · 오프라인 배지의 "목록 없음"은 합친 목록 기준이다.
+20. 팩 영역: 받는 중이면 `Downloading`("팩 받는 중 · N%", 전체 크기를 모르면 진행 바 없이 "팩 받는 중"). 아니면 발행 전 "팩 발행을 기다리고 있어요", 받은 버전 ≥ 발행 버전 "팩 받음 · 최신 버전", 그 외 "팩 받기"(받은 적 있으면 "팩 업데이트").
+21. 팩 받기: 포그라운드 ∧ 그 축제를 받는 중 아님 ∧ 발행 버전 > 0 ∧ 받은 버전 < 발행 버전일 때만 받는다(일정 상태 · 예매 여부 무관). 축제마다 하나만 돈다. Reset이면 진행률을 지우고, 저장 완료(Updated · NotModified)면 팩을 합친다. 재시도 대기 · 재접속으로 끝나거나 실패하면 상단 토스트 `ic_circle_info_16` "팩을 받지 못했어요. 다시 시도해 주세요" 2초.
+22. 팩 받기 취소: 앱이 배경으로 가면(`ON_STOP`) 받는 중인 팩을 모두 취소한다. 사용자 ID가 바뀌면 취소하고 세대를 올려 이전 받기의 늦은 이벤트를 버린다. 같은 사용자로 최근 검색을 다시 읽는 것만으로는 취소하지 않는다.
 
 ## 엣지 케이스
 
@@ -52,7 +56,10 @@ iOS 대응: `Projects/Feature/Festival/Sources/FestivalList/`(`View/FestivalView
 ## iOS와 다른 점
 
 - 북마크 버튼은 숨긴다(설계 D3). 예매 완료 탭은 항상 빈 카드다.
-- 팩 받기 버튼은 iOS 문구로 보이지만 누르면 아무것도 하지 않는다(설계 D2 a). 팩 받는 중 표시 · 팩만 있는 항목은 팩 단계에서 붙인다.
+- 처음 받은 팩의 준비 안내(iOS `prepGuideRequested`, S15)와 팩 받기 분석 이벤트(`packSync`)는 해당 화면 · 분석 모듈 전이라 보내지 않는다.
+- iOS는 포그라운드 해제(`inactive`)와 배경(`background`)을 나눠 받고 배경에서만 취소한다. Android는 `ON_STOP`을 배경으로 보고 포그라운드 해제 뒤 바로 취소한다(`ON_PAUSE`는 쓰지 않는다).
+- iOS `reloadBookmarks`(취소 안 함)와 `sessionChanged` · `accountChanged`(취소함)를 Android는 `CurrentUserProvider` 하나로 받는다. 사용자 ID가 바뀌면 취소한다.
+- 팩 감시(WebSocket) · 선택 팩 표시는 라이브 보드(L4) 몫이라 목록은 감시를 시작하지 않는다.
 - 카드 · 결과 탭은 축제 ID를 Coordinator에 넘기는 데까지다. 라이브 보드 push는 다음 단계. 그래서 지금은 라이브 탭 목록에서 다른 탭으로 갈 길이 없다(iOS는 보드에서 탭 바가 보인다).
 - 예매처는 앱 안 웹 화면 대신 Custom Tabs다(`feature/web` 예매 범위 전까지).
 - 당겨서 새로고침 표시가 요청 동안 남는다(iOS는 즉시 끝남, 설계 D9). 더 보기 인디케이터는 Material 원형 20dp · 선 2dp · `labelAssistive`.
@@ -63,3 +70,4 @@ iOS 대응: `Projects/Feature/Festival/Sources/FestivalList/`(`View/FestivalView
 ## 변경 이력
 
 - 2026-11-22: 첫 작성(F4).
+- 2026-11-22: 팩 받기 · 진행 · 실패 토스트 · 배경 취소 · 받은 팩 병합(L3, 설계 D2 (b)).

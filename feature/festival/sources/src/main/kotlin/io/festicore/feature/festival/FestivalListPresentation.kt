@@ -1,8 +1,12 @@
 package io.festicore.feature.festival
 
+import io.festicore.domain.festival.CachedFestivalPack
 import io.festicore.domain.festival.FestivalCatalogArtist
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalOverview
+import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.PackDownloadProgress
+import java.net.URI
 import java.text.Collator
 import java.text.Normalizer
 import java.time.Instant
@@ -13,6 +17,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /** 목록 화면의 표시 규칙. iOS `FestivalListPresentation`과 같은 입력에서 같은 결과를 낸다. 날짜는 Asia/Seoul 기준이다. */
 internal object FestivalListPresentation {
@@ -168,8 +173,23 @@ internal object FestivalListPresentation {
         return listOfNotNull(festival.venue, dates.ifEmpty { null }).joinToString(" · ")
     }
 
-    /** iOS `FestivalOverview(item:isCached:)`. 팩 병합은 팩 단계에서 붙인다. */
-    fun overview(item: FestivalCatalogItem): FestivalOverview = FestivalOverview(
+    /**
+     * 목록 항목(iOS `FestivalFeature.State.festivals`). 카탈로그 순서대로 받은 팩 버전을 합치고,
+     * 카탈로그에 없는 받은 팩은 문서를 읽을 수 있는 것만 이름순으로 뒤에 붙인다.
+     */
+    fun festivals(catalog: List<FestivalCatalogItem>, packs: Map<String, CachedFestivalPack>): List<FestivalOverview> {
+        val result = catalog.map { overview(it, packs[it.id]) }
+        val known = result.mapTo(HashSet()) { it.id }
+        val collator = Collator.getInstance(Locale.KOREAN)
+        return result +
+            packs.values
+                .filter { it.festivalId !in known }
+                .mapNotNull(::overview)
+                .sortedWith { lhs, rhs -> collator.compare(lhs.name, rhs.name) }
+    }
+
+    /** iOS `FestivalOverview(item:isCached:cachedPackVersion:)`. */
+    fun overview(item: FestivalCatalogItem, pack: CachedFestivalPack? = null): FestivalOverview = FestivalOverview(
         id = item.id,
         name = item.name,
         venue = item.venue,
@@ -177,11 +197,80 @@ internal object FestivalListPresentation {
         lastDate = item.lastDate,
         thumbnailUrl = item.thumbnailUrl,
         packVersion = item.packVersion,
-        isCached = false,
-        cachedPackVersion = null,
+        isCached = pack != null,
+        cachedPackVersion = pack?.packVersion,
         catalogStatus = item.status,
         ticketUrl = item.ticketLinks.firstOrNull()?.url,
         artists = item.artists,
+    )
+
+    /** iOS `FestivalOverview(pack:)`. 팩 문서를 읽지 못했으면 null. 날짜는 팩 일자, 없으면 행사 기간. */
+    private fun overview(pack: CachedFestivalPack): FestivalOverview? {
+        val document = pack.document ?: return null
+        val dates = packDateBounds(document.days.orEmpty()) ?: eventDateBounds(document.eventPeriod)
+        return FestivalOverview(
+            id = pack.festivalId,
+            name = document.name ?: pack.festivalId,
+            venue = document.venue,
+            firstDate = dates?.first,
+            lastDate = dates?.second,
+            thumbnailUrl = document.thumbUrl,
+            packVersion = pack.packVersion,
+            isCached = true,
+            cachedPackVersion = pack.packVersion,
+            catalogStatus = null,
+            ticketUrl = document.ticketLinks.orEmpty().firstOrNull(::isHttpsLink)?.url,
+            artists = document.artists?.map { FestivalCatalogArtist(name = it.name, performances = emptyList()) },
+        )
+    }
+
+    /** iOS `FestivalLiveActivitySchedule.packDateBounds`: 가장 이른 시작 일자와 가장 늦은 끝 일자(원래 문자열). */
+    private fun packDateBounds(days: List<FestivalPackDocument.Day>): Pair<String, String>? {
+        val valid =
+            days.mapNotNull { day ->
+                val raw = day.date ?: return@mapNotNull null
+                val date = parseDay(raw)
+                if (date != null) {
+                    Triple(raw, date.atStartOfDay(zone).toInstant(), date.plusDays(1).atStartOfDay(zone).toInstant())
+                } else {
+                    parseInstant(raw)?.let { Triple(raw, it, it) }
+                }
+            }
+        val first = valid.minByOrNull { it.second } ?: return null
+        val last = valid.maxByOrNull { it.third } ?: return null
+        return first.first to last.first
+    }
+
+    private fun eventDateBounds(period: FestivalPackDocument.EventPeriod?): Pair<String, String>? {
+        period ?: return null
+        val first = parseDay(period.firstDate) ?: return null
+        val last = parseDay(period.lastDate) ?: return null
+        return if (first <= last) period.firstDate to period.lastDate else null
+    }
+
+    /** iOS `FestivalPackDocument.TicketLink.httpsURL`: 이름이 있고 https 주소인 것만. */
+    private fun isHttpsLink(link: FestivalPackDocument.TicketLink): Boolean {
+        if (link.label.isBlank()) return false
+        val uri = runCatching { URI(link.url) }.getOrNull() ?: return false
+        return uri.scheme.equals("https", ignoreCase = true) && uri.host != null
+    }
+
+    /** iOS `FestivalPackDownloadDisplay`. 받는 중이 아니면 null. 전체 크기를 모르면 진행률 없이 "팩 받는 중". */
+    fun packDownloadDisplay(downloads: Map<String, PackDownloadProgress?>, festivalId: String): PackDownloadDisplay? {
+        if (festivalId !in downloads) return null
+        val fraction =
+            downloads[festivalId]?.takeIf { it.totalBytes > 0 }?.let {
+                (it.receivedBytes.toDouble() / it.totalBytes).coerceIn(0.0, 1.0)
+            }
+        return PackDownloadDisplay(
+            progress = fraction,
+            text = fraction?.let { "팩 받는 중 · ${(it * 100).roundToInt()}%" } ?: "팩 받는 중",
+        )
+    }
+
+    data class PackDownloadDisplay(
+        val progress: Double?,
+        val text: String,
     )
 
     /** `yyyy-MM-dd`. 없는 날짜(2월 30일 등)는 null. */
