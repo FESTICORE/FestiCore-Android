@@ -3,4 +3,6 @@
     <!-- staticInk(#111113). 시스템 스플래시 테마는 Compose 토큰을 읽지 못해 색 리소스로 둔다.
          DesignSystem이 Android 색 리소스를 생성하지 않아 값을 여기 둔다. SplashBackgroundColorTest가 토큰과 같은지 검사한다. -->
     <color name="splash_background">#111113</color>
+    <!-- iOS 앱 아이콘 바탕(#151518, FestiCore-AppIcon-1024.png 가장자리 색). 적응형 아이콘 바탕으로 쓴다. -->
+    <color name="ic_launcher_background">#151518</color>
 </resources>

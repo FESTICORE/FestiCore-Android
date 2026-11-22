@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- iOS AppIcon(FestiCore-AppIcon-1024.png)을 적응형 아이콘으로 옮긴 것. 그림은 안전 영역 안에 들어오도록 5/6로 줄였다. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
