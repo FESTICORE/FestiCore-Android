@@ -1,9 +1,5 @@
 package io.festicore.feature.festival.liveboard
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,7 +35,6 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -71,6 +66,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.sharedui.externallink.openExternalUrl
 import java.time.Clock
 import java.time.Instant
 import kotlinx.coroutines.delay
@@ -200,20 +196,6 @@ internal fun ForegroundEffect(lifecycleOwner: LifecycleOwner, onForegroundChange
             }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-}
-
-/** 인스타그램 게시물을 Custom Tabs로 연다(설계 D10). 열 수 있는 앱이 없으면 일반 보기 요청으로 한 번 더 연다. */
-private fun openExternalUrl(context: Context, url: String) {
-    val uri = url.toUri()
-    try {
-        CustomTabsIntent.Builder().build().launchUrl(context, uri)
-    } catch (_: ActivityNotFoundException) {
-        try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-        } catch (_: ActivityNotFoundException) {
-            // 링크를 열 앱이 없다.
-        }
     }
 }
 
