@@ -4,5 +4,6 @@ package io.festicore.service.api.auth
 object AuthApi {
     const val LOGIN = "api/v1/auth/login"
     const val REFRESH = "api/v1/auth/refresh"
+    const val LOGOUT = "api/v1/auth/logout"
     const val ME = "api/v1/me"
 }

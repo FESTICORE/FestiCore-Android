@@ -25,3 +25,7 @@ data class SignUpBody(
     @Serializable
     data class AcceptTerms(val version: String)
 }
+
+/** `PATCH api/v1/me` 닉네임 변경 요청. iOS `AuthNicknameUpdateBody`. */
+@Serializable
+data class NicknameBody(val nickname: String)
