@@ -1,8 +1,10 @@
 package io.festicore.app.navigation
 
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
+import io.festicore.feature.auth.LoginContext
 import io.festicore.ui.designkit.component.navigation.FCTabBarTab
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
@@ -44,6 +46,22 @@ class MainTabCoordinatorTest {
         MainTabCoordinator().test(this) {
             containerHost.onFlagTabRequested()
             expectState { copy(selectedTab = FCTabBarTab.Flag) }
+        }
+    }
+
+    @Test
+    fun `로그인 시트 문맥이 없으면 고른 탭으로 정하고 있으면 그대로 쓴다`() {
+        val expected =
+            mapOf(
+                FCTabBarTab.My to LoginContext.Profile,
+                FCTabBarTab.Flag to LoginContext.Flag,
+                FCTabBarTab.Live to LoginContext.Bookmark,
+                FCTabBarTab.Timetable to LoginContext.Bookmark,
+            )
+        for ((tab, context) in expected) {
+            val state = MainTabCoordinatorState(selectedTab = tab)
+            assertEquals(context, state.loginContext(null))
+            assertEquals(LoginContext.Report, state.loginContext(LoginContext.Report))
         }
     }
 }

@@ -21,6 +21,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginFlow
+import io.festicore.feature.auth.LoginSheet
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalFlow
 import io.festicore.feature.onboarding.OnboardingResult
@@ -92,6 +93,7 @@ private fun rootScreen(screen: RootScreen): Map<String, Any> = mapOf(LaunchTrans
  * - 첫 진입 덮개(N4 · N5): 덮는 동안 메인 탭은 화면 오른쪽 밖에 두고, 걷히면 메인 탭이 오른쪽에서 들어오고 덮개는 왼쪽으로 나간다(0.35초).
  * - 재확인 가입 덮개(N8): 오른쪽에서 들어오고 오른쪽으로 나간다(0.3초). 메인 탭은 제자리.
  * 루트가 꺼낸 딥링크는 [MainTabCoordinator]가 탭을 고르고, 라이브 경로는 라이브 흐름([FestivalCoordinator])에 넘긴다.
+ * 로그인 시트(iOS `LoginModalView`)는 메인 탭 위에 띄운다. 로그인 결과 · 가입 이어짐은 [AppCoordinator]가 정한다.
  */
 @Composable
 private fun HomeWithCovers(
@@ -144,6 +146,13 @@ private fun HomeWithCovers(
                 },
             )
         }
+        LoginSheet(
+            context = state.loginSheet,
+            presentationId = state.loginSheetId,
+            onResult = coordinator::onLoginSheetFinished,
+            onSignUpRequired = coordinator::onLoginSheetSignUpRequired,
+            onDismiss = coordinator::onLoginSheetDismissed,
+        )
         AnimatedVisibility(
             visible = state.launchLogin,
             enter = LaunchTransitions.launchCoverEnter(),
