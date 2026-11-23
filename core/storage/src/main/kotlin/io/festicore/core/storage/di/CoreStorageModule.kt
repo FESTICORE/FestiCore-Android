@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import io.festicore.core.storage.AppearanceModeStore
+import io.festicore.core.storage.DataStoreAppearanceModeStore
 import io.festicore.core.storage.DataStoreFestivalPackLocalStore
 import io.festicore.core.storage.DataStoreFirstInstallOnboardingStore
 import io.festicore.core.storage.DataStoreLiveBoardPreferenceStore
@@ -26,6 +28,7 @@ private val Context.recentSearchDataStore: DataStore<Preferences> by preferences
 private val Context.liveBoardDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_live_board")
 private val Context.deeplinkDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_deeplink")
 private val Context.festivalPackDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_festival_pack")
+private val Context.appearanceDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_appearance")
 
 val coreStorageModule = module {
     single<FirstInstallOnboardingStore> { DataStoreFirstInstallOnboardingStore(androidContext().onboardingDataStore) }
@@ -34,4 +37,5 @@ val coreStorageModule = module {
     single<LiveBoardPreferenceStore> { DataStoreLiveBoardPreferenceStore(androidContext().liveBoardDataStore) }
     single<PendingDeeplinkStore> { DataStorePendingDeeplinkStore(androidContext().deeplinkDataStore) }
     single<FestivalPackLocalStore> { DataStoreFestivalPackLocalStore(androidContext().festivalPackDataStore) }
+    single<AppearanceModeStore> { DataStoreAppearanceModeStore(androidContext().appearanceDataStore) }
 }

@@ -4,16 +4,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.festicore.app.application.AppearanceModeProvider
 import io.festicore.app.application.MainActivityProvider
+import io.festicore.app.application.applySystemBarStyle
 import io.festicore.app.deeplink.AppDeeplinkBridge
 import io.festicore.app.navigation.AppFlow
+import io.festicore.core.storage.AppearanceModeStore
 import io.festicore.ui.designkit.theme.FestiCoreTheme
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
     private val activityProvider: MainActivityProvider by inject()
     private val deeplinkBridge: AppDeeplinkBridge by inject()
+    private val appearanceModeStore: AppearanceModeStore by inject()
 
     /** 첫 화면을 그릴 수 있는지. 그 전까지 시스템 스플래시(staticInk)를 남겨 빈 화면 · 상태바가 보이지 않게 한다. */
     private var isLaunchContentReady = false
@@ -26,8 +33,15 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) deeplinkBridge.handleIntent(intent)
         enableEdgeToEdge()
         setContent {
-            FestiCoreTheme {
-                AppFlow(onLaunchContentReady = { isLaunchContentReady = true })
+            // 저장된 화면 모드를 읽기 전에는 그리지 않는다. 그동안 시스템 스플래시가 남아 다른 모드가 잠깐 보이지 않는다.
+            val mode by appearanceModeStore.appearanceMode.collectAsStateWithLifecycle(initialValue = null)
+            mode?.let { current ->
+                LaunchedEffect(current) { applySystemBarStyle(current) }
+                AppearanceModeProvider(current) {
+                    FestiCoreTheme {
+                        AppFlow(onLaunchContentReady = { isLaunchContentReady = true })
+                    }
+                }
             }
         }
     }
