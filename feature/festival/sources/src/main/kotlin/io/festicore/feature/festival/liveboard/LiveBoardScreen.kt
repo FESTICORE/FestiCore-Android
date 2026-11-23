@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -485,19 +486,33 @@ private fun Header(
             horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // iOS SwiftUI Text는 줄바꿈된 글자의 가장 긴 줄 너비만 차지해(FestivalLiveBoardScreen.swift:316-322)
-            // 화살표가 글자 바로 뒤 8에 붙는다. Compose Text는 줄바꿈되면 가능한 폭을 다 쓰므로 가장 긴 줄 너비로 줄인다.
+            // iOS SwiftUI Text는 줄바꿈된 글자의 가장 긴 줄 너비만 차지하고(FestivalLiveBoardScreen.swift:316-322), 공백에서 줄바꿈된 줄은
+            // 줄 끝 공백 폭까지 넣는다. 화살표는 그 뒤 8에 붙는다. Compose Text는 줄바꿈되면 가능한 폭을 다 쓰고 줄 끝 공백 폭을 빼므로
+            // 가장 긴 줄 너비로 줄이되, 공백에서 끝난 줄에는 같은 글자 모양으로 잰 공백 한 칸 폭을 더한다.
+            val nameStyle = FestiCoreTextStyle.baseTitle2Bold.textStyle
+            val textMeasurer = rememberTextMeasurer()
+            val spaceWidth =
+                remember(textMeasurer, nameStyle) {
+                    textMeasurer.measure("x x", nameStyle).size.width - textMeasurer.measure("xx", nameStyle).size.width
+                }
             val nameLayout = remember { arrayOfNulls<TextLayoutResult>(1) }
             Text(
                 text = festival.name,
-                style = FestiCoreTextStyle.baseTitle2Bold.textStyle,
+                style = nameStyle,
                 color = FestiCoreSemanticColor.labelNormal.color,
                 maxLines = 2,
                 onTextLayout = { nameLayout[0] = it },
                 modifier =
                     Modifier.weight(1f, fill = false).layout { measurable, constraints ->
                         val placeable = measurable.measure(constraints)
-                        val widest = nameLayout[0]?.let { layout -> (0 until layout.lineCount).maxOf { layout.getLineRight(it) } }
+                        val widest = nameLayout[0]?.let { layout ->
+                            (0 until layout.lineCount).maxOf { line ->
+                                val endsWithBreakSpace =
+                                    line < layout.lineCount - 1 &&
+                                        festival.name.getOrNull(layout.getLineEnd(line) - 1)?.isWhitespace() == true
+                                layout.getLineRight(line) + if (endsWithBreakSpace) spaceWidth else 0
+                            }
+                        }
                         val width = widest?.let { ceil(it).toInt().coerceAtMost(placeable.width) } ?: placeable.width
                         layout(width, placeable.height) { placeable.place(0, 0) }
                     },
