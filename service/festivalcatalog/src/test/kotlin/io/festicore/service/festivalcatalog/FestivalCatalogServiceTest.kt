@@ -3,6 +3,7 @@ package io.festicore.service.festivalcatalog
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.domain.festival.sources.service.FestivalCatalogServiceError
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -35,7 +36,7 @@ class FestivalCatalogServiceTest {
     private val cache by lazy { FestivalCatalogCache(File(folder.root, "festival-catalog.json"), FestiCoreJson) }
 
     /** [pages]: 요청한 after(첫 쪽은 null) → (축제 ID 목록, 다음 커서). 없는 커서는 500. */
-    private fun service(pages: suspend (String?) -> Pair<List<String>, String?>?) = FestivalCatalogService(
+    private fun service(pages: suspend (String?) -> Pair<List<String>, String?>?) = NetworkFestivalCatalogService(
         api = FestivalRequest(
             createFestiCoreHttpClient(
                 baseUrl = "https://example.test/",
@@ -201,7 +202,7 @@ class FestivalCatalogServiceTest {
         val error = failure { service.refresh() }
 
         assertTrue(error is FestivalCatalogServiceError.TooManyPages)
-        assertEquals(FestivalCatalogService.MAX_PAGES, requests.size)
+        assertEquals(NetworkFestivalCatalogService.MAX_PAGES, requests.size)
         assertTrue(cachedIds().isEmpty())
     }
 

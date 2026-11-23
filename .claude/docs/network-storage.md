@@ -39,12 +39,12 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 
 ## service/api · service/apiendpoint · service/auth (인증 세션)
 
-- 경로는 `service/api`의 기능 폴더 `<X>Api`(예: `auth/AuthApi`), 요청은 `service/apiendpoint`의 같은 폴더 `<X>Request`(예: `auth/AuthRequest`: login · refresh · me · patchMe), 요청 본문은 `<X>RequestBody.kt`다. iOS `Service/API` · `Service/APIEndpoint`와 같다. Bearer가 필요한 요청은 `bearerAuthorization(expectedSessionId)` 속성으로 표시하고, 표시가 있는 요청에만 인증 플러그인이 토큰을 붙인다. refresh는 표시가 없어 플러그인을 거치지 않는다.
+- 경로는 `service/api`의 기능 폴더 `<X>Api`(예: `auth/AuthApi`), 요청은 `service/apiendpoint`의 같은 폴더 `<X>Request`(예: `auth/AuthRequest`: login · refresh · me · patchMe), 요청 본문은 `<X>RequestBody.kt`다. iOS `Service/API` · `Service/APIEndpoint`와 같다. `<X>Request`는 응답 타입을 모른다: 축제 · 크루 · 깃발 · 알림 요청은 `suspend inline fun <reified T>`로 응답 타입을 호출하는 쪽에서 받고(iOS `networkClient.request(_:as:)`처럼), 응답 DTO는 `domain/*/sources/model/dto`에 있다. 인증 응답 DTO(`AuthDto.kt`)만 `service/auth`가 토큰 갱신에 쓰므로 `service/api`에 남는다. Bearer가 필요한 요청은 `bearerAuthorization(expectedSessionId)` 속성으로 표시하고, 표시가 있는 요청에만 인증 플러그인이 토큰을 붙인다. refresh는 표시가 없어 플러그인을 거치지 않는다.
 - 세션은 `{sessionId, revision, accessToken, refreshToken}` JSON 하나로 `SecureStorage` 한 키에 저장한다(`CredentialStore`). 저장 · 갱신 · 삭제는 `(sessionId, revision)` compare-and-set으로만 한다.
 - 401은 `TokenRefresher`(Mutex) 한 경로로만 갱신한다. 세션이 없거나 sessionId가 바뀌면 재전송하지 않고 `AuthSessionError.NotAuthenticated`, revision만 바뀌었으면 refresh 없이 현재 토큰으로 한 번 재요청한다. refresh 401은 세션을 지우고 `SessionExpiryEvents`에 한 번 알린다. 오프라인 · 5xx는 세션을 유지하고 그 `NetworkError`로 실패한다.
 - 세션이 없거나 기대 sessionId와 다른 Bearer 요청은 보내지 않는다. 공개 API는 `AuthSession`(isLoggedIn · currentSessionId · saveLogin · clear)과 `SessionExpiryEvents`다.
 - HttpClient는 `serviceAuthModule(baseUrl)`이 인증 플러그인을 붙여 등록하고, app은 `BuildConfig.BASE_URL`만 넘긴다.
 - 내 알림(`UserNotificationRequest`, `domain/usernotification`)은 모든 요청을 현재 세션 ID에 묶어 보낸다(`bearerAuthorization(expectedSessionId)`, 재시도 0). 읽음 · 삭제(`POST`)는 `festiCoreExchange`로 보내 2xx면 본문을 보지 않는다(204 빈 본문 포함). 로컬 저장은 없고 배지는 메모리 공유 상태다(`domain/usernotification/.spec/user-notification.md`).
-- 깃발 쓰기 · 크루(`FlagRequest` · `CrewRequest`)는 재시도 0이다. 깃발 상세는 로그인 세션이 있을 때만 Bearer, 크루 초대 미리보기(`GET crews/invite/{code}`)는 인증 없음, 나머지는 현재 세션 ID에 묶은 Bearer이고 서비스가 세션이 없으면 요청 전에 `AuthSessionError.NotAuthenticated`를 던진다.
+- 깃발 쓰기 · 크루(`FlagRequest` · `CrewRequest`)는 재시도 0이다. 깃발 상세는 로그인 세션이 있을 때만 Bearer, 크루 초대 미리보기(`GET crews/invite/{code}`)는 인증 없음, 나머지는 현재 세션 ID에 묶은 Bearer이고 `FestivalCrewRepositoryImpl` · `FestivalFlagDetailRepositoryImpl`이 요청을 직접 부르며 세션이 없으면 요청 전에 `AuthSessionError.NotAuthenticated`를 던진다.
 - 서버가 `Idempotency-Key`를 받는 쓰기(깃발 팔로우 `PUT` · 크루 상태 `POST`)는 `HttpRequestBuilder.idempotencyKey()`(`service/apiendpoint/.../common/IdempotencyKey.kt`, `UUID.randomUUID()`)로 요청마다 새 키를 붙인다. 재시도가 없으므로 키를 저장하지 않는다.
 - `FestiCoreJson`은 `explicitNulls = false`라 null 필드를 빼고 보낸다. null을 보내야 하는 본문(`PUT me/pinned-flag {"flagId": null}`)은 그 DTO에 전용 serializer를 둔다(`PinnedFlagBody`).

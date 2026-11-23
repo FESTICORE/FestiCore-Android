@@ -5,8 +5,6 @@ import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.festiCoreExchange
 import io.festicore.core.network.festiCoreRequest
-import io.festicore.service.api.UserNotificationCountDto
-import io.festicore.service.api.UserNotificationListDto
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.api.base.bearerAuthorization
 import io.festicore.service.api.usernotification.UserNotificationApi
@@ -25,9 +23,9 @@ import io.ktor.http.isSuccess
  * 내 알림 요청. 모두 Bearer 대상이고 [expectedSessionId] 세션일 때만 보낸다(iOS `sessionBound`). 재시도하지 않는다.
  * 실패는 [NetworkError] 또는 [AuthSessionError]. iOS `UserNotificationRequest`.
  */
-class UserNotificationRequest(private val client: HttpClient) {
+class UserNotificationRequest(@PublishedApi internal val client: HttpClient) {
     /** `GET api/v1/me/notifications?before=`. [before]가 null이면 첫 쪽(쿼리 없음). */
-    suspend fun list(before: String?, expectedSessionId: String): UserNotificationListDto = unwrapAuth {
+    suspend inline fun <reified T> list(before: String?, expectedSessionId: String): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Get
             url(UserNotificationApi.LIST)
@@ -37,7 +35,7 @@ class UserNotificationRequest(private val client: HttpClient) {
     }
 
     /** `GET api/v1/me/notifications/unread-count`. */
-    suspend fun unreadCount(expectedSessionId: String): UserNotificationCountDto = unwrapAuth {
+    suspend inline fun <reified T> unreadCount(expectedSessionId: String): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Get
             url(UserNotificationApi.UNREAD_COUNT)
@@ -84,7 +82,7 @@ class UserNotificationRequest(private val client: HttpClient) {
     }
 
     // 인증 플러그인이 던진 AuthSessionError는 요청 함수가 Unknown으로 감싸므로 풀어서 던진다(AuthApi와 같음).
-    private suspend inline fun <T> unwrapAuth(block: () -> T): T = try {
+    @PublishedApi internal suspend inline fun <T> unwrapAuth(block: () -> T): T = try {
         block()
     } catch (e: NetworkError.Unknown) {
         throw e.cause as? AuthSessionError ?: e

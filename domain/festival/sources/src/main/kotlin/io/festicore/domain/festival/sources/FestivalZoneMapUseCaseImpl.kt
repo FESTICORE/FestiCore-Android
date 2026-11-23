@@ -5,6 +5,7 @@ import io.festicore.domain.festival.FestivalPackRepository
 import io.festicore.domain.festival.FestivalZoneMap
 import io.festicore.domain.festival.FestivalZoneMapRepository
 import io.festicore.domain.festival.FestivalZoneMapUseCase
+import io.festicore.domain.festival.sources.model.mapper.toZoneMap
 import java.time.Instant
 
 /**

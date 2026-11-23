@@ -4,8 +4,10 @@ import io.festicore.core.network.NetworkError
 import io.festicore.domain.festival.FestivalLiveBoardError
 import io.festicore.domain.festival.FestivalLiveBoardUseCase
 import io.festicore.domain.festival.FestivalScheduleError
+import io.festicore.domain.festival.sources.model.mapper.toFestivalLiveBoardError
+import io.festicore.domain.festival.sources.model.mapper.toFestivalScheduleError
+import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.service.api.base.AuthSessionError
-import io.festicore.service.festivalcatalog.FestivalLiveBoardServiceError
 import java.io.IOException
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException

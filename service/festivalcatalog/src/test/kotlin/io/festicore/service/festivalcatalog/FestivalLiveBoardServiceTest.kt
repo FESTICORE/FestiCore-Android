@@ -2,6 +2,7 @@ package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
@@ -54,7 +55,7 @@ class FestivalLiveBoardServiceTest {
         ),
     )
 
-    private val service = FestivalLiveBoardService(
+    private val service = NetworkFestivalLiveBoardService(
         api = api,
         deviceId = { "00000000-0000-4000-8000-000000000001" },
         currentSessionId = { sessionId },
@@ -160,10 +161,10 @@ class FestivalLiveBoardServiceTest {
 
     @Test
     fun `Retry-After가 없거나 숫자가 아니면 35초, 1초보다 작으면 1초다`() {
-        assertEquals(35.seconds, FestivalLiveBoardService.retryAfter(null))
-        assertEquals(35.seconds, FestivalLiveBoardService.retryAfter("Wed, 21 Oct 2026 07:28:00 GMT"))
-        assertEquals(1.seconds, FestivalLiveBoardService.retryAfter("0"))
-        assertEquals(12.seconds, FestivalLiveBoardService.retryAfter("12"))
+        assertEquals(35.seconds, NetworkFestivalLiveBoardService.retryAfter(null))
+        assertEquals(35.seconds, NetworkFestivalLiveBoardService.retryAfter("Wed, 21 Oct 2026 07:28:00 GMT"))
+        assertEquals(1.seconds, NetworkFestivalLiveBoardService.retryAfter("0"))
+        assertEquals(12.seconds, NetworkFestivalLiveBoardService.retryAfter("12"))
     }
 
     @Test
@@ -229,14 +230,15 @@ class FestivalLiveBoardServiceTest {
 
     @Test
     fun `공식 소식이 다른 축제 것이면 잘못된 응답이다`() = runTest {
-        val error = failure { FestivalOfficialNewsService(api).officialNews("fst_a") }
+        val error = failure { NetworkFestivalOfficialNewsService(api).officialNews("fst_a") }
 
         assertTrue(error is FestivalLiveBoardServiceError.InvalidResponse)
     }
 
     @Test
     fun `상세 응답 ID가 다르거나 경로 문자가 있는 ID면 잘못된 응답이다`() = runTest {
-        val catalog = FestivalCatalogService(api, FestivalCatalogCache(File("unused.json"), FestiCoreJson), FestivalImageUrlResolver(null))
+        val catalog =
+            NetworkFestivalCatalogService(api, FestivalCatalogCache(File("unused.json"), FestiCoreJson), FestivalImageUrlResolver(null))
 
         assertTrue(failure { catalog.festivalDetail("fst_a") } is FestivalLiveBoardServiceError.InvalidResponse)
         assertTrue(failure { catalog.festivalDetail("fst?a") } is FestivalLiveBoardServiceError.InvalidResponse)
@@ -246,7 +248,7 @@ class FestivalLiveBoardServiceTest {
 
     @Test
     fun `내 일정의 잘못된 축제 ID는 요청하지 않는다`() = runTest {
-        assertTrue(failure { FestivalScheduleService(api).mySchedule("fst a") } is FestivalLiveBoardServiceError.InvalidFestivalId)
+        assertTrue(failure { NetworkFestivalScheduleService(api).mySchedule("fst a") } is FestivalLiveBoardServiceError.InvalidFestivalId)
         assertTrue(requests.isEmpty())
     }
 

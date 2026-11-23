@@ -12,9 +12,8 @@ import io.festicore.service.api.base.BearerAuthorizationKey
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.festicore.service.festivalcatalog.FestivalCatalogCache
-import io.festicore.service.festivalcatalog.FestivalCatalogService
-import io.festicore.service.festivalcatalog.FestivalFlagDetailService
 import io.festicore.service.festivalcatalog.FestivalImageUrlResolver
+import io.festicore.service.festivalcatalog.NetworkFestivalCatalogService
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -49,12 +48,13 @@ class FestivalFlagDetailRepositoryTest {
     )
     private val useCase = FestivalFlagDetailUseCaseImpl(
         FestivalFlagDetailRepositoryImpl(
-            FestivalFlagDetailService(FlagRequest(client), currentSessionId = { sessionId }),
-            FestivalCatalogService(
+            FlagRequest(client),
+            NetworkFestivalCatalogService(
                 FestivalRequest(client),
                 FestivalCatalogCache(File("unused.json"), FestiCoreJson),
                 FestivalImageUrlResolver("https://example.test/"),
             ),
+            currentSessionId = { sessionId },
         ),
     )
 

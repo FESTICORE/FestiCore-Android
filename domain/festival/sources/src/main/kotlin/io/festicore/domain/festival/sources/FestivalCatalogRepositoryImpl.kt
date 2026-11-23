@@ -3,8 +3,10 @@ package io.festicore.domain.festival.sources
 import io.festicore.domain.festival.FestivalCatalogItem
 import io.festicore.domain.festival.FestivalCatalogPage
 import io.festicore.domain.festival.FestivalCatalogRepository
-import io.festicore.service.api.FestivalItemDto
-import io.festicore.service.festivalcatalog.FestivalCatalogService
+import io.festicore.domain.festival.sources.model.dto.FestivalItemDto
+import io.festicore.domain.festival.sources.model.mapper.mapCatalogErrors
+import io.festicore.domain.festival.sources.model.mapper.toDomain
+import io.festicore.domain.festival.sources.service.FestivalCatalogService
 
 /** iOS `FestivalCatalogRepositoryImpl`. DTO를 도메인으로 바꾸고 오류를 [io.festicore.domain.festival.FestivalCatalogError]로 바꾼다. */
 internal class FestivalCatalogRepositoryImpl(private val service: FestivalCatalogService) : FestivalCatalogRepository {

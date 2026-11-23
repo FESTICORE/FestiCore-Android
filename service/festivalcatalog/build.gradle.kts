@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     val libs = catalog
+    implementation(project(":domain:festival:sources"))
     api(project(":service:apiendpoint"))
     implementation(project(":service:auth"))
     implementation(project(":service:device"))

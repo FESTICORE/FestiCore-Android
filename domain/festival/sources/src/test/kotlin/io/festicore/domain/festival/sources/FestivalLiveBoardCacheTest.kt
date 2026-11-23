@@ -4,10 +4,10 @@ import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.festivalcatalog.FestivalCatalogCache
-import io.festicore.service.festivalcatalog.FestivalCatalogService
 import io.festicore.service.festivalcatalog.FestivalImageUrlResolver
-import io.festicore.service.festivalcatalog.FestivalLiveBoardService
-import io.festicore.service.festivalcatalog.FestivalOfficialNewsService
+import io.festicore.service.festivalcatalog.NetworkFestivalCatalogService
+import io.festicore.service.festivalcatalog.NetworkFestivalLiveBoardService
+import io.festicore.service.festivalcatalog.NetworkFestivalOfficialNewsService
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -48,7 +48,7 @@ class FestivalLiveBoardCacheTest {
             },
         ),
     )
-    private val liveBoardService = FestivalLiveBoardService(
+    private val liveBoardService = NetworkFestivalLiveBoardService(
         api = api,
         deviceId = { "00000000-0000-4000-8000-000000000001" },
         currentSessionId = { sessionId },
@@ -56,8 +56,8 @@ class FestivalLiveBoardCacheTest {
     )
     private val repository = FestivalLiveBoardRepositoryImpl(
         liveBoardService,
-        FestivalOfficialNewsService(api),
-        FestivalCatalogService(
+        NetworkFestivalOfficialNewsService(api),
+        NetworkFestivalCatalogService(
             api,
             FestivalCatalogCache(File("unused.json"), FestiCoreJson),
             FestivalImageUrlResolver("https://example.test/"),

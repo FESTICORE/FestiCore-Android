@@ -7,7 +7,8 @@ import io.festicore.domain.festival.FestivalPackState
 import io.festicore.domain.festival.PackDownloadEvent
 import io.festicore.domain.festival.PackDownloadProgress
 import io.festicore.domain.festival.PackSyncResult
-import io.festicore.service.api.FestivalPackDocumentDto
+import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
+import io.festicore.domain.festival.sources.model.mapper.toDomain
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackDownloadEvent as ServiceDownloadEvent
 import io.festicore.service.pack.PackSyncError

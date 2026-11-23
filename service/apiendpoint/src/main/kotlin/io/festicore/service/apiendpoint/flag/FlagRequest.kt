@@ -2,10 +2,6 @@ package io.festicore.service.apiendpoint.flag
 
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.festiCoreRequest
-import io.festicore.service.api.FlagDetailDto
-import io.festicore.service.api.FlagFollowDto
-import io.festicore.service.api.FlagReportDto
-import io.festicore.service.api.PinnedFlagDto
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.api.base.bearerAuthorization
 import io.festicore.service.api.flag.FlagApi
@@ -22,9 +18,9 @@ import io.ktor.http.contentType
  * 깃발 상세 · 팔로우 · 신고 · 대표 깃발 요청. 실패는 [NetworkError], Bearer 요청은 [AuthSessionError]도 던진다. 재시도하지 않는다.
  * iOS `PublicFlagRequest` · `FestivalFlagFollowRequest` · `FlagUserRequest`.
  */
-class FlagRequest(private val client: HttpClient) {
+class FlagRequest(@PublishedApi internal val client: HttpClient) {
     /** `GET api/v1/flags/{id}`. 익명 허용. [expectedSessionId]가 있으면 그 세션의 Bearer를 붙인다(iOS `.automatic`). */
-    suspend fun detail(flagId: String, expectedSessionId: String? = null): FlagDetailDto = unwrapAuth {
+    suspend inline fun <reified T> detail(flagId: String, expectedSessionId: String? = null): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Get
             url(FlagApi.detail(flagId))
@@ -33,11 +29,11 @@ class FlagRequest(private val client: HttpClient) {
     }
 
     /** `PUT api/v1/flags/{id}/follow` + `Idempotency-Key`. Bearer 대상. */
-    suspend fun follow(
+    suspend inline fun <reified T> follow(
         flagId: String,
         expectedSessionId: String? = null,
         idempotencyKey: String = newIdempotencyKey(),
-    ): FlagFollowDto = unwrapAuth {
+    ): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Put
             url(FlagApi.follow(flagId))
@@ -47,7 +43,7 @@ class FlagRequest(private val client: HttpClient) {
     }
 
     /** `DELETE api/v1/flags/{id}/follow`. Bearer 대상, 멱등 키 없음. */
-    suspend fun unfollow(flagId: String, expectedSessionId: String? = null): FlagFollowDto = unwrapAuth {
+    suspend inline fun <reified T> unfollow(flagId: String, expectedSessionId: String? = null): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Delete
             url(FlagApi.follow(flagId))
@@ -56,11 +52,11 @@ class FlagRequest(private val client: HttpClient) {
     }
 
     /** `POST api/v1/flags/{id}/report` `{reason}`. Bearer 대상. */
-    suspend fun report(
+    suspend inline fun <reified T> report(
         flagId: String,
         body: FlagReportBody,
         expectedSessionId: String? = null,
-    ): FlagReportDto = unwrapAuth {
+    ): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Post
             url(FlagApi.report(flagId))
@@ -71,7 +67,7 @@ class FlagRequest(private val client: HttpClient) {
     }
 
     /** `PUT api/v1/me/pinned-flag` `{flagId}`. 해제는 `flagId: null`을 명시한다. Bearer 대상. */
-    suspend fun setPinnedFlag(body: PinnedFlagBody, expectedSessionId: String? = null): PinnedFlagDto = unwrapAuth {
+    suspend inline fun <reified T> setPinnedFlag(body: PinnedFlagBody, expectedSessionId: String? = null): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Put
             url(FlagApi.PINNED_FLAG)
@@ -82,7 +78,7 @@ class FlagRequest(private val client: HttpClient) {
     }
 
     // 인증 플러그인이 던진 AuthSessionError는 festiCoreRequest가 Unknown으로 감싸므로 풀어서 던진다(FestivalApi와 같음).
-    private suspend inline fun <T> unwrapAuth(block: () -> T): T = try {
+    @PublishedApi internal suspend inline fun <T> unwrapAuth(block: () -> T): T = try {
         block()
     } catch (e: NetworkError.Unknown) {
         throw e.cause as? AuthSessionError ?: e
