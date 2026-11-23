@@ -36,7 +36,7 @@ val authDomainModule = module {
 val appModules: List<Module> =
     coreModules +                                   // core/coreassembly
         serviceModules(baseUrl = BuildConfig.BASE_URL) + // service/serviceassembly
-        listOf(domainAuthModule(...), domainFestivalModule, domainUserNotificationModule) +
+        listOf(domainAuthModule(...), domainFestivalModule, domainUserNotificationModule, domainNoticeModule) +
         featureModules(legalBaseUrl = BuildConfig.LEGAL_BASE_URL) + // feature/featureassembly
         appModule                                    // 루트 Coordinator · 딥링크 브리지
 ```

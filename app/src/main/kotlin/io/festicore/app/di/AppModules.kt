@@ -10,6 +10,7 @@ import io.festicore.domain.auth.sources.ActivityProvider
 import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.festival.sources.di.domainFestivalModule
+import io.festicore.domain.notice.sources.di.domainNoticeModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
 import io.festicore.feature.featureassembly.featureModules
 import io.festicore.service.auth.AuthSession
@@ -52,6 +53,7 @@ val appModules: List<Module> =
             domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),
             domainFestivalModule,
             domainUserNotificationModule,
+            domainNoticeModule,
         ) +
         featureModules(legalBaseUrl = BuildConfig.LEGAL_BASE_URL) +
         appModule
