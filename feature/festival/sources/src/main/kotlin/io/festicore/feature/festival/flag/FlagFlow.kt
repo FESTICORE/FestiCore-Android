@@ -9,11 +9,11 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import io.festicore.domain.festival.FestivalFlagFollowResult
-import io.festicore.feature.festival.FestivalTransitions
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
 import io.festicore.feature.festival.FlagLoginContext
 import io.festicore.feature.festival.FlagRoute
 import io.festicore.feature.festival.FlagTabInput
+import io.festicore.feature.festival.common.FestivalTransitions
 import io.festicore.feature.festival.flagdetail.FlagDetailContext
 import io.festicore.feature.festival.flagdetail.FlagDetailScreen
 import io.festicore.feature.festival.flagdetail.FlagDetailViewModel

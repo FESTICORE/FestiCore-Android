@@ -43,7 +43,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 import androidx.compose.ui.zIndex
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.feature.festival.flag.FlagPresentation.title
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCChip

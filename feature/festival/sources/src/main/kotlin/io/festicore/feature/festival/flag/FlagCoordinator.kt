@@ -2,8 +2,8 @@ package io.festicore.feature.festival.flag
 
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import io.festicore.domain.festival.FestivalFlagFollowResult
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.feature.festival.FlagRoute
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer

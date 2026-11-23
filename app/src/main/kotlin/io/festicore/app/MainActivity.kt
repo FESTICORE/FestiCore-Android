@@ -1,11 +1,12 @@
 package io.festicore.app
-
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import io.festicore.app.application.MainActivityProvider
+import io.festicore.app.deeplink.AppDeeplinkBridge
 import io.festicore.app.navigation.AppFlow
 import io.festicore.ui.designkit.theme.FestiCoreTheme
 import org.koin.android.ext.android.inject

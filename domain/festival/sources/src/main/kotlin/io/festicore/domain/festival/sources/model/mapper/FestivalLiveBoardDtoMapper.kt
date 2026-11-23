@@ -1,9 +1,9 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.domain.festival.FestivalCrewGatherResponse
-import io.festicore.domain.festival.FestivalIsoTime
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalCrewGatherResponse
+import io.festicore.domain.festival.entity.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.sources.model.dto.FestivalFlagProfileDto
 import io.festicore.domain.festival.sources.model.dto.FestivalLiveBoardDto
 import io.festicore.domain.festival.sources.model.dto.FestivalLiveCrewDto

@@ -1,5 +1,5 @@
 package io.festicore.service.auth
-
+import io.festicore.service.auth.store.CredentialStore
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

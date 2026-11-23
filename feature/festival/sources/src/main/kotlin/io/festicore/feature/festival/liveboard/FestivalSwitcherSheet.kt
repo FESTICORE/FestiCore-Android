@@ -29,7 +29,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.festicore.feature.festival.FestivalPoster
+import io.festicore.feature.festival.festivallist.FestivalPoster
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.modal.FCSheet
 import io.festicore.ui.designkit.tokens.FestiCoreRadius

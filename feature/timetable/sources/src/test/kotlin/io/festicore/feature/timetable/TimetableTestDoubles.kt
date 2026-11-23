@@ -1,12 +1,12 @@
 package io.festicore.feature.timetable
 
-import io.festicore.domain.auth.CurrentUserProvider
-import io.festicore.domain.festival.FestivalBoardSelection
-import io.festicore.domain.festival.FestivalBoardSelectionUseCase
-import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.domain.festival.FestivalSchedule
-import io.festicore.domain.festival.FestivalScheduleSaved
-import io.festicore.domain.festival.FestivalScheduleUseCase
+import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.domain.festival.entity.FestivalBoardSelection
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalSchedule
+import io.festicore.domain.festival.entity.FestivalScheduleSaved
+import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
+import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
 import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetableLineupArtist

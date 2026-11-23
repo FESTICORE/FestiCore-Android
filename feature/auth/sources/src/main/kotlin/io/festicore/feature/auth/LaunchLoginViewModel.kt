@@ -3,11 +3,11 @@ package io.festicore.feature.auth
 import androidx.lifecycle.ViewModel
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthLoginResult
-import io.festicore.domain.auth.AuthProfile
-import io.festicore.domain.auth.AuthRepository
-import io.festicore.domain.auth.GoogleLoginUseCase
+import io.festicore.domain.auth.auth.AuthRepository
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthLoginResult
+import io.festicore.domain.auth.entity.AuthProfile
+import io.festicore.domain.auth.google.GoogleLoginUseCase
 import kotlin.coroutines.cancellation.CancellationException
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer

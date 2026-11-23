@@ -1,6 +1,6 @@
 package io.festicore.feature.festival.flag
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import java.text.NumberFormat
 import java.time.Duration
 import java.time.Instant

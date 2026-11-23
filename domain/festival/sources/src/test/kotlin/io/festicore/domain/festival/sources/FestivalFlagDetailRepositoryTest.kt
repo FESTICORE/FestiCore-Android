@@ -1,12 +1,13 @@
 package io.festicore.domain.festival.sources
-
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.domain.festival.FestivalFlagDetail
-import io.festicore.domain.festival.FestivalFlagDetailError
-import io.festicore.domain.festival.FestivalFlagPinError
-import io.festicore.domain.festival.FestivalFlagReportError
-import io.festicore.domain.festival.FestivalFlagReportReason
+import io.festicore.domain.festival.entity.FestivalFlagDetail
+import io.festicore.domain.festival.entity.FestivalFlagDetailError
+import io.festicore.domain.festival.entity.FestivalFlagPinError
+import io.festicore.domain.festival.entity.FestivalFlagReportError
+import io.festicore.domain.festival.entity.FestivalFlagReportReason
+import io.festicore.domain.festival.sources.flag.FestivalFlagDetailUseCaseImpl
+import io.festicore.domain.festival.sources.repository.FestivalFlagDetailRepositoryImpl
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
 import io.festicore.service.apiendpoint.festival.FestivalRequest

@@ -1,7 +1,6 @@
 package io.festicore.feature.festival.flag
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 /** 목록 조회 상태. iOS `FestivalFlagFeature.State.ViewState`. */
 enum class FlagViewState {
     Idle,

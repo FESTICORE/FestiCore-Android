@@ -1,6 +1,6 @@
 package io.festicore.app
-
 import androidx.compose.ui.graphics.toArgb
+import io.festicore.app.application.FestiCoreApplication
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import java.io.File
 import org.junit.Assert.assertEquals

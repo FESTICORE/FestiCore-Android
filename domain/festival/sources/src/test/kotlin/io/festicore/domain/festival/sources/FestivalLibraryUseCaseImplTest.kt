@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources
-
 import io.festicore.core.datastore.RecentSearchStore
+import io.festicore.domain.festival.sources.library.FestivalLibraryUseCaseImpl
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test

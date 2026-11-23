@@ -1,9 +1,9 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.domain.festival.FestivalCatalogArtist
-import io.festicore.domain.festival.FestivalCatalogItem
-import io.festicore.domain.festival.FestivalCatalogPerformance
-import io.festicore.domain.festival.FestivalTicketLink
+import io.festicore.domain.festival.entity.FestivalCatalogArtist
+import io.festicore.domain.festival.entity.FestivalCatalogItem
+import io.festicore.domain.festival.entity.FestivalCatalogPerformance
+import io.festicore.domain.festival.entity.FestivalTicketLink
 import io.festicore.domain.festival.sources.model.dto.FestivalCatalogArtistDto
 import io.festicore.domain.festival.sources.model.dto.FestivalItemDto
 import io.festicore.domain.festival.sources.model.dto.FestivalTicketLinkDto

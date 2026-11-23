@@ -1,12 +1,12 @@
 package io.festicore.feature.festival.flag
 
 import androidx.lifecycle.ViewModel
-import io.festicore.domain.festival.FestivalFlagFollowError
-import io.festicore.domain.festival.FestivalFlagFollowResult
-import io.festicore.domain.festival.FestivalFlagUseCase
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalLiveBoardUseCase
+import io.festicore.domain.festival.entity.FestivalFlagFollowError
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.flagdetail.FestivalFlagUseCase
+import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration

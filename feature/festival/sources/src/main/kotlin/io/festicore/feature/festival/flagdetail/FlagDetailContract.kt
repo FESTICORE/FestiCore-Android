@@ -1,7 +1,7 @@
 package io.festicore.feature.festival.flagdetail
 
-import io.festicore.domain.festival.FestivalFlagDetail
-import io.festicore.domain.festival.FestivalFlagReportReason
+import io.festicore.domain.festival.entity.FestivalFlagDetail
+import io.festicore.domain.festival.entity.FestivalFlagReportReason
 import java.time.Instant
 
 /** 화면 본문 단계(iOS `FestivalFlagDetailFeature.State.Content`). */

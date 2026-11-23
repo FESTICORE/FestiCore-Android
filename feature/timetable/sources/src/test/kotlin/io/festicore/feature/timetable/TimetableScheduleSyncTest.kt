@@ -1,8 +1,8 @@
 package io.festicore.feature.timetable
 
-import io.festicore.domain.festival.FestivalSchedule
-import io.festicore.domain.festival.FestivalScheduleError
-import io.festicore.domain.festival.FestivalScheduleSaved
+import io.festicore.domain.festival.entity.FestivalSchedule
+import io.festicore.domain.festival.entity.FestivalScheduleError
+import io.festicore.domain.festival.entity.FestivalScheduleSaved
 import io.festicore.feature.timetable.main.TimetableContentStatus
 import io.festicore.feature.timetable.main.TimetableScheduleSave
 import io.festicore.feature.timetable.main.TimetableScheduleSync

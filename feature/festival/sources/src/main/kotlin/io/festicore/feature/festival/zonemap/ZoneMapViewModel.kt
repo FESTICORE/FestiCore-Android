@@ -1,14 +1,14 @@
 package io.festicore.feature.festival.zonemap
 
 import androidx.lifecycle.ViewModel
-import io.festicore.domain.auth.CurrentUserProvider
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalLiveBoardUseCase
-import io.festicore.domain.festival.FestivalPackUseCase
-import io.festicore.domain.festival.FestivalZoneMap
-import io.festicore.domain.festival.FestivalZoneMapUseCase
-import io.festicore.domain.festival.PackSyncResult
+import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalZoneMap
+import io.festicore.domain.festival.entity.PackSyncResult
+import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
+import io.festicore.domain.festival.pack.FestivalPackUseCase
+import io.festicore.domain.festival.zonemap.FestivalZoneMapUseCase
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.cancellation.CancellationException

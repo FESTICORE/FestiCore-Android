@@ -1,11 +1,12 @@
 package io.festicore.domain.festival.sources
-
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.NetworkError
-import io.festicore.domain.festival.FestivalPackError
-import io.festicore.domain.festival.PackDownloadEvent
-import io.festicore.domain.festival.PackDownloadProgress
-import io.festicore.domain.festival.PackSyncResult
+import io.festicore.domain.festival.entity.FestivalPackError
+import io.festicore.domain.festival.entity.PackDownloadEvent
+import io.festicore.domain.festival.entity.PackDownloadProgress
+import io.festicore.domain.festival.entity.PackSyncResult
+import io.festicore.domain.festival.sources.repository.FestivalPackRepositoryImpl
+import io.festicore.domain.festival.sources.repository.toPackError
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackDownloadEvent as ServiceEvent
 import io.festicore.service.pack.PackDownloadProgress as ServiceProgress

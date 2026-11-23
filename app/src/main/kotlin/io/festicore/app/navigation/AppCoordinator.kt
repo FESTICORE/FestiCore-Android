@@ -6,13 +6,13 @@ import io.festicore.core.datastore.FirstInstallOnboardingStore
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthProfile
-import io.festicore.domain.auth.AuthRepository
+import io.festicore.domain.auth.auth.AuthRepository
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.onboarding.OnboardingRoute
-import io.festicore.service.auth.SessionExpiry
+import io.festicore.service.auth.expiry.SessionExpiry
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException

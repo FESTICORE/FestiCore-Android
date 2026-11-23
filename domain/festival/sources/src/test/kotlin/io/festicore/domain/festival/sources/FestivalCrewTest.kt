@@ -1,13 +1,13 @@
 package io.festicore.domain.festival.sources
-
-import io.festicore.domain.festival.FestivalCrew
-import io.festicore.domain.festival.FestivalCrewError
-import io.festicore.domain.festival.FestivalCrewGatherReply
-import io.festicore.domain.festival.FestivalCrewGatherResponse
-import io.festicore.domain.festival.FestivalCrewInvite
-import io.festicore.domain.festival.FestivalCrewInviteCode
-import io.festicore.domain.festival.FestivalCrewRepository
-import io.festicore.domain.festival.FestivalCrewState
+import io.festicore.domain.festival.crew.FestivalCrewRepository
+import io.festicore.domain.festival.entity.FestivalCrew
+import io.festicore.domain.festival.entity.FestivalCrewError
+import io.festicore.domain.festival.entity.FestivalCrewGatherReply
+import io.festicore.domain.festival.entity.FestivalCrewGatherResponse
+import io.festicore.domain.festival.entity.FestivalCrewInvite
+import io.festicore.domain.festival.entity.FestivalCrewInviteCode
+import io.festicore.domain.festival.entity.FestivalCrewState
+import io.festicore.domain.festival.sources.crew.FestivalCrewUseCaseImpl
 import java.time.Instant
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

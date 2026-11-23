@@ -1,10 +1,10 @@
 package io.festicore.feature.timetable.schedulepick
 
 import androidx.lifecycle.ViewModel
-import io.festicore.domain.festival.FestivalBoardSelectionUseCase
-import io.festicore.domain.festival.FestivalSchedule
-import io.festicore.domain.festival.FestivalScheduleError
-import io.festicore.domain.festival.FestivalScheduleUseCase
+import io.festicore.domain.festival.entity.FestivalSchedule
+import io.festicore.domain.festival.entity.FestivalScheduleError
+import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
+import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
 import io.festicore.domain.timetable.TimetableOverlapCalculator
 import io.festicore.feature.timetable.SchedulePickResult

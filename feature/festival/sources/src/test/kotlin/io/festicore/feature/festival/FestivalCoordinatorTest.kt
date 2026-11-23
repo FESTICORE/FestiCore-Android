@@ -1,5 +1,5 @@
 package io.festicore.feature.festival
-
+import io.festicore.feature.festival.festivallist.FakeCurrentUserProvider
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse

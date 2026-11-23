@@ -1,7 +1,6 @@
 package io.festicore.feature.auth
 
-import io.festicore.domain.auth.AuthNicknameRule
-
+import io.festicore.domain.auth.entity.AuthNicknameRule
 /**
  * iOS `SignUpFeature.State` + 부모 흐름 값(`AuthFlowState`의 제출 중 · 문구 · 약관 재변경).
  *

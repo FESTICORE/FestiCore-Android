@@ -1,7 +1,7 @@
 package io.festicore.feature.auth
 
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthProfile
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthProfile
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -10,7 +10,7 @@ import org.orbitmvi.orbit.test.test
 
 class LaunchLoginViewModelTest {
     private fun viewModel(
-        login: suspend () -> io.festicore.domain.auth.AuthLoginResult = { loginResult() },
+        login: suspend () -> io.festicore.domain.auth.entity.AuthLoginResult = { loginResult() },
         repository: FakeAuthRepository = FakeAuthRepository(),
     ) = LaunchLoginViewModel(FakeGoogleLoginUseCase(login), repository)
 
@@ -207,7 +207,7 @@ class LaunchLoginViewModelTest {
 
     @Test
     fun `로그인 중에는 다시 누르기와 건너뛰기를 무시하고 진행 중 시도의 결과만 반영한다`() = runTest {
-        val pending = CompletableDeferred<io.festicore.domain.auth.AuthLoginResult>()
+        val pending = CompletableDeferred<io.festicore.domain.auth.entity.AuthLoginResult>()
         val useCase = FakeGoogleLoginUseCase { pending.await() }
         LaunchLoginViewModel(useCase, FakeAuthRepository()).test(this) {
             containerHost.onSignInTapped()

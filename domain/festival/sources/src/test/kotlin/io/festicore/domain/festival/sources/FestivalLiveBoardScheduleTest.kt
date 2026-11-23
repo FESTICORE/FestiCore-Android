@@ -1,8 +1,8 @@
 package io.festicore.domain.festival.sources
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.domain.festival.FestivalLiveBoardSchedule
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.model.mapper.toDomain
 import java.time.Instant

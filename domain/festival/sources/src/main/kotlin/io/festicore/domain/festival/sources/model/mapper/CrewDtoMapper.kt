@@ -1,12 +1,12 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.domain.festival.FestivalCrew
-import io.festicore.domain.festival.FestivalCrewError
-import io.festicore.domain.festival.FestivalCrewGatherReply
-import io.festicore.domain.festival.FestivalCrewGatherResponse
-import io.festicore.domain.festival.FestivalCrewInvite
-import io.festicore.domain.festival.FestivalCrewInviteCode
-import io.festicore.domain.festival.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalCrew
+import io.festicore.domain.festival.entity.FestivalCrewError
+import io.festicore.domain.festival.entity.FestivalCrewGatherReply
+import io.festicore.domain.festival.entity.FestivalCrewGatherResponse
+import io.festicore.domain.festival.entity.FestivalCrewInvite
+import io.festicore.domain.festival.entity.FestivalCrewInviteCode
+import io.festicore.domain.festival.entity.FestivalIsoTime
 import io.festicore.domain.festival.sources.model.dto.CrewDto
 import io.festicore.domain.festival.sources.model.dto.CrewGatherReplyDto
 import io.festicore.domain.festival.sources.model.dto.CrewInviteCodeDto

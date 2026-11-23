@@ -2,10 +2,10 @@ package io.festicore.feature.festival.liveboard
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import io.festicore.domain.festival.CachedFestivalPack
-import io.festicore.domain.festival.FestivalCatalogItem
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.CachedFestivalPack
+import io.festicore.domain.festival.entity.FestivalCatalogItem
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.ui.designkit.theme.FestiCoreTheme
 import java.time.Instant
 

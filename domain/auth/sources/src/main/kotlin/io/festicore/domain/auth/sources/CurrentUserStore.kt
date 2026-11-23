@@ -1,6 +1,6 @@
 package io.festicore.domain.auth.sources
 
-import io.festicore.domain.auth.CurrentUserProvider
+import io.festicore.domain.auth.auth.CurrentUserProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -1,9 +1,9 @@
 package io.festicore.domain.usernotification.sources.model.mapper
 
 import io.festicore.core.network.NetworkError
-import io.festicore.domain.usernotification.UserNotificationError
-import io.festicore.domain.usernotification.UserNotificationItem
-import io.festicore.domain.usernotification.UserNotificationPage
+import io.festicore.domain.usernotification.entity.UserNotificationError
+import io.festicore.domain.usernotification.entity.UserNotificationItem
+import io.festicore.domain.usernotification.entity.UserNotificationPage
 import io.festicore.domain.usernotification.sources.model.dto.UserNotificationItemDto
 import io.festicore.domain.usernotification.sources.model.dto.UserNotificationListDto
 import io.festicore.service.api.base.AuthSessionError

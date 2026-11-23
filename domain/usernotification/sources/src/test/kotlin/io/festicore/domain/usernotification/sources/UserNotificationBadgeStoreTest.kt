@@ -1,11 +1,11 @@
 package io.festicore.domain.usernotification.sources
-
-import io.festicore.domain.usernotification.UserNotificationBadge
-import io.festicore.domain.usernotification.UserNotificationBadgeUseCase
-import io.festicore.domain.usernotification.UserNotificationError
-import io.festicore.domain.usernotification.UserNotificationItem
-import io.festicore.domain.usernotification.UserNotificationPage
-import io.festicore.domain.usernotification.UserNotificationRepository
+import io.festicore.domain.usernotification.entity.UserNotificationBadge
+import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
+import io.festicore.domain.usernotification.entity.UserNotificationError
+import io.festicore.domain.usernotification.entity.UserNotificationItem
+import io.festicore.domain.usernotification.entity.UserNotificationPage
+import io.festicore.domain.usernotification.sources.repository.local.UserNotificationBadgeStore
+import io.festicore.domain.usernotification.usernotification.UserNotificationRepository
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset

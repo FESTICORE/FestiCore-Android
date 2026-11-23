@@ -1,5 +1,7 @@
 package io.festicore.service.auth
 
+import io.festicore.service.auth.store.CredentialStore
+
 /** 로그인 세션 공개 API. 토큰 값은 밖으로 내보내지 않는다. */
 class AuthSession internal constructor(private val store: CredentialStore) {
     suspend fun isLoggedIn(): Boolean = store.current() != null

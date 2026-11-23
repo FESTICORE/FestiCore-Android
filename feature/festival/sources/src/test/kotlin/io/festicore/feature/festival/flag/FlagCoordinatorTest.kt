@@ -1,6 +1,6 @@
 package io.festicore.feature.festival.flag
 
-import io.festicore.domain.festival.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
 import io.festicore.feature.festival.FlagRoute
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse

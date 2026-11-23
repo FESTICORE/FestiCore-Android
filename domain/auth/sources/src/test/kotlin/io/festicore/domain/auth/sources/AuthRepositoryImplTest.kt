@@ -1,12 +1,12 @@
 package io.festicore.domain.auth.sources
-
 import io.festicore.core.datastore.SecureStorage
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.domain.auth.AuthDomainError
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.sources.repository.AuthRepositoryImpl
 import io.festicore.service.apiendpoint.auth.AuthRequest
 import io.festicore.service.auth.AuthSession
-import io.festicore.service.auth.SessionExpiryEvents
 import io.festicore.service.auth.di.serviceAuthModule
+import io.festicore.service.auth.expiry.SessionExpiryEvents
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData

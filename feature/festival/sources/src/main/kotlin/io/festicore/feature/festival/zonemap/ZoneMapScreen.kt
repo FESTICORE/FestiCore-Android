@@ -31,8 +31,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.LifecycleOwner
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalZoneMap
 import io.festicore.feature.festival.liveboard.ForegroundEffect
 import io.festicore.feature.festival.liveboard.LiveBoardPresentation
 import io.festicore.ui.designkit.component.action.FCButton

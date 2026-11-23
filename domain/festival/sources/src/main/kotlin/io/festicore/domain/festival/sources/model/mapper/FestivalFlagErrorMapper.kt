@@ -1,10 +1,10 @@
 package io.festicore.domain.festival.sources.model.mapper
 
 import io.festicore.core.network.NetworkError
-import io.festicore.domain.festival.FestivalFlagDetailError
-import io.festicore.domain.festival.FestivalFlagFollowError
-import io.festicore.domain.festival.FestivalFlagPinError
-import io.festicore.domain.festival.FestivalFlagReportError
+import io.festicore.domain.festival.entity.FestivalFlagDetailError
+import io.festicore.domain.festival.entity.FestivalFlagFollowError
+import io.festicore.domain.festival.entity.FestivalFlagPinError
+import io.festicore.domain.festival.entity.FestivalFlagReportError
 import io.festicore.domain.festival.sources.service.FestivalFlagServiceError
 import io.festicore.service.api.base.AuthSessionError
 import kotlin.coroutines.cancellation.CancellationException

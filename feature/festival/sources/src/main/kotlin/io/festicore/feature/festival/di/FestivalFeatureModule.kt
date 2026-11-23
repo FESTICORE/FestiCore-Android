@@ -1,12 +1,12 @@
 package io.festicore.feature.festival.di
 
 import io.festicore.feature.festival.FestivalCoordinator
-import io.festicore.feature.festival.FestivalListViewModel
+import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.flag.FlagCoordinator
 import io.festicore.feature.festival.flag.FlagViewModel
 import io.festicore.feature.festival.flagdetail.FlagDetailViewModel
-import io.festicore.feature.festival.inbox.NotificationInboxViewModel
 import io.festicore.feature.festival.liveboard.LiveBoardViewModel
+import io.festicore.feature.festival.notificationinbox.NotificationInboxViewModel
 import io.festicore.feature.festival.zonemap.ZoneMapViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf

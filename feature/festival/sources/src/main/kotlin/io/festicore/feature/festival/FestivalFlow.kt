@@ -1,5 +1,4 @@
 package io.festicore.feature.festival
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -9,8 +8,12 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import io.festicore.feature.festival.inbox.NotificationInboxScreen
+import io.festicore.feature.festival.common.FestivalTransitions
+import io.festicore.feature.festival.festivallist.FestivalListScreen
+import io.festicore.feature.festival.festivallist.FestivalListViewModel
+import io.festicore.feature.festival.festivallist.ListForegroundEffect
 import io.festicore.feature.festival.liveboard.LiveBoardScreen
+import io.festicore.feature.festival.notificationinbox.NotificationInboxScreen
 import io.festicore.feature.festival.zonemap.ZoneMapScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf

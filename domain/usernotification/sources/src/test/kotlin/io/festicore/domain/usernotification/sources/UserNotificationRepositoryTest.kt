@@ -1,8 +1,8 @@
 package io.festicore.domain.usernotification.sources
-
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.domain.usernotification.UserNotificationError
+import io.festicore.domain.usernotification.entity.UserNotificationError
+import io.festicore.domain.usernotification.sources.repository.UserNotificationRepositoryImpl
 import io.festicore.service.api.base.BearerAuthorizationKey
 import io.festicore.service.apiendpoint.usernotification.UserNotificationRequest
 import io.ktor.client.engine.mock.MockEngine

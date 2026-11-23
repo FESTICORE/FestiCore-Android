@@ -1,7 +1,7 @@
 package io.festicore.feature.festival.flagdetail
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.feature.festival.liveboard.LiveBoardMySchedule
 import io.festicore.feature.festival.liveboard.LiveBoardState
 import java.time.Instant

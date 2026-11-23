@@ -1,5 +1,5 @@
 package io.festicore.domain.auth
-
+import io.festicore.domain.auth.entity.AuthNicknameRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

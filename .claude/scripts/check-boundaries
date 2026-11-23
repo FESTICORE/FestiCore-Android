@@ -26,7 +26,7 @@ RULES = [
      r"\bColor\(\s*0[xX][0-9A-Fa-f]",
      "FestiCoreSemanticColor(ui/designkit 생성 토큰)를 쓴다. 새 색은 FestiCore-DesignSystem 토큰에 추가한다"),
     ("feature는 다른 모듈의 sources를 의존하지 않는다", "feature/**/build.gradle.kts",
-     [], r"projects\.\w+(\.\w+)*\.sources\b|project\(\s*\"[^\"]*:sources\"\s*\)",
+     ["feature/featureassembly/**"], r"projects\.\w+(\.\w+)*\.sources\b|project\(\s*\"[^\"]*:sources\"\s*\)",
      "다른 feature · domain은 interface 모듈만 의존한다. sources는 app이 연결한다"),
     ("service:api는 요청을 보내지 않는다", "service/api/**/*.kt",
      [], r"\bHttpClient\b|\bfestiCore(Request|Exchange)\b|\bimport org\.koin\.",
@@ -37,6 +37,9 @@ RULES = [
     ("domain sources는 service 구현 모듈을 의존하지 않는다", "domain/**/build.gradle.kts",
      [], r"^\s*(api|implementation|compileOnly)\(.*(:service:festivalcatalog\b|projects\.service\.festivalcatalog\b)",
      "서비스 계약은 domain에 두고 service/festivalcatalog가 구현한다(iOS와 같은 방향). 실제 구현을 붙이는 테스트만 testImplementation 허용"),
+    ("assembly 모듈에는 정의를 두지 않는다", "**/*assembly/**/*.kt",
+     [], r"\b(single|factory|viewModel|scoped|worker)(Of)?\s*[({]|\bmodule\s*\{",
+     "core · service · feature assembly는 각 모듈 di/의 Koin 모듈 목록만 합친다. 정의는 그 모듈의 di/에 둔다"),
 ]
 
 

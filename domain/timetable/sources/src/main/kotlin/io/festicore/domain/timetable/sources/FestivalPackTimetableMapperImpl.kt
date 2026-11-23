@@ -1,7 +1,7 @@
 package io.festicore.domain.timetable.sources
 
-import io.festicore.domain.festival.FestivalIsoTime
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
 import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetableLineupArtist

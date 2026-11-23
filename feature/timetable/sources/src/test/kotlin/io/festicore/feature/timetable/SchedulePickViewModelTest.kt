@@ -1,7 +1,7 @@
 package io.festicore.feature.timetable
 
-import io.festicore.domain.festival.FestivalSchedule
-import io.festicore.domain.festival.FestivalScheduleError
+import io.festicore.domain.festival.entity.FestivalSchedule
+import io.festicore.domain.festival.entity.FestivalScheduleError
 import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetablePickOverlap
 import io.festicore.domain.timetable.TimetableSet

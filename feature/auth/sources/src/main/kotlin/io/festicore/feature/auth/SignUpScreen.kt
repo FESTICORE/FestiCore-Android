@@ -26,7 +26,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.auth.AuthNicknameRule
+import io.festicore.domain.auth.entity.AuthNicknameRule
 import io.festicore.feature.web.WebPage
 import io.festicore.ui.designkit.component.button.FCPrimaryButton
 import io.festicore.ui.designkit.component.divider.FCDivider

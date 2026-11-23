@@ -1,7 +1,7 @@
 package io.festicore.feature.festival.zonemap
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalZoneMap
 import java.time.Instant
 
 /** 받아 둔 팩의 지도 상태. iOS `FestivalZoneMapFeature.MapLoad`. */
