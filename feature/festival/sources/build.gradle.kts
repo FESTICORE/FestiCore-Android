@@ -20,7 +20,6 @@ dependencies {
     implementation(libs.lib("compose-foundation"))
     implementation(libs.lib("activity-compose"))
     implementation(libs.lib("lifecycle-runtime-compose"))
-    implementation(libs.lib("browser"))
 
     testImplementation(libs.lib("robolectric"))
     testImplementation(libs.lib("compose-ui-test-junit4"))

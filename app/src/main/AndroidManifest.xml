@@ -5,6 +5,12 @@
     <!-- 받은 팩 와이파이 자동 받기의 와이파이 판단(일반 권한, 설계 쟁점 M9) -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- 팩 상세 가는 길의 지도 앱 설치 확인(Android 11+ 패키지 가시성, 설계 쟁점 M10). feature/profile `MapApp`과 같은 이름 -->
+    <queries>
+        <package android:name="com.nhn.android.nmap" />
+        <package android:name="net.daum.android.map" />
+    </queries>
+
     <application
         android:name=".application.FestiCoreApplication"
         android:allowBackup="false"

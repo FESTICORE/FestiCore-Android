@@ -1,11 +1,11 @@
 ---
 spec: my-tab
-modules: [feature/profile, feature/web, domain/festival, domain/auth, domain/notice]
+modules: [feature/profile, feature/web, domain/festival, domain/auth, domain/notice, ui/sharedui]
 ---
 
 # 마이 탭 Spec
 
-> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3) · 공지 목록 · 상세(S4)가 있다.
+> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3) · 공지 목록 · 상세(S4) · 팩 상세(S5)가 있다.
 
 iOS 대응: `Projects/Feature/Profile/Sources/Main/{Reducer/ProfileFeature.swift,View/ProfileView.swift}`, `Interface/Sources/ProfileDelegate.swift`, 테스트 `Tests/Sources/ProfileFeatureTests.swift`.
 설계: `.claude/docs/specs/2026-11-23-my-tab-android-design.md`(화면 1 · 쟁점 M1 · M7 · M12 · M13 · PR S1).
@@ -93,12 +93,32 @@ iOS 대응: `Notice/{Reducer/NoticeListFeature.swift,Reducer/NoticeDetailFeature
 5. 날짜 `yyyy.MM.dd`는 서울 기준(iOS `AppDateFormat.noticeDay`). feature는 `core`를 의존하지 않으므로 `NoticePresentation`이 같은 패턴을 둔다.
 6. 이동은 SideEffect → Screen 콜백: 목록 `BackRequested` · `NoticeDetailRequested(id, title)`, 상세 `BackRequested`. 설정 홈 `NoticeListRequested`에서 목록을 여는 연결은 T1이다.
 
+## 팩 상세 (S5)
+
+iOS 대응: `PackDetail/{Reducer/PackDetailFeature.swift,View/PackDetailView.swift,Components/PackRuleTags.swift}`, `Interface/Sources/PackDetailDelegate.swift`, `Core/FestiCoreLocation/Interface/Client/MapAppClient.swift`, 테스트 `PackDetailFeatureTests`. 설계 화면 2 · 팩 상세 데이터(D3) · 검토 반영 P2 · 쟁점 M8~M11.
+
+1. 화면: 배경 `backgroundNormal`, `FCTopBar(Back, 제목)` 아래 `FCTab(["가는 길", "준비물", "팩 관리"])`. 탭 바와 좌우로 넘기는 본문(`HorizontalPager`)이 같은 `tab`을 쓴다. 칸 · 페이지 번호가 범위 밖이면 가는 길로 둔다. 제목은 넘겨받은 축제 이름이고 팩을 읽으면 팩 이름으로 바꾼다.
+2. 처음 나타날 때 상세가 없고 읽는 중이 아니면 `Loading`으로 바꾸고 기기에 받은 팩 · 준비물 · 와이파이 자동 받기를 읽는다(네트워크 없음, 진입 경로와 관계없음). 팩이 없으면 `Missing` "기기에 받은 팩이 없어요"(버튼 없음), 예외면 `Failed` "팩을 불러오지 못했어요" + "다시 시도"(`Failed`일 때만 다시 읽음). 문구 `baseBodyRegular` · `labelNeutral`, 버튼 Secondary · Medium, 간격 `P12`, 가운데.
+   - `Idle` · `Loading`: 스켈레톤 r16 높이 96 · 160 · 120(간격 · 패딩 `P16`).
+3. 읽은 팩이 새 버전(`latestPackVersion > packVersion`)이면 변경 요약(`packChanges(id, packVersion)`)을 묻고, 요약의 `fromVersion`이 지금 버전과 같을 때만 보인다. 실패하면 아무것도 안 한다. 자동으로 받지 않는다.
+4. 탭 본문: 세로 스크롤(간격 `P16`, 좌우 · 위 `P16`, 아래 `fcScrollBottomInset`). 카드 = `backgroundElevated` r16 · 패딩 `P16`. 카드 제목 `baseBodyBold` · `labelNormal`, 본문 `baseCalloutRegular` · `labelNeutral`, 각주 `baseFootnoteRegular` · `labelAssistive`(좌우 `P4`), 구분선 1 · `lineNormal`(왼쪽 `P16` 안쪽).
+5. 가는 길: 정보가 없으면 카드 "가는 길 정보가 아직 없어요"(최소 높이 56, 가운데). 막차 · 셔틀 중 하나라도 있으면 `FCLastRideCard`(ISO 시각은 서울 24시간 `HH:mm`, 아니면 서버 값, 없으면 "-"). 카드 "셔틀"(본문 + 링크 버튼들) · "대중교통"(본문 + 지도 버튼) · "주차" · "팀 추천 메모". 대중교통이 없고 지도 주소만 있으면 지도 버튼만 카드에. 섹션 본문 = "가장 가까운 역은 {역}이에요. 걸어서 {N}분 정도 걸려요."(분 없으면 앞 문장만) + 서버 본문. 출처 줄 `FCSourceLine("출처: {이름} · 확인 MM/dd HH:mm")`(가는 길 출처가 없으면 팩 출처, 확인 시각 없으면 이름만).
+6. 지도 버튼 "네이버 지도" · "카카오맵"(Secondary · Medium, 같은 폭, 간격 `P8`). 버튼이 보이면 설치 여부를 확인하고(`MapAppClient`, 패키지 `com.nhn.android.nmap` · `net.daum.android.map`, app 매니페스트 `<queries>`), 확인 뒤 없는 앱은 "{이름} 웹 ↗". 설치된 앱의 버튼은 그 패키지로 링크를 보내고(받지 못하면 Custom Tabs), 그 밖의 링크는 Custom Tabs로 연다(`ui/sharedui` `openExternalUrl`, M10 · M11).
+7. 준비물: 카드 안 `FCChecklistProgress(체크 수, 행 수)`, `FCSectionHeader("챙길 것", "편집"/"완료")`, 행 묶음 r16. 행 = 숨기지 않은 팩 항목(필수는 항상) + 내 항목. 편집 중이면 `FCChecklistEditRow`(필수는 삭제 대신 태그), 아니면 `FCChecklistRow`(필수 표시). 편집 중이거나 행이 없으면 `FCAddItemRow`, 아니면 "내 항목 추가"(plus 20 · 간격 10 · `baseCalloutMedium` · `labelNeutral`, 높이 56, 누르면 편집 시작). 편집 중이고 필수 행이 있으면 각주 "필수 항목은 운영팀이 정한 거라 지울 수 없어요.". 반입 금지가 있으면 `FCSectionHeader("반입 금지")` + 카드(태그 줄바꿈 간격 `marginM6` + 띠 없는 출처 줄, 간격 `P12`).
+8. 준비물 동작: 체크 토글 · 지우기(필수는 무시, 내 항목은 삭제, 팩 항목은 숨김, 체크도 뺀다) · 추가(앞뒤 공백 뺀 이름이 있을 때만, id `custom-<uuid 소문자>`, 입력 비움)마다 축제별로 저장한다. 저장 실패는 알리지 않는다. "완료"는 편집을 끄고 입력을 비운다. 준비물이 아닌 탭으로 가면 편집을 끈다.
+9. 팩 관리: 팩 카드(썸네일 44 r8, 없으면 `FCThumbnail` 44 · 이름 `baseCalloutMedium` · 상태 `baseFootnoteRegular` · `labelAssistive`, 새 버전이면 `FCTag("업데이트", Warning)`). 상태 = "새 버전이 있어요 · v{latest}" / "최신 버전 · MM/dd HH:mm 확인" / "최신 버전 · v{ver}". 새 버전이면 `FCButton("업데이트 받기 · {용량}"(요약 없으면 "업데이트 받기") / "받는 중…", Primary, 전체 폭)` + 각주 "바뀐 내용: 시간표 N개 변경 · 셔틀 막차 HH:mm → HH:mm · 막차 HH:mm → HH:mm". "팩 정보" 묶음: 버전 "v{n} (새 버전 v{m})" · 마지막 확인(없으면 "-") · 용량(0.1MB 이상 "x.xMB", 아니면 "nKB" 최소 1) · 토글 "와이파이에서 자동으로 받기". 새 버전이 아니면 `FCButton("지금 업데이트 확인", Secondary, 전체 폭)`. 결과 문구 각주. "팩 삭제"(`baseBodyRegular` · `statusNegative`, 최소 높이 56 · 좌우 `P16` · r16 카드). 안내 "페스티벌이 끝나고 30일 뒤에 자동으로 삭제돼요. 내 일정과 체크한 준비물은 남아 있어요."(`baseCaption1Regular` · `labelAssistive`, 좌우 `P4`, M8). 업데이트 · 삭제 중에는 두 버튼과 "팩 삭제"를 막는다.
+10. 업데이트 · 확인: 받는 중 · 지우는 중 · 상세 없음이면 무시. 결과 "새 버전 v{n}을 받았어요" / "최신 버전이에요" 뒤 `PackChanged`, 새 상세가 또 새 버전이면 변경 요약을 다시 묻는다. 팩이 사라졌으면 `Missing` + `PackChanged`. 실패 `RetryLater` "지금은 받는 사람이 많아요. 잠시 후 다시 시도해 주세요." · `Offline` "인터넷에 연결되어 있지 않아요. 연결을 확인한 뒤 다시 시도해 주세요." · 그 밖 "업데이트를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.".
+11. 삭제: 받는 중 · 지우는 중이 아니면 `FCDialog("{제목} 팩을 삭제할까요?", "시간표·가는 길·준비물을 오프라인으로 볼 수 없게 돼요. 내 일정과 체크한 준비물은 남아 있어요.", 확인 "삭제", 취소 "취소")`. 확인하면 진행 중 업데이트를 취소하고 지운다. 성공 `PackDeleted`, 실패 "팩을 삭제하지 못했어요. 다시 시도해 주세요.".
+12. 와이파이 자동 받기 토글은 바로 화면에 반영하고 저장한다(실패는 알리지 않음).
+13. 이동은 SideEffect → Screen 콜백: `BackRequested` · `PackChanged` · `PackDeleted`. 마이 목록 다시 읽기(`onPackChanged` · `onPackDeleted`) · 상세 닫기 · 경로 연결과 라이브 보드 "가는 길" 진입은 T1이다.
+
 ## 엣지 케이스
 
 - 진행 중 읽기를 취소하는 iOS `cancelInFlight`는 두지 않는다. `Loading` 중 `onAppear`는 무시하고, 팩 상세 결과로 다시 읽는 경우만 겹칠 수 있다(마지막 응답이 남는다).
 - 바뀐 공연 수는 팩마다 차례로 묻는다(iOS는 동시에). 결과는 같다.
 - 공지 읽기의 iOS `cancelInFlight`는 두지 않는다. `Idle` · `Failed`일 때만 읽어 요청이 겹치지 않는다.
 - 닉네임 저장의 iOS `cancelInFlight`는 두지 않는다. 저장 중 다시 누르기를 무시해 요청이 겹치지 않는다.
+- 팩 상세 읽기 · 변경 요약의 iOS `cancelInFlight`는 두지 않는다. 읽는 중 `onAppear`는 무시하고, 변경 요약은 받은 버전이 맞을 때만 반영한다. 진행 중 업데이트는 삭제 확인 때 Job을 취소한다(iOS `CancelID.update`).
 
 ## 제약 / 가정
 
@@ -107,6 +127,8 @@ iOS 대응: `Notice/{Reducer/NoticeListFeature.swift,Reducer/NoticeDetailFeature
 - 계정 화면은 iOS 자식 Store(`NicknameEditFeature`) 대신 `AccountSettingsViewModel` 하나가 시트 상태(`AccountSettingsDestination.Nickname`)를 가진다(Orbit은 자식 Store가 없다).
 - 옮기지 않음: 분석 `profile_logout` · `profile_withdraw`(`service/analytics` 없음), `searchTapped` · `isSearchAvailable`(View 진입점 없음), 분석 `screen_view`(`service/analytics` 없음), 기수 카드 · 내 깃발(M7), 설정 홈 닫힘 때 알림 설정 보내기(알림 설정은 S6).
 - `loginTapped`(시트 요청)는 iOS처럼 ViewModel에 두되 화면에는 진입점이 없다.
+- 팩 상세는 iOS 첫 상태 `loading` 대신 `Idle`에서 시작해 처음 나타날 때 `Loading`으로 바꾼다(그리는 모양은 같다). 삭제 확인 팝업은 iOS `destination` 대신 `isDeleteConfirmationPresented`다.
+- 지도 앱 설치 확인은 iOS URL 스킴(`nmap` · `kakaomap`) 대신 Android 패키지 이름이다. 네이버 지도는 NAVER Cloud Maps URL Scheme 문서의 인텐트 예제, 카카오맵은 Google Play 등록 id로 확인했다.
 
 ## 작업 모듈
 
@@ -116,8 +138,11 @@ iOS 대응: `Notice/{Reducer/NoticeListFeature.swift,Reducer/NoticeDetailFeature
 | `feature/profile/sources`   | feature | `main/`(Contract · ViewModel · Screen · Presentation · 프리뷰), `settings/` · `appearance/`(S2), `account/`(S3), `notice/`(S4, `domain/notice/interface` 의존), `di/ProfileFeatureModule` |
 | `feature/featureassembly`   | feature | `profileFeatureModule` 등록                                                               |
 | `feature/web`               | feature | `LegalDocumentUrls`를 `interface`로 옮기고 https · host 검증(S2)                          |
+| `feature/profile/sources` `packdetail/` | feature | 팩 상세 Contract · ViewModel · Screen · Presentation · `MapApp` · 프리뷰(S5) |
+| `ui/sharedui`               | ui      | 외부 링크 열기 `openExternalUrl`(Custom Tabs, festival 목록 · 라이브 보드도 함께 씀, S5)   |
+| `app`                       | app     | 매니페스트 `<queries>` 지도 앱 패키지 2개(S5)                                             |
 | `app`                       | app     | `AppearanceModeSettings` 등록(`StoredAppearanceModeSettings`, S2)                         |
 
 ## 영향 범위
 
-앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`(`FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`)은 읽기만 하고, `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다. `domain/notice`(`NoticeUseCase`)는 읽기만 한다.
+앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`은 마이가 `FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`를 읽고 팩 상세가 `FestivalPackDetailUseCase`로 팩 업데이트 · 삭제 · 준비물 · 자동 받기 설정을 쓴다(테스트는 가짜 구현, 서버 쓰기 없음). `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다. `domain/notice`(`NoticeUseCase`)는 읽기만 한다.

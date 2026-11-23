@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.lib("compose-foundation"))
     implementation(libs.lib("coil-compose"))
     implementation(libs.lib("coil-network-okhttp"))
+    implementation(libs.lib("browser"))
     implementation(libs.lib("compose-ui-tooling-preview"))
     debugImplementation(libs.lib("compose-ui-tooling"))
     testImplementation(libs.lib("junit"))
