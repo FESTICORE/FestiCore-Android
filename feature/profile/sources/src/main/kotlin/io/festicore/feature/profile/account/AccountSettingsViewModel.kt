@@ -35,7 +35,15 @@ class AccountSettingsViewModel(
 
     /** 앱 코디네이터가 계정 상태가 바뀔 때 보내는 입력. iOS `accountChanged(profile:isLoading:message:)`. */
     fun onAccountChanged(account: AccountState) = intent {
-        val next = state.copy(profile = account.profile, isLoading = account.isLoading, message = account.message)
+        // 다른 계정으로 바뀌면 이전 계정에서 연 시트 · 팝업을 닫는다. 이전 계정 입력이 새 계정에 저장되지 않게 한다.
+        val accountChanged = account.profile?.user?.id != state.profile?.user?.id
+        val next =
+            state.copy(
+                profile = account.profile,
+                isLoading = account.isLoading,
+                message = account.message,
+                destination = if (accountChanged) null else state.destination,
+            )
         if (next != state) reduce { next }
     }
 
@@ -114,6 +122,8 @@ class AccountSettingsViewModel(
 
     /** iOS `nickname(.delegate(.saved))`: 시트를 닫고 화면의 프로필을 바꾼 뒤 앱에 알린다. */
     private suspend fun onNicknameSaved(user: AuthUser) = subIntent {
+        // 저장 중 계정이 바뀌었으면 이전 계정 응답은 버린다.
+        if (state.profile?.user?.id != user.id) return@subIntent
         reduce { state.copy(destination = null, profile = state.profile?.copy(user = user)) }
         postSideEffect(AccountSettingsSideEffect.NicknameUpdated(user))
     }

@@ -135,6 +135,17 @@ class AccountSettingsViewModelTest {
     }
 
     @Test
+    fun switchingAccountClosesNicknameSheet() = runTest {
+        val other = AuthProfile(user = user("다른").copy(id = "user-b"), currentTermsVersion = "2026-10")
+        viewModel().test(this) {
+            containerHost.onNicknameTapped()
+            expectState { copy(destination = nicknameSheet("로이")) }
+            containerHost.onAccountChanged(AccountState(profile = other, hasSession = true))
+            expectState { copy(destination = null, profile = other) }
+        }
+    }
+
+    @Test
     fun nicknameRulesFollowSignUp() = runTest {
         val repository = NicknameAuthRepository { throw AuthDomainError.Unavailable() }
         viewModel(account = AccountState(profile = profile(""), hasSession = true), repository = repository).test(this) {
