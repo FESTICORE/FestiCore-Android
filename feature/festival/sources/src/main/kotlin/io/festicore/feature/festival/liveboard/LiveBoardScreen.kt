@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -34,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -70,6 +72,7 @@ import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import io.festicore.ui.sharedui.externallink.openExternalUrl
 import java.time.Clock
 import java.time.Instant
+import kotlin.math.ceil
 import kotlinx.coroutines.delay
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -482,12 +485,22 @@ private fun Header(
             horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // iOS SwiftUI Text는 줄바꿈된 글자의 가장 긴 줄 너비만 차지해(FestivalLiveBoardScreen.swift:316-322)
+            // 화살표가 글자 바로 뒤 8에 붙는다. Compose Text는 줄바꿈되면 가능한 폭을 다 쓰므로 가장 긴 줄 너비로 줄인다.
+            val nameLayout = remember { arrayOfNulls<TextLayoutResult>(1) }
             Text(
                 text = festival.name,
                 style = FestiCoreTextStyle.baseTitle2Bold.textStyle,
                 color = FestiCoreSemanticColor.labelNormal.color,
                 maxLines = 2,
-                modifier = Modifier.weight(1f, fill = false),
+                onTextLayout = { nameLayout[0] = it },
+                modifier =
+                    Modifier.weight(1f, fill = false).layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val widest = nameLayout[0]?.let { layout -> (0 until layout.lineCount).maxOf { layout.getLineRight(it) } }
+                        val width = widest?.let { ceil(it).toInt().coerceAtMost(placeable.width) } ?: placeable.width
+                        layout(width, placeable.height) { placeable.place(0, 0) }
+                    },
             )
             // Figma S01 Festival Title: Chevron Down은 chevron-right 20을 90도 돌린 것이다.
             Image(

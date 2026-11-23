@@ -4,10 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -149,11 +152,14 @@ private fun NoticeListLoading() {
     }
 }
 
-/** 실패 · 빈 목록 문구. [onRetryTapped]가 있으면 "다시 시도"를 둔다. iOS `messageContent`. */
+/**
+ * 실패 · 빈 목록 문구. [onRetryTapped]가 있으면 "다시 시도"를 둔다. iOS `messageContent`(NoticeListView.swift:88).
+ * iOS는 아래 안전 영역을 뺀 높이의 가운데에 두므로 내비게이션 바 인셋을 빼고 가운데 맞춘다.
+ */
 @Composable
 internal fun NoticeMessage(message: String, onRetryTapped: (() -> Unit)?) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP12, Alignment.CenterVertically),
     ) {

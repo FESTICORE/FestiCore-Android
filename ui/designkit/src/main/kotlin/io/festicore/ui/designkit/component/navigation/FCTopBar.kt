@@ -240,7 +240,12 @@ private fun contentSpacing(style: FCTopBarStyle): Dp = when (style) {
     else -> 0.dp
 }
 
-/** iOS `.ultraThinMaterial` 흐림은 Compose에서 뒤 내용을 흐리게 할 수 없어 같은 색 덧칠만 둔다. */
+/**
+ * iOS `FCTopBar.swift:299-302` 기본(back 등) 배경은 `.ultraThinMaterial` 위에 `materialGlass`를 덮는다.
+ * Compose에는 뒤 내용을 흐리는 배경이 없고, 바는 본문 위가 아니라 위쪽에 따로 놓여 흐림 대상이 단색 배경뿐이다.
+ * 그래서 재질이 단색 위에 더하는 밝기를 `fillNormal`(다크 흰색 10%)로 근사한다.
+ * iOS 다크 캡처 실측 (31,31,32) ↔ 이 조합 (33,33,34).
+ */
 @Composable
 private fun Modifier.topBarBackground(style: FCTopBarStyle, backgroundColor: FestiCoreSemanticColor?): Modifier = when {
     backgroundColor != null -> background(backgroundColor.color)
@@ -250,7 +255,7 @@ private fun Modifier.topBarBackground(style: FCTopBarStyle, backgroundColor: Fes
 
     style == FCTopBarStyle.Large || style is FCTopBarStyle.Search -> background(FestiCoreSemanticColor.backgroundNormal.color)
 
-    else -> background(FestiCoreSemanticColor.materialGlass.color)
+    else -> background(FestiCoreSemanticColor.fillNormal.color).background(FestiCoreSemanticColor.materialGlass.color)
 }
 
 @Composable

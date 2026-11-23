@@ -61,14 +61,13 @@ internal fun SettingsSection(
     }
 }
 
-/** 그룹 안 줄 구분선. Figma S13-0 Divider: 좌우 16 안쪽. */
+/** 그룹 안 줄 구분선. Figma S13-0 Divider: 카드 너비를 채운다(iOS SettingsHomeView.swift:146-150 · AppearanceSettingsView.swift:72-74). */
 @Composable
 internal fun SettingsRowDivider() {
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = FestiCoreSpacing.paddingP16)
                 .height(DividerHeight)
                 .background(FestiCoreSemanticColor.lineNormal.color),
     )
