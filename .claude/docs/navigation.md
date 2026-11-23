@@ -94,6 +94,16 @@ fun AuthFlow(coordinator: AuthCoordinator = koinViewModel(), onFinished: () -> U
 
 - iOS `AppCoordinator`처럼 `app`의 루트 Coordinator가 기능 흐름(스플래시 → 온보딩 → `AuthFlow` → 메인 탭)을 전환한다.
 - 기능 밖으로 나가는 이동은 항상 부모 Coordinator가 정한다.
+- 메인 탭 선택은 `app` `MainTabCoordinator`(iOS 같은 이름, `selectedTab`)가 가진다. `MainTabScreen`은 선택을 인자로 받는 껍데기다.
+
+## 딥링크
+
+iOS 4단 그대로 둔다(규칙: `core/utility/.spec/deeplink.md`).
+
+1. 파싱: `core/utility` `FestiCoreDeeplink` · `FestiCoreDeeplinkParser`(스킴 `festicore`).
+2. 대기: `core/datastore` `PendingDeeplinkStore`(최신 하나, 꺼내면 비움).
+3. 브리지: `app` `AppDeeplinkBridge`. `MainActivity`(`launchMode="singleTop"`)의 `onCreate` · `onNewIntent` `ACTION_VIEW` 인텐트를 받아 대기에 넣고 신호를 보낸다.
+4. 라우팅: `AppCoordinator`가 홈이고 덮개가 없을 때만 꺼내 `OpenDeeplink` SideEffect로 보낸다. 홈 진입 · 덮개 닫힘 때 다시 꺼낸다. `MainTabCoordinator.open`이 탭을 고르고 라이브 경로는 `FestivalCoordinator.onDeeplinkFestival(List)Opened`로 넘긴다.
 
 ## 화면 전환 애니메이션
 
@@ -107,6 +117,7 @@ iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트�
 ## 테스트
 
 - `orbit-test`로 Coordinator 함수 호출 → `routes` State와 `Finished` SideEffect를 검증한다.
+- 딥링크 수동 확인: `adb shell am start -W -a android.intent.action.VIEW -d "festicore://festival/<축제 ID>" io.festiCore.co.stage`(앱 꺼짐 · 켜짐 각각).
 
 ## 금지
 

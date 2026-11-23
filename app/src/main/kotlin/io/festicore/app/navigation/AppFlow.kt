@@ -21,6 +21,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginFlow
+import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalFlow
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
@@ -29,6 +30,7 @@ import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.orbitmvi.orbit.compose.collectAsState
+import org.orbitmvi.orbit.compose.collectSideEffect
 
 /**
  * 루트 흐름. 스택은 항상 한 화면이라 시스템 뒤로 가기는 앱을 닫는다(스플래시 · 온보딩으로 돌아가지 않는다).
@@ -89,9 +91,20 @@ private fun rootScreen(screen: RootScreen): Map<String, Any> = mapOf(LaunchTrans
  * 메인 탭과 그 위 덮개(iOS `MainTabView`의 overlay).
  * - 첫 진입 덮개(N4 · N5): 덮는 동안 메인 탭은 화면 오른쪽 밖에 두고, 걷히면 메인 탭이 오른쪽에서 들어오고 덮개는 왼쪽으로 나간다(0.35초).
  * - 재확인 가입 덮개(N8): 오른쪽에서 들어오고 오른쪽으로 나간다(0.3초). 메인 탭은 제자리.
+ * 루트가 꺼낸 딥링크는 [MainTabCoordinator]가 탭을 고르고, 라이브 경로는 라이브 흐름([FestivalCoordinator])에 넘긴다.
  */
 @Composable
-private fun HomeWithCovers(state: AppCoordinatorState, coordinator: AppCoordinator) {
+private fun HomeWithCovers(
+    state: AppCoordinatorState,
+    coordinator: AppCoordinator,
+    mainTab: MainTabCoordinator = koinViewModel(),
+) {
+    val mainTabState by mainTab.collectAsState()
+    coordinator.collectSideEffect { sideEffect ->
+        when (sideEffect) {
+            is AppCoordinatorSideEffect.OpenDeeplink -> mainTab.open(sideEffect.deeplink)
+        }
+    }
     val mainTabOffset by animateFloatAsState(
         targetValue = if (state.launchLogin) 1f else 0f,
         animationSpec = LaunchTransitions.coverTween(),
@@ -109,8 +122,25 @@ private fun HomeWithCovers(state: AppCoordinatorState, coordinator: AppCoordinat
                     .then(if (state.authCover != null) Modifier.clearAndSetSemantics {} else Modifier),
         ) {
             MainTabScreen(
+                selection = mainTabState.selectedTab,
+                onSelectionChange = mainTab::onTabSelected,
+                onFlagTabRequested = mainTab::onFlagTabRequested,
                 liveContent = { onHidesTabBarChanged, onFlagTabRequested ->
-                    FestivalFlow(onHidesTabBarChanged = onHidesTabBarChanged, onFlagTabRequested = onFlagTabRequested)
+                    val festivalCoordinator: FestivalCoordinator = koinViewModel()
+                    val liveRequest = mainTabState.liveRequest
+                    LaunchedEffect(liveRequest) {
+                        when (liveRequest) {
+                            null -> return@LaunchedEffect
+                            LiveTabRequest.FestivalList -> festivalCoordinator.onDeeplinkFestivalListOpened()
+                            is LiveTabRequest.Festival -> festivalCoordinator.onDeeplinkFestivalOpened(liveRequest.festivalId)
+                        }
+                        mainTab.onLiveRequestConsumed()
+                    }
+                    FestivalFlow(
+                        onHidesTabBarChanged = onHidesTabBarChanged,
+                        onFlagTabRequested = onFlagTabRequested,
+                        coordinator = festivalCoordinator,
+                    )
                 },
             )
         }
