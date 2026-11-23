@@ -1,6 +1,6 @@
 ---
 spec: deeplink
-modules: [core/utility, core/datastore, app, feature/festival]
+modules: [core/utility, core/storage, app, feature/festival]
 ---
 
 # 딥링크 Spec
@@ -31,4 +31,4 @@ iOS 대응: `Projects/Core/FestiCoreUtility/Sources/Deeplink/FestiCoreDeeplink.s
 
 ## 테스트
 
-- `core/utility` `FestiCoreDeeplinkTest`(iOS `FestiCoreDeeplinkTests` 6건), `core/datastore` `PendingDeeplinkStoreTest`, `app` `AppCoordinatorTest`(홈 전 · 덮개 중 대기 → 열기), `MainTabCoordinatorTest`, `feature/festival` `FestivalCoordinatorTest`(딥링크 열기).
+- `core/utility` `FestiCoreDeeplinkTest`(iOS `FestiCoreDeeplinkTests` 6건), `core/storage` `PendingDeeplinkStoreTest`, `app` `AppCoordinatorTest`(홈 전 · 덮개 중 대기 → 열기), `MainTabCoordinatorTest`, `feature/festival` `FestivalCoordinatorTest`(딥링크 열기).

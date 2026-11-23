@@ -27,8 +27,8 @@
 | `@Dependency(\.x)` · `DependencyKey` | 생성자 주입 + 모듈 `di/` Koin 정의 (`.claude/docs/dependency-injection.md`) |
 | `UseCase` · `Repository` (Domain Interface / Sources) | `domain/{기능}/interface` · `sources` |
 | Alamofire `FestiCoreNetwork` · `APIEndpoint` | Ktor `core/network` · `service/api` |
-| Keychain · `@Shared(.persistent)` | `core/datastore` |
-| SQLiteData | Room `core/database` |
+| Keychain · `@Shared(.persistent)` | `core/storage` |
+| SQLiteData | Room `core/storage`(iOS `FestiCoreStorage`) |
 | `TestStore` 테스트 | `orbit-test` `test(this) { expectState { } }` |
 
 ## 옮기지 않는 것

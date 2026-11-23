@@ -42,6 +42,7 @@ val appModules: List<Module> =
 ```
 
 - `core/coreassembly` · `service/serviceassembly` · `feature/featureassembly`(iOS `CoreAssembly` · `ServiceAssembly` · `FeatureAssembly`)는 각 계층 모듈이 공개한 Koin 모듈(`val xxxModule`)을 나열만 한다. 정의(`single` · `factory` · `viewModel` · `module { }`)를 두지 않는다(check-boundaries가 막는다). domain 목록은 iOS처럼 조립 모듈 없이 app이 나열한다.
+- `interface` · `sources`로 나뉜 service · core 모듈(`service/{pack,device,auth}` · `core/network`)의 Koin 모듈은 `sources`의 `di/`에 두고 인터페이스 타입으로 등록한다(`single<AuthSession> { AuthSessionImpl(get()) }`, `single { SessionExpiryEventsImpl() } bind SessionExpiryEvents::class`, `single<DeviceInstallationService> { DeviceInstallationServiceImpl(get()) }`). assembly만 `sources`를 의존한다.
 - 새 core · service · feature Koin 모듈은 해당 assembly 목록에 추가한다. app은 모듈 안의 정의를 알지 못한다.
 - app에 `single { }`, `factory { }` 정의를 직접 쓰지 않는다. 정의는 항상 그 클래스가 있는 모듈에 둔다.
 - 테스트에서는 `koin-test`의 `verify()` 또는 생성자 주입으로 가짜 구현을 넣는다.

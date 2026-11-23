@@ -8,7 +8,8 @@ plugins {
 dependencies {
     val libs = catalog
     api(project(":domain:auth:interface"))
-    implementation(project(":service:auth"))
+    implementation(project(":service:apiendpoint"))
+    implementation(project(":service:auth:interface"))
     implementation(libs.lib("credentials"))
     implementation(libs.lib("credentials-play-services-auth"))
     implementation(libs.lib("googleid"))
@@ -16,7 +17,9 @@ dependencies {
     implementation(platform(libs.lib("koin-bom")))
     implementation(libs.lib("koin-core"))
 
-    testImplementation(project(":core:datastore"))
+    testImplementation(project(":service:auth:sources"))
+    testImplementation(project(":core:network:sources"))
+    testImplementation(project(":core:storage"))
     testImplementation(libs.lib("junit"))
     testImplementation(libs.lib("ktor-client-mock"))
     testImplementation(libs.lib("kotlinx-coroutines-test"))

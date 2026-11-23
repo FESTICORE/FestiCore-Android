@@ -1,0 +1,17 @@
+package io.festicore.service.auth
+
+/** 로그인 세션 공개 API. 토큰 값은 밖으로 내보내지 않는다. 구현은 `AuthSessionImpl`. */
+interface AuthSession {
+    suspend fun isLoggedIn(): Boolean
+
+    /** 세션에 묶인 요청(`expectedSessionId`)에 넘길 현재 세션 ID. */
+    suspend fun currentSessionId(): String?
+
+    /** 로그인 토큰을 새 세션으로 저장하고 그 sessionId를 돌려준다. 저장 실패는 `SecureStorageException`. */
+    suspend fun saveLogin(accessToken: String, refreshToken: String): String
+
+    suspend fun clear()
+
+    /** 현재 세션이 [sessionId]일 때만 지우고 지웠으면 `true`. 그 사이 다른 로그인이 저장한 세션은 지우지 않는다. */
+    suspend fun clearIfCurrent(sessionId: String): Boolean
+}

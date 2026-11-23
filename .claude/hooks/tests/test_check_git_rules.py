@@ -189,12 +189,12 @@ class BoundaryTests(unittest.TestCase):
             f.write(text)
         return run(str(REPO / ".claude" / "scripts" / "check-boundaries"), cwd=self.tmp, check=False)
 
-    def test_room_outside_core_database_blocked(self):
+    def test_room_outside_core_storage_blocked(self):
         result = self.check("feature/auth/sources/src/main/kotlin/A.kt", "import androidx.room.Dao\n")
         self.assertEqual(1, result.returncode)
-        self.assertIn("core:database", result.stdout)
+        self.assertIn("core:storage", result.stdout)
         self.assertEqual(0, self.check("feature/auth/sources/src/main/kotlin/A.kt", "val a = 1\n").returncode)
-        self.assertEqual(0, self.check("core/database/src/main/kotlin/A.kt", "import androidx.room.Dao\n").returncode)
+        self.assertEqual(0, self.check("core/storage/src/main/kotlin/A.kt", "import androidx.room.Dao\n").returncode)
 
     def test_hex_color_outside_tokens_blocked(self):
         result = self.check("feature/home/sources/src/main/kotlin/A.kt", "val c = Color(0xFF111113)\n")

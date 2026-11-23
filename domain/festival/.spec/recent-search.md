@@ -1,6 +1,6 @@
 ---
 spec: recent-search
-modules: [core/datastore, domain/festival, domain/auth, app]
+modules: [core/storage, domain/festival, domain/auth, app]
 ---
 
 # 최근 검색 Spec
@@ -12,7 +12,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/Interface/Sources/RecentSearch/Festi
 
 ## 개요
 
-`FestivalLibraryUseCase`(domain/festival/interface)가 화면의 입구다. 구현은 `RecentSearchStore`(core/datastore, DataStore Preferences 파일 `festicore_recent_search`)에 그대로 넘긴다. 사용자 ID는 화면이 `CurrentUserProvider.currentUserId`(domain/auth, `domain/auth/.spec/current-user.md`)에서 받아 넘긴다.
+`FestivalLibraryUseCase`(domain/festival/interface)가 화면의 입구다. 구현은 `RecentSearchStore`(core/storage, DataStore Preferences 파일 `festicore_recent_search`)에 그대로 넘긴다. 사용자 ID는 화면이 `CurrentUserProvider.currentUserId`(domain/auth, `domain/auth/.spec/current-user.md`)에서 받아 넘긴다.
 
 ## 동작 규칙
 
@@ -31,16 +31,16 @@ iOS 대응: `Projects/Domain/FestivalDomain/Interface/Sources/RecentSearch/Festi
 
 ## 제약 / 가정
 
-- DataStore는 core/datastore에서만 쓴다. domain/festival/sources가 `RecentSearchStore`를 주입받는다.
+- DataStore는 core/storage에서만 쓴다. domain/festival/sources가 `RecentSearchStore`를 주입받는다.
 - iOS의 예매 축제(`bookedFestivalIDs`)는 북마크 단계에서 같은 UseCase에 붙인다.
 
 ## 작업 모듈
 
 | 모듈 | 계층 | 변경 내용 |
 | --- | --- | --- |
-| `core/datastore` | core | `RecentSearchStore` · `DataStoreRecentSearchStore` · Koin 등록 |
+| `core/storage` | core | `RecentSearchStore` · `DataStoreRecentSearchStore` · Koin 등록 |
 | `domain/festival/interface` | domain | `FestivalLibraryUseCase`(최근 검색 4개 함수) |
-| `domain/festival/sources` | domain | `FestivalLibraryUseCaseImpl` · Koin 등록 · `core:datastore` 의존 |
+| `domain/festival/sources` | domain | `FestivalLibraryUseCaseImpl` · Koin 등록 · `core:storage` 의존 |
 
 ## 영향 범위
 

@@ -33,7 +33,7 @@ iOS 대응: `Projects/Service/FestiCoreFestivalCatalog/Sources/Storage/FestivalC
 ## 제약 / 가정
 
 - DataStore · Room이 아닌 파일이다(결정 D6 (a)): 목록 문서 하나를 통째로 바꾸고 iOS도 파일이며 수십 KB다.
-- 파일 IO는 `core/datastore`로 모으지 않는다. `check-boundaries`는 SharedPreferences · DataStore · Keystore · Room만 막고, 이 캐시는 토큰 · 개인정보가 아닌 공개 목록이다.
+- 파일 IO는 `core/storage`로 모으지 않는다. `check-boundaries`는 SharedPreferences · DataStore · Keystore · Room만 막고, 이 캐시는 토큰 · 개인정보가 아닌 공개 목록이다.
 - `androidx.core.util.AtomicFile` 대신 플랫폼 `android.util.AtomicFile`(API 17+, minSdk 24)을 써서 새 의존성을 두지 않는다. JVM 단위 테스트는 Robolectric으로 한다.
 
 ## 작업 모듈

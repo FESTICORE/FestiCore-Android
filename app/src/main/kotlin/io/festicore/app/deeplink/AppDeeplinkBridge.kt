@@ -1,9 +1,9 @@
 package io.festicore.app.deeplink
 
 import android.content.Intent
-import io.festicore.core.datastore.PendingDeeplinkStore
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
+import io.festicore.core.storage.PendingDeeplinkStore
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.core.utility.deeplink.FestiCoreDeeplinkParser
 import kotlinx.coroutines.CoroutineScope

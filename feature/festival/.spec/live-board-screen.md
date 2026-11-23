@@ -1,6 +1,6 @@
 ---
 spec: live-board-screen
-modules: [feature/festival, domain/festival, core/datastore, service/api, app]
+modules: [feature/festival, domain/festival, core/storage, service/api, app]
 ---
 
 # 라이브 보드 화면(S01) Spec
@@ -50,11 +50,11 @@ iOS 대응: `Projects/Feature/Festival/Sources/LiveBoard/`(`View/FestivalLiveBoa
 ## 제약 / 가정
 
 - 날짜는 `java.time`(`Asia/Seoul`, `HH:mm` · `MM.dd (E)` · `MM/dd HH:mm`, `Locale.KOREAN`). 기기 시각은 `Clock`, 폴링 기다림은 `sleep`으로 주입한다.
-- 설정 저장은 `core/datastore` `LiveBoardPreferenceStore`(DataStore `festicore_live_board`)를 `FestivalLiveBoardPreferenceUseCase`로 쓴다.
+- 설정 저장은 `core/storage` `LiveBoardPreferenceStore`(DataStore `festicore_live_board`)를 `FestivalLiveBoardPreferenceUseCase`로 쓴다.
 
 ## 작업 모듈
 
-`feature/festival/{interface,sources}`(`liveboard/`), `domain/festival`(`FestivalLiveBoardPreferenceUseCase` · `FestivalPackDocument.Directions`), `service/api`(`FestivalPackDirectionsDto`), `core/datastore`, `app`(탭 바).
+`feature/festival/{interface,sources}`(`liveboard/`), `domain/festival`(`FestivalLiveBoardPreferenceUseCase` · `FestivalPackDocument.Directions`), `service/api`(`FestivalPackDirectionsDto`), `core/storage`, `app`(탭 바).
 
 ## iOS와 다른 점
 

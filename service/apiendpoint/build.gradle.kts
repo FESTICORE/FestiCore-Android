@@ -13,6 +13,7 @@ dependencies {
     implementation(platform(libs.lib("koin-bom")))
     implementation(libs.lib("koin-core"))
 
+    testImplementation(project(":core:network:sources"))
     testImplementation(libs.lib("junit"))
     testImplementation(libs.lib("ktor-client-mock"))
     testImplementation(libs.lib("kotlinx-coroutines-test"))
