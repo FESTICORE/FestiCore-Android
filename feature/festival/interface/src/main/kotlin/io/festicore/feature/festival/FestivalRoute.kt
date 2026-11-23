@@ -35,4 +35,8 @@ sealed interface FestivalRoute : NavKey {
         val festivalId: String,
         val crewId: String,
     ) : FestivalRoute
+
+    /** S08 크루 참여 확인(iOS `crewJoin`). 초대 코드 [code]로 크루를 미리 보고 참여한다. 로그인 없이 볼 수 있고 탭 바를 숨긴다. */
+    @Serializable
+    data class CrewJoin(val code: String) : FestivalRoute
 }

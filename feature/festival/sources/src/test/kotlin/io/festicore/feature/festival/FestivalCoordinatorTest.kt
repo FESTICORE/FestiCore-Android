@@ -269,4 +269,37 @@ class FestivalCoordinatorTest {
             subscription.cancel()
         }
     }
+
+    // MARK: - 참여 확인 (iOS FestivalCrewCreateRoutingTests 중 C2)
+
+    private val crewJoin = FestivalRoute.CrewJoin("K7P2QX")
+
+    @Test
+    fun crewJoinLoginRequestUsesJoinContext() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewJoin)) {
+            containerHost.onCrewJoinLoginRequested(null)
+            // 화면은 그대로 두고 참여 문맥 경계를 남긴다(일반 크루 로그인과 구별된다).
+            expectState { copy(lastBoundary = LiveBoardBoundary.CrewJoinLogin(crewName = null)) }
+        }
+    }
+
+    @Test
+    fun `초대 코드는 기존 참여 확인 · 크루 화면을 빼고 참여 확인을 쌓고 탭 바를 숨기며 닫으면 보드로 돌아온다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crew)) {
+            containerHost.onCrewInviteOpened("K7P2QX")
+            val opened = awaitState()
+            assertEquals(listOf(FestivalRoute.List, board, crewJoin), opened.routes)
+            assertTrue(opened.hidesTabBar)
+            containerHost.onCrewJoinClosed()
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+        }
+    }
+
+    @Test
+    fun `참여하면 참여 확인을 크루 화면으로 바꾼다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewJoin)) {
+            containerHost.onCrewJoined("fst_1", "crew")
+            expectState { copy(routes = listOf(FestivalRoute.List, board, crew)) }
+        }
+    }
 }

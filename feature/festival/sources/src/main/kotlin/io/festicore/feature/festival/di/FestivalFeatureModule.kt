@@ -4,6 +4,7 @@ import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.crew.CrewViewModel
 import io.festicore.feature.festival.crewcreate.CrewCreateViewModel
 import io.festicore.feature.festival.crewgather.CrewGatherViewModel
+import io.festicore.feature.festival.crewjoin.CrewJoinViewModel
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.flag.FlagCoordinator
 import io.festicore.feature.festival.flag.FlagViewModel
@@ -69,6 +70,10 @@ val festivalFeatureModule = module {
             boardSelectionUseCase = get(),
             currentUserProvider = get(),
         )
+    }
+    // 인자: 초대 코드. 로그인 상태는 현재 사용자로 정한다.
+    viewModel { params ->
+        CrewJoinViewModel(code = params.get(), crewUseCase = get(), liveBoardUseCase = get(), currentUserProvider = get())
     }
     // 인자: 시트를 여는 값(CrewGatherInput). 보드 · 크루 메인이 연다.
     viewModel { params -> CrewGatherViewModel(input = params.get(), crewUseCase = get()) }

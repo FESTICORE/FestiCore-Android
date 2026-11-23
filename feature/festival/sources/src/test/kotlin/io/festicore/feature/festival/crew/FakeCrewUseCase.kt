@@ -24,6 +24,9 @@ internal class FakeCrewUseCase(
     var dissolve: suspend () -> Unit = { unexpected("dissolve") },
     var respond: suspend (gatherId: String, response: FestivalCrewGatherResponse) -> FestivalCrewGatherReply =
         { _, _ -> unexpected("respondToGather") },
+    var invite: suspend (code: String) -> FestivalCrewInvite = { unexpected("invite") },
+    var join: suspend (inviteCode: String) -> FestivalCrew = { unexpected("join") },
+    var leave: suspend (crewId: String) -> Unit = { unexpected("leave") },
 ) : FestivalCrewUseCase {
     override suspend fun gather(crewId: String, zoneId: String) = gather.invoke(crewId, zoneId)
 
@@ -47,9 +50,9 @@ internal class FakeCrewUseCase(
 
     override suspend fun dissolve(crewId: String) = dissolve.invoke()
 
-    override suspend fun invite(code: String): FestivalCrewInvite = unexpected("invite")
+    override suspend fun invite(code: String): FestivalCrewInvite = invite.invoke(code)
 
-    override suspend fun join(inviteCode: String): FestivalCrew = unexpected("join")
+    override suspend fun join(inviteCode: String): FestivalCrew = join.invoke(inviteCode)
 
     override suspend fun respondToGather(
         crewId: String,
@@ -57,5 +60,5 @@ internal class FakeCrewUseCase(
         response: FestivalCrewGatherResponse,
     ) = respond.invoke(gatherId, response)
 
-    override suspend fun leave(crewId: String) = unexpected("leave")
+    override suspend fun leave(crewId: String) = leave.invoke(crewId)
 }
