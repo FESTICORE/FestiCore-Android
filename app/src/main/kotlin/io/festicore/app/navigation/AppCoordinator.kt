@@ -222,6 +222,7 @@ class AppCoordinator(
     /**
      * 시트 로그인 계정이 가입 조건을 채우지 못했다(신규 계정 등). 시트를 닫고 재확인과 같은 가입 정보 덮개를 띄운다(iOS `presentation = .onboarding`).
      * iOS `acceptLogin`과 같이 확인한 사용자를 둔다. 그 사이 세션이 바뀌었거나 다른 덮개가 떴으면 시트만 닫는다.
+     * 계정 상태는 [onLoginCompleted]와 같이 같은 사용자의 이전 프로필만 남긴다(다른 계정의 닉네임이 보이지 않게).
      */
     fun onLoginSheetSignUpRequired(route: AuthRoute.SignUp) = intent {
         if (currentSessionId() != route.sessionId || state.authCover != null) {
@@ -229,7 +230,9 @@ class AppCoordinator(
             return@intent
         }
         updateCurrentUserId(route.userId)
-        accountState.update { it.copy(hasSession = true) }
+        accountState.update { account ->
+            account.copy(profile = account.profile?.takeIf { it.user.id == route.userId }, hasSession = true)
+        }
         reduce { state.copy(loginSheet = null, directLogin = false, signUp = route) }
     }
 
@@ -291,7 +294,7 @@ class AppCoordinator(
 
     /**
      * 계정 작업을 시작한다(iOS `startOperation`, `AcC:140-153`). 세션이 있고 처리 중이 아닐 때만 세대를 올리고 문구를 비운 뒤 실행한다.
-     * 결과는 [onAccountOperationFinished]가 세대를 비교해 반영한다.
+     * 결과는 [onAccountOperationFinished]가 세대와 시작 세션을 비교해 반영한다.
      */
     private fun startAccountOperation(operation: AccountOperation) {
         val current = accountState.value
@@ -301,24 +304,32 @@ class AppCoordinator(
         accountState.update { it.copy(isLoading = true, message = null) }
         accountOperationJob =
             intent {
+                val sessionId = currentSessionId()
                 val result = accountCoordinator.run(operation)
-                onAccountOperationFinished(generation, operation, result)
+                onAccountOperationFinished(generation, sessionId, operation, result)
             }
     }
 
     /**
      * 계정 작업 결과(iOS `handleMyAccountFinished`, `AcC:196-228`). 세대가 다르면(세션 만료로 끊김) 버린다.
+     * 끝났을 때 시작 세션([sessionId])과 다른 세션이 저장돼 있으면(만료 알림 전에 다시 로그인함) 새 계정을 건드리지 않고 처리 중 표시만 끈다.
      * 성공 · 로그인 잃음이면 현재 사용자와 계정 상태를 비우고(탈퇴 중 로그인을 잃었으면 결과 불명 문구) 가입 정보 덮개가 있으면 닫는다.
      * 로그인 시트 상태는 건드리지 않는다(`AcC:231-242`). 그 외 실패면 계정을 두고 실패 문구만 보인다.
      */
     private suspend fun onAccountOperationFinished(
         generation: Int,
+        sessionId: String?,
         operation: AccountOperation,
         result: AccountOperationResult,
     ) = subIntent {
         if (accountOperationGeneration.get() != generation) return@subIntent
         runningAccountOperation = null
         accountOperationJob = null
+        val current = currentSessionId()
+        if (current != null && current != sessionId) {
+            accountState.update { it.copy(isLoading = false) }
+            return@subIntent
+        }
         when (result) {
             AccountOperationResult.Failed -> {
                 val message =

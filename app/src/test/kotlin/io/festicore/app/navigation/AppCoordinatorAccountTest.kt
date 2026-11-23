@@ -71,7 +71,12 @@ class AppCoordinatorAccountTest {
             withdrawResult()
         }
 
-        override suspend fun isLoggedIn(): Boolean = sessionId != null
+        var isLoggedInError: Exception? = null
+
+        override suspend fun isLoggedIn(): Boolean {
+            isLoggedInError?.let { throw it }
+            return sessionId != null
+        }
 
         override suspend fun clearSession() {
             sessionId = null
@@ -381,6 +386,58 @@ class AppCoordinatorAccountTest {
             pending.complete(Unit)
             expectState(home)
             assertEquals(AccountState(), containerHost.account.value)
+        }
+    }
+
+    @Test
+    fun `로그인 상태를 읽지 못하면 iOS와 같이 로그인을 잃은 것으로 보고 계정을 비운다`() = runTest {
+        val scope = this
+        val auth = FakeAuth().apply { withdrawResult = { throw AuthDomainError.Offline() } }
+        coordinator(auth).test(this, home) {
+            containerHost.onProfileRefreshRequested()
+            scope.settle()
+            auth.isLoggedInError = IllegalStateException("read")
+            containerHost.onWithdrawRequested()
+            scope.settle()
+            assertEquals(AccountState(message = AccountCoordinator.SESSION_EXPIRED_DURING_WITHDRAW), containerHost.account.value)
+        }
+        assertEquals(listOf("unbind", "withdraw"), auth.calls)
+    }
+
+    @Test
+    fun `작업 중 만료 알림 전에 다른 세션으로 바뀌었으면 끝난 결과로 새 계정을 비우지 않는다`() = runTest {
+        val scope = this
+        val users = CurrentUserStore()
+        val auth = FakeAuth()
+        val pending = CompletableDeferred<Unit>()
+        auth.signOutResult = { pending.await() }
+        coordinator(auth, users).test(this, home) {
+            containerHost.onProfileRefreshRequested()
+            scope.settle()
+            containerHost.onLogoutRequested()
+            scope.settle()
+
+            // 로그아웃 응답 전에 다른 세션이 저장됐다(만료 알림은 아직 오지 않음).
+            auth.sessionId = "s2"
+            pending.complete(Unit)
+            scope.settle()
+            assertEquals(signedIn, containerHost.account.value)
+        }
+        assertEquals("u1", users.currentUserId.value)
+    }
+
+    @Test
+    fun `시트 로그인 계정이 가입 정보로 가면 다른 사용자의 이전 프로필을 남기지 않는다`() = runTest {
+        val scope = this
+        val signUp = AuthRoute.SignUp(userId = "u2", nickname = null, currentTermsVersion = "2026-10", sessionId = "s1")
+        coordinator(FakeAuth()).test(this, home) {
+            containerHost.onProfileRefreshRequested()
+            scope.settle()
+            assertEquals(signedIn, containerHost.account.value)
+
+            containerHost.onLoginSheetSignUpRequired(signUp)
+            expectState { copy(signUp = signUp) }
+            assertEquals(AccountState(hasSession = true), containerHost.account.value)
         }
     }
 

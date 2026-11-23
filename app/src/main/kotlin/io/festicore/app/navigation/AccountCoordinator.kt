@@ -61,13 +61,17 @@ class AccountCoordinator(
         }
     }
 
+    /**
+     * 로컬 세션이 남아 있는지. iOS `isLoggedIn`은 키체인 읽기(`recoveredCredential() != nil`)이고 읽지 못하면 nil이라 로그인 없음으로 본다.
+     * 같게 읽기 실패는 로그인 없음으로 본다.
+     */
     private suspend fun isLoggedIn(): Boolean = try {
         authRepository.isLoggedIn()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
         FestiCoreLogger.error("계정 작업 실패 뒤 로그인 상태를 확인할 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
-        true
+        false
     }
 
     private suspend fun restoreDevice() {
