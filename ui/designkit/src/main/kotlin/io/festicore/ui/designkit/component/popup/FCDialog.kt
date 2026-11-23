@@ -23,6 +23,8 @@ import androidx.compose.ui.window.DialogProperties
 import io.festicore.ui.designkit.component.action.FCButton
 import io.festicore.ui.designkit.component.action.FCButtonSize
 import io.festicore.ui.designkit.component.action.FCButtonStyle
+import io.festicore.ui.designkit.theme.ProvideNightMode
+import io.festicore.ui.designkit.theme.currentNightMode
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
@@ -62,8 +64,12 @@ fun FCDialog(
     textAlign: FCDialogTextAlign = FCDialogTextAlign.Leading,
     confirmStyle: FCButtonStyle = FCButtonStyle.Primary,
 ) {
+    val nightMode = currentNightMode()
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        FCDialogCard(item, onDismiss, modifier, textAlign, confirmStyle)
+        // 새 창이라 앱 화면 모드(야간 비트)를 잃는다. 띄운 화면의 값을 다시 넣는다.
+        ProvideNightMode(nightMode) {
+            FCDialogCard(item, onDismiss, modifier, textAlign, confirmStyle)
+        }
     }
 }
 

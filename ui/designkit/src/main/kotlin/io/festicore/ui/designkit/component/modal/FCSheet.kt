@@ -5,13 +5,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +40,8 @@ import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.festicore.ui.designkit.theme.ProvideNightMode
+import io.festicore.ui.designkit.theme.currentNightMode
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
@@ -192,6 +194,7 @@ fun <T : Any> FCSheet(
 
     val displayed = shownItem
     if (!isShowing || displayed == null) return
+    val nightMode = currentNightMode()
     ModalBottomSheet(
         onDismissRequest = {
             // 딤 탭 · 끌기 · 뒤로 가기로 이미 내려간 경우. 예약된 닫기나 바깥에서 닫은 경우는 따로 처리된다.
@@ -209,55 +212,61 @@ fun <T : Any> FCSheet(
         contentWindowInsets = { WindowInsets(0) },
         properties = ModalBottomSheetProperties(shouldDismissOnBackPress = isDismissible, shouldDismissOnClickOutside = isDismissible),
     ) {
-        if (accessory != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = FestiCoreSpacing.paddingP16)
-                        .alpha(if (pendingDismissal == null) 1f else 0f),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                accessory(displayed)
-            }
-        }
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = FestiCoreRadius.r24, topEnd = FestiCoreRadius.r24))
-                    .background(FestiCoreSemanticColor.backgroundElevated.color)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .semantics {
-                        // iOS 딤의 "닫기" 버튼. 닫기가 막혀 있으면 알리지 않는다.
-                        if (isDismissible) {
-                            dismiss(label = CLOSE_LABEL) {
-                                dismiss()
-                                true
-                            }
-                        }
-                    },
-            verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP16),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (showsGrabber) {
+        // 시트는 새 창이라 앱 화면 모드(야간 비트)를 잃는다. 띄운 화면의 값을 다시 넣는다.
+        ProvideNightMode(nightMode) {
+            val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            if (accessory != null) {
                 Box(
                     modifier =
                         Modifier
-                            .padding(top = FestiCoreSpacing.paddingP8)
-                            .size(GrabberWidth, GrabberHeight)
-                            .background(FestiCoreSemanticColor.lineNormal.color, CircleShape),
-                )
-            }
-            val heightModifier =
-                when (height) {
-                    is FCSheetHeight.Fraction -> Modifier.fillMaxHeight(height.fraction.coerceIn(0f, 1f))
-                    is FCSheetHeight.Fixed -> Modifier.height(height.height)
-                    FCSheetHeight.Auto -> Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = FestiCoreSpacing.paddingP16)
+                            .alpha(if (pendingDismissal == null) 1f else 0f),
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
+                    accessory(displayed)
                 }
-            Box(modifier = Modifier.fillMaxWidth().then(heightModifier), contentAlignment = Alignment.TopCenter) {
-                CompositionLocalProvider(LocalFCSheetDismiss provides dismiss) {
-                    content(displayed)
+            }
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        // iOS FCSheetModifier: 시트 배경은 하단 안전 영역 위에서 끝나고(그 아래는 딤), 배경 안에도 같은 높이의 아래 여백을 둔다.
+                        .padding(bottom = navigationBarBottom)
+                        .clip(RoundedCornerShape(topStart = FestiCoreRadius.r24, topEnd = FestiCoreRadius.r24))
+                        .background(FestiCoreSemanticColor.backgroundElevated.color)
+                        .padding(bottom = navigationBarBottom)
+                        .semantics {
+                            // iOS 딤의 "닫기" 버튼. 닫기가 막혀 있으면 알리지 않는다.
+                            if (isDismissible) {
+                                dismiss(label = CLOSE_LABEL) {
+                                    dismiss()
+                                    true
+                                }
+                            }
+                        },
+                verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP16),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (showsGrabber) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(top = FestiCoreSpacing.paddingP8)
+                                .size(GrabberWidth, GrabberHeight)
+                                .background(FestiCoreSemanticColor.lineNormal.color, CircleShape),
+                    )
+                }
+                val heightModifier =
+                    when (height) {
+                        is FCSheetHeight.Fraction -> Modifier.fillMaxHeight(height.fraction.coerceIn(0f, 1f))
+                        is FCSheetHeight.Fixed -> Modifier.height(height.height)
+                        FCSheetHeight.Auto -> Modifier
+                    }
+                Box(modifier = Modifier.fillMaxWidth().then(heightModifier), contentAlignment = Alignment.TopCenter) {
+                    CompositionLocalProvider(LocalFCSheetDismiss provides dismiss) {
+                        content(displayed)
+                    }
                 }
             }
         }
