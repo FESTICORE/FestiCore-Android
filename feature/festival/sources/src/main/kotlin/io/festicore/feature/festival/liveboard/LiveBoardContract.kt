@@ -9,6 +9,7 @@ import io.festicore.domain.festival.entity.FestivalOverview
 import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.festival.entity.PackDownloadProgress
 import io.festicore.domain.usernotification.entity.UserNotificationItem
+import io.festicore.feature.festival.crewgather.CrewGatherInput
 import io.festicore.feature.festival.festivallist.FestivalListPresentation
 import java.time.Instant
 
@@ -84,6 +85,10 @@ data class LiveBoardState(
     val switcher: List<LiveBoardSwitcherItem>? = null,
     /** 팔로우 안내 숨김 확인 다이얼로그. */
     val isFollowGuideDialogPresented: Boolean = false,
+    /** "모여!" 시트(iOS `crewGather`). null이면 닫힘. 탭 바 숨김 대상이 아니다(iOS `shouldHideTabBar`). */
+    val crewGather: CrewGatherInput? = null,
+    /** 모여 시트를 연 횟수. 시트 ViewModel 키로 쓴다. */
+    val crewGatherCount: Int = 0,
     val isVisible: Boolean = false,
     val isForeground: Boolean = true,
     val hasStarted: Boolean = false,
@@ -168,10 +173,10 @@ sealed interface LiveBoardBoundary {
 
     data class CrewCreate(val festivalId: String) : LiveBoardBoundary
 
-    data class Crew(val crewId: String) : LiveBoardBoundary
-
-    /** "모여!" 시트(iOS `crewGather`). */
-    data class CrewGather(val crewId: String) : LiveBoardBoundary
+    data class Crew(
+        val festivalId: String,
+        val crewId: String,
+    ) : LiveBoardBoundary
 
     /** 귀가 "가는 길". 위치 계산이 없어 iOS의 역 · 정류장이 없을 때처럼 팩 가는 길로 보낸다(iOS `packDirectionsRequested`). */
     data class PackDirections(

@@ -24,4 +24,15 @@ sealed interface FestivalRoute : NavKey {
     /** 알림함(iOS `notificationInbox`). 보드 종 아이콘 · 새 알림 배너에서 연다. 로그인이 필요하고 탭 바를 숨긴다. */
     @Serializable
     data object NotificationInbox : FestivalRoute
+
+    /** S07 크루 만들기(iOS `crewCreate`). 보드 "크루 만들기"에서 연다. 로그인이 필요하고 탭 바를 숨긴다. */
+    @Serializable
+    data class CrewCreate(val festivalId: String) : FestivalRoute
+
+    /** S07 크루(iOS `crew`). 보드 크루 카드 · 만들기 "크루 보기"에서 연다. 존 · 라이브 값은 화면이 [festivalId]로 다시 읽는다. 탭 바를 숨긴다. */
+    @Serializable
+    data class Crew(
+        val festivalId: String,
+        val crewId: String,
+    ) : FestivalRoute
 }

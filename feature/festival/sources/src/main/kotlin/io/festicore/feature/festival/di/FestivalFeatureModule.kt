@@ -1,6 +1,9 @@
 package io.festicore.feature.festival.di
 
 import io.festicore.feature.festival.FestivalCoordinator
+import io.festicore.feature.festival.crew.CrewViewModel
+import io.festicore.feature.festival.crewcreate.CrewCreateViewModel
+import io.festicore.feature.festival.crewgather.CrewGatherViewModel
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.flag.FlagCoordinator
 import io.festicore.feature.festival.flag.FlagViewModel
@@ -54,4 +57,19 @@ val festivalFeatureModule = module {
             currentUserProvider = get(),
         )
     }
+    // 인자: 축제 ID. 축제 이름은 보드 선택 문서에서 읽는다.
+    viewModel { params -> CrewCreateViewModel(festivalId = params.get(), crewUseCase = get(), boardSelectionUseCase = get()) }
+    // 인자: 축제 ID, 크루 ID. 둘 다 문자열이라 순서로 꺼낸다.
+    viewModel { params ->
+        CrewViewModel(
+            festivalId = params[0],
+            crewId = params[1],
+            crewUseCase = get(),
+            liveBoardUseCase = get(),
+            boardSelectionUseCase = get(),
+            currentUserProvider = get(),
+        )
+    }
+    // 인자: 시트를 여는 값(CrewGatherInput). 보드 · 크루 메인이 연다.
+    viewModel { params -> CrewGatherViewModel(input = params.get(), crewUseCase = get()) }
 }

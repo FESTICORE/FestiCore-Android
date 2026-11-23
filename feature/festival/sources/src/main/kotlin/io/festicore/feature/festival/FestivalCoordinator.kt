@@ -13,7 +13,7 @@ data class FestivalCoordinatorState(
     val selectedFestivalId: String? = null,
     /** 맨 위 라이브 보드에 시트 · 다이얼로그가 떠 있다. */
     val isLiveBoardPresentingModal: Boolean = false,
-    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(크루 등). 존 지도 · 알림함은 화면을 쌓는다. */
+    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(로그인 등). 존 지도 · 알림함 · 크루 · 크루 만들기는 화면을 쌓는다. */
     val lastBoundary: LiveBoardBoundary? = null,
     /** 맨 위 보드가 바꿀 수 있는 축제 ID(보드 카탈로그). 알림이 연 축제가 여기 없으면 알림함에 팝업을 띄운다(iOS `board.catalog`). */
     val liveBoardFestivalIds: Set<String> = emptySet(),
@@ -22,14 +22,17 @@ data class FestivalCoordinatorState(
 ) {
     /**
      * 탭 바를 숨길지(iOS `MainTabCoordinator.shouldHideTabBar`의 라이브 탭 부분). 스택이 목록뿐이면 숨기고,
-     * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있거나 알림함이 맨 위면 숨긴다(설계 D9 · "탭 바 표시"). 존 지도는 탭 바를 보인다.
+     * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있거나 알림함 · 크루 · 크루 만들기가 맨 위면 숨긴다(설계 D9 · "탭 바 표시"). 존 지도는 탭 바를 보인다.
      */
     val hidesTabBar: Boolean
         get() {
             val top = routes.lastOrNull()
             return routes.size == 1 ||
                 (top is FestivalRoute.LiveBoard && isLiveBoardPresentingModal) ||
-                top is FestivalRoute.NotificationInbox
+                top is FestivalRoute.NotificationInbox ||
+                // 크루 · 만들기는 아래 고정 영역이 있어 탭 바 없이 보인다(iOS `isCrewOnTop`).
+                top is FestivalRoute.Crew ||
+                top is FestivalRoute.CrewCreate
         }
 }
 
@@ -43,7 +46,8 @@ sealed interface FestivalCoordinatorSideEffect {
  * 라이브 탭 흐름(iOS `FestivalCoordinator`). 첫 화면은 목록(`routes = [.festivalList]`)이다.
  * 목록에서 축제를 고르면 라이브 보드를 쌓고(iOS `routes.push(.liveBoard)`), 보드의 뒤로 · "전체 페스티벌 보기"는 pop이다.
  * 보드 크루 존 칩은 존 지도를, 종 아이콘 · 새 알림 배너는 알림함을 쌓는다(이미 있으면 무시).
- * 계정이 바뀌면 계정의 팔로우 · 크루를 보여 주는 존 지도와 이전 계정의 알림함을 스택에서 뺀다(iOS `clearAccountData`, 설계 E9).
+ * 보드 "크루 만들기"는 만들기를, 크루 카드는 크루 화면을 쌓는다(spec `crew.md`).
+ * 계정이 바뀌면 계정의 팔로우 · 크루를 보여 주는 존 지도 · 크루 · 만들기와 이전 계정의 알림함을 스택에서 뺀다(iOS `clearAccountData`, 설계 E9).
  */
 class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) :
     ViewModel(),
@@ -94,8 +98,46 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
                 reduce { state.copy(routes = state.routes + FestivalRoute.NotificationInbox) }
             }
 
+            // iOS `crewCreateRequested`. 이미 열려 있으면 다시 쌓지 않는다.
+            is LiveBoardBoundary.CrewCreate -> {
+                if (state.routes.any { it is FestivalRoute.CrewCreate }) return@intent
+                reduce { state.copy(routes = state.routes + FestivalRoute.CrewCreate(boundary.festivalId)) }
+            }
+
+            is LiveBoardBoundary.Crew -> pushCrew(boundary.festivalId, boundary.crewId)
+
             else -> reduce { state.copy(lastBoundary = boundary) }
         }
+    }
+
+    /** 만들기 · 크루 화면의 뒤로 · 닫기(iOS `crewCreate(.delegate(.closeRequested))` · `crew(.delegate(.backRequested))`). */
+    fun onCrewBack() = goBack()
+
+    /** 만들기 "크루 보기"(iOS `openCrewRequested`): 만들기 화면을 크루 화면으로 바꾼다. 크루에서 뒤로 가면 보드다. */
+    fun onCrewCreateOpenCrew(festivalId: String, crewId: String) = intent {
+        reduce { state.copy(routes = state.routes.filterNot { it is FestivalRoute.CrewCreate }) }
+        pushCrew(festivalId, crewId)
+    }
+
+    /** 만들기 중 세션이 끊겼다(iOS `crewCreate(.delegate(.loginRequested))`). 화면을 닫고 크루 로그인 경계를 남긴다(로그인 시트는 L1). */
+    fun onCrewCreateLoginRequested() = intent {
+        reduce {
+            state.copy(
+                routes = state.routes.filterNot { it is FestivalRoute.CrewCreate },
+                lastBoundary = LiveBoardBoundary.CrewLogin,
+            )
+        }
+    }
+
+    /** 해산했거나 크루에서 빠졌다(iOS `crewClosed`). 크루 화면을 뺀다. 보드는 다시 보일 때 크루 카드를 새로 받는다. */
+    fun onCrewClosed() = intent {
+        reduce { state.copy(routes = state.routes.filterNot { it is FestivalRoute.Crew }) }
+    }
+
+    /** iOS `pushCrew`. 이미 크루 화면이 있거나 보드가 없으면 쌓지 않는다. */
+    private suspend fun pushCrew(festivalId: String, crewId: String) = subIntent {
+        if (state.routes.any { it is FestivalRoute.Crew } || state.routes.none { it is FestivalRoute.LiveBoard }) return@subIntent
+        reduce { state.copy(routes = state.routes + FestivalRoute.Crew(festivalId, crewId)) }
     }
 
     /** 존 지도 "깃발을 팔로우하면…" 띠(iOS `zoneMap(.delegate(.flagDirectoryRequested))`): 보드로 돌아가 깃발 탭을 요청한다. */
@@ -155,7 +197,13 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
     private fun onAccountChanged() = intent {
         reduce {
             state.copy(
-                routes = state.routes.filterNot { it is FestivalRoute.ZoneMap || it is FestivalRoute.NotificationInbox },
+                routes =
+                    state.routes.filterNot {
+                        it is FestivalRoute.ZoneMap ||
+                            it is FestivalRoute.NotificationInbox ||
+                            it is FestivalRoute.Crew ||
+                            it is FestivalRoute.CrewCreate
+                    },
                 pendingBoardFestivalId = null,
             )
         }
