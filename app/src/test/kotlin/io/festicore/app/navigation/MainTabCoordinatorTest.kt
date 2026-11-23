@@ -73,6 +73,33 @@ class MainTabCoordinatorTest {
         }
     }
 
+    /** iOS `browseFestivalsOpensFestivalList`: 마이 빈 팩 "페스티벌 둘러보기"는 라이브 탭으로 바꿔 축제 목록만 남긴다. */
+    @Test
+    fun `마이의 축제 목록 요청은 라이브 탭에서 목록을 연다`() = runTest {
+        MainTabCoordinator().test(this, MainTabCoordinatorState(selectedTab = FCTabBarTab.My)) {
+            containerHost.onFestivalListRequested()
+            expectState { copy(selectedTab = FCTabBarTab.Live, liveRequest = LiveTabRequest.FestivalList) }
+        }
+    }
+
+    /** iOS `MTCSc:127-134` `packDirectionsRequested`: 보드 "가는 길"은 마이 탭을 고르고 마이 흐름에 팩 상세를 넘긴다. */
+    @Test
+    fun `라이브 보드 가는 길은 마이 탭으로 바꾸고 마이 흐름에 팩 상세 열기를 넘긴다`() = runTest {
+        MainTabCoordinator().test(this) {
+            containerHost.onPackDirectionsRequested("fst_a", "축제")
+            expectState { copy(selectedTab = FCTabBarTab.My, packDirectionsRequest = PackDirectionsRequest("fst_a", "축제")) }
+
+            containerHost.onPackDirectionsRequestConsumed()
+            expectState { copy(packDirectionsRequest = null) }
+        }
+    }
+
+    /** iOS `profileLoginDelegateReachesHome`: 마이 로그인 요청은 문맥 없이 올라가 마이 탭 기본(프로필) 시트를 연다. */
+    @Test
+    fun `마이 로그인 요청은 프로필 문맥 시트다`() {
+        assertEquals(LoginContext.Profile, MainTabCoordinatorState(selectedTab = FCTabBarTab.My).loginContext(null))
+    }
+
     @Test
     fun `로그인 시트 문맥이 없으면 고른 탭으로 정하고 있으면 그대로 쓴다`() {
         val expected =

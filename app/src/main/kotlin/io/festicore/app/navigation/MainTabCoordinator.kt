@@ -21,14 +21,22 @@ sealed interface LiveTabRequest {
     data class CrewInvite(val code: String) : LiveTabRequest
 }
 
+/** 마이 흐름에 맡길 팩 상세 열기(라이브 보드 "가는 길", iOS `openPackDirections(festivalID:title:)`). */
+data class PackDirectionsRequest(
+    val festivalId: String,
+    val title: String,
+)
+
 /**
  * [selectedTab]은 메인 탭에서 고른 탭, [liveRequest]는 라이브 흐름이 아직 받지 않은 딥링크 열기다.
  * [flagRequest]는 깃발 흐름이 아직 받지 않은 깃발 링크의 깃발 ID다(iOS `showDetail(flagID:)`).
+ * [packDirectionsRequest]는 마이 흐름이 아직 받지 않은 팩 상세 열기다.
  */
 data class MainTabCoordinatorState(
     val selectedTab: FCTabBarTab = FCTabBarTab.Live,
     val liveRequest: LiveTabRequest? = null,
     val flagRequest: String? = null,
+    val packDirectionsRequest: PackDirectionsRequest? = null,
 ) {
     /**
      * 로그인 시트 문맥. 요청에 문맥이 없으면 고른 탭으로 정한다(iOS `MainTabAuthInputs.swift:48-58`).
@@ -75,6 +83,16 @@ class MainTabCoordinator :
     /** 라이브 흐름이 깃발 탭을 요청했다(iOS `flagTabRequested`). */
     fun onFlagTabRequested() = onTabSelected(FCTabBarTab.Flag)
 
+    /** 라이브 보드 "가는 길"(iOS `packDirectionsRequested`): 마이 탭을 고르고 마이 흐름에 그 축제의 팩 상세를 넘긴다(iOS `MTCSc:127-134`). */
+    fun onPackDirectionsRequested(festivalId: String, title: String) = intent {
+        reduce {
+            state.copy(selectedTab = FCTabBarTab.My, packDirectionsRequest = PackDirectionsRequest(festivalId, title))
+        }
+    }
+
+    /** 마이 빈 팩 "페스티벌 둘러보기"(iOS `festivalListRequested`): 축제 목록 딥링크와 같다(iOS `MTCSc:245-249`). */
+    fun onFestivalListRequested() = open(FestiCoreDeeplink.FestivalList)
+
     fun open(deeplink: FestiCoreDeeplink) = intent {
         when (deeplink) {
             FestiCoreDeeplink.FestivalList ->
@@ -96,6 +114,9 @@ class MainTabCoordinator :
 
     /** 깃발 흐름이 [MainTabCoordinatorState.flagRequest]를 받았다. */
     fun onFlagRequestConsumed() = intent { reduce { state.copy(flagRequest = null) } }
+
+    /** 마이 흐름이 [MainTabCoordinatorState.packDirectionsRequest]를 받았다. */
+    fun onPackDirectionsRequestConsumed() = intent { reduce { state.copy(packDirectionsRequest = null) } }
 
     /** 라이브 흐름이 [MainTabCoordinatorState.liveRequest]를 받았다. */
     fun onLiveRequestConsumed() = intent { reduce { state.copy(liveRequest = null) } }

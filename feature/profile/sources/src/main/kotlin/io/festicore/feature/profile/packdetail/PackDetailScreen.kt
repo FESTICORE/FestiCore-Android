@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -91,6 +92,7 @@ private const val AUTO_DELETE_NOTICE = "페스티벌이 끝나고 30일 뒤에 �
 /**
  * 받은 팩 상세(iOS `PackDetailView`, Figma Pack A~F). 이동은 콜백으로만 알리고 Coordinator가 정한다(T1).
  * 링크는 Custom Tabs로, 설치된 지도 앱 링크는 그 앱으로 연다(설계 쟁점 M10 · M11).
+ * [onPresentingModalChanged]로 삭제 확인 팝업이 떠 있는지 알린다(탭 바 숨김, iOS `isProfileOverlayPresented`).
  */
 @Composable
 fun PackDetailScreen(
@@ -99,6 +101,7 @@ fun PackDetailScreen(
     onPackChanged: () -> Unit,
     onPackDeleted: () -> Unit,
     modifier: Modifier = Modifier,
+    onPresentingModalChanged: (Boolean) -> Unit = {},
 ) {
     val state by viewModel.collectAsState()
     val context = LocalContext.current
@@ -111,6 +114,9 @@ fun PackDetailScreen(
         }
     }
     LaunchedEffect(viewModel) { viewModel.onAppear() }
+    val currentOnPresentingModalChanged by rememberUpdatedState(onPresentingModalChanged)
+    LaunchedEffect(state.isDeleteConfirmationPresented) { currentOnPresentingModalChanged(state.isDeleteConfirmationPresented) }
+    DisposableEffect(Unit) { onDispose { currentOnPresentingModalChanged(false) } }
     PackDetailContent(
         state = state,
         modifier = modifier,

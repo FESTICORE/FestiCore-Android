@@ -50,11 +50,20 @@ class FestivalCoordinatorTest {
     }
 
     @Test
-    fun `대상 화면이 없는 기수 · 가는 길 경계는 받아 두기만 한다`() = runTest {
+    fun `대상 화면이 없는 기수 경계는 받아 두기만 한다`() = runTest {
         FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
-            val directions = LiveBoardBoundary.PackDirections("fst_1", "축제")
-            containerHost.onLiveBoardBoundary(directions)
-            expectState { copy(lastBoundary = directions) }
+            val bearer = LiveBoardBoundary.Bearer("fst_1", "flag_1", null)
+            containerHost.onLiveBoardBoundary(bearer)
+            expectState { copy(lastBoundary = bearer) }
+        }
+    }
+
+    /** iOS `MTCSc:127-134` `packDirectionsRequested`: 보드 "가는 길"은 상위(메인 탭)에 마이 팩 상세를 요청한다. */
+    @Test
+    fun `보드 가는 길 경계는 상위에 마이 팩 상세를 요청하고 스택은 그대로 둔다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.PackDirections("fst_1", "축제"))
+            expectSideEffect(FestivalCoordinatorSideEffect.PackDirectionsRequested("fst_1", "축제"))
         }
     }
 

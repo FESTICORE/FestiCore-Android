@@ -35,6 +35,8 @@ import io.festicore.feature.festival.flag.flagTabInput
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
+import io.festicore.feature.profile.ProfileCoordinator
+import io.festicore.feature.profile.ProfileFlow
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,6 +110,9 @@ private fun rootScreen(screen: RootScreen): Map<String, Any> = mapOf(LaunchTrans
  * 라이브 · 깃발 흐름의 로그인 요청은 메인 탭이 문맥을 정해(문맥이 없으면 탭 기본) 시트로 올린다(iOS `MTCSc`). 시트가 떠 있으면 탭 바를 숨긴다.
  * 깃발 흐름 Coordinator와 목록은 탭 밖(이 범위)에 두어 다른 탭에 다녀와도 깃발 스택을 유지한다(설계 "탭 바 규칙").
  * 깃발 탭은 라이브 스택의 보드([FestivalCoordinator]의 `flagBoard`)와 현재 사용자로 목록 입력 · 상세 문맥을 맞춘다(iOS `MTCSy` `syncFlag`).
+ * 마이 흐름 Coordinator([ProfileCoordinator])도 탭 밖에 두어 마이 스택을 유지한다. 계정 상태는 [AppCoordinator.account]를 넘기고(쟁점 M13),
+ * 로그인 · 계정 작업은 [AppCoordinator]로, 축제 목록은 라이브 탭으로 올린다(iOS `handleProfileScope`).
+ * 라이브 보드 "가는 길"은 [MainTabCoordinator]가 마이 탭을 고르고 마이 흐름에 팩 상세를 넘긴다(iOS `packDirectionsRequested`).
  */
 @Composable
 private fun HomeWithCovers(
@@ -117,6 +122,7 @@ private fun HomeWithCovers(
     festivalCoordinator: FestivalCoordinator = koinViewModel(),
     flagCoordinator: FlagCoordinator = koinViewModel(),
     flagViewModel: FlagViewModel = koinViewModel(),
+    profileCoordinator: ProfileCoordinator = koinViewModel(),
     currentUserProvider: CurrentUserProvider = koinInject(),
 ) {
     val mainTabState by mainTab.collectAsState()
@@ -133,6 +139,12 @@ private fun HomeWithCovers(
         if (flagRequest == null) return@LaunchedEffect
         flagCoordinator.openDetail(flagRequest)
         mainTab.onFlagRequestConsumed()
+    }
+    val packDirectionsRequest = mainTabState.packDirectionsRequest
+    LaunchedEffect(packDirectionsRequest) {
+        if (packDirectionsRequest == null) return@LaunchedEffect
+        profileCoordinator.onOpenPackDirections(packDirectionsRequest.festivalId, packDirectionsRequest.title)
+        mainTab.onPackDirectionsRequestConsumed()
     }
     coordinator.collectSideEffect { sideEffect ->
         when (sideEffect) {
@@ -177,6 +189,7 @@ private fun HomeWithCovers(
                         onLoginRequested = { context ->
                             coordinator.onLoginRequested(mainTabState.liveLoginContext(context))
                         },
+                        onPackDirectionsRequested = mainTab::onPackDirectionsRequested,
                         coordinator = festivalCoordinator,
                     )
                 },
@@ -190,6 +203,21 @@ private fun HomeWithCovers(
                         onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
                         coordinator = flagCoordinator,
                         flagViewModel = flagViewModel,
+                    )
+                },
+                myContent = { onHidesTabBarChanged ->
+                    ProfileFlow(
+                        account = coordinator.account,
+                        onHidesTabBarChanged = onHidesTabBarChanged,
+                        onLoginRequested = { coordinator.onLoginRequested(mainTabState.loginContext(null)) },
+                        onGoogleLoginRequested = coordinator::onGoogleLoginRequested,
+                        onFestivalListRequested = mainTab::onFestivalListRequested,
+                        onLogoutRequested = coordinator::onLogoutRequested,
+                        onWithdrawRequested = coordinator::onWithdrawRequested,
+                        onRefreshRequested = coordinator::onProfileRefreshRequested,
+                        onNicknameUpdated = coordinator::onNicknameUpdated,
+                        legalDocument = { page, onBack -> WebScreen(page = page, onBackToRoot = onBack) },
+                        coordinator = profileCoordinator,
                     )
                 },
             )

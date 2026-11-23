@@ -102,6 +102,48 @@ class MainTabScreenTest {
         tab("깃발").assertIsSelected()
     }
 
+    /** iOS `profileInformationRoutesHideTabBarUntilDismissed`: 마이 루트 · 팩 상세는 탭 바를 보인다. */
+    @Test
+    fun `마이 흐름이 숨기지 않으면 탭 바를 보인다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.My, liveContent = { _, _ -> }, myContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(false, true) }
+                Text("마이 흐름")
+            })
+        }
+
+        composeRule.onNodeWithText("마이 흐름").assertExists()
+        tab("마이").assertIsSelected()
+    }
+
+    /** iOS `#557`: 설정 홈과 그 아래는 탭 바를 숨기고 자리도 비운다. */
+    @Test
+    fun `마이 흐름이 숨기고 자리를 비우라고 하면 탭 바가 없다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.My, liveContent = { _, _ -> }, myContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(true, false) }
+                Text("설정")
+            })
+        }
+
+        composeRule.onNodeWithText("설정").assertExists()
+        composeRule.onAllNodesWithText("타임테이블").assertCountEquals(0)
+    }
+
+    /** iOS `shouldReserveTabBarSpace`: 팩 삭제 팝업으로만 숨기면 자리는 남기고 읽기 도구 · 누르기는 받지 않는다. */
+    @Test
+    fun `마이 팝업으로 숨기면 탭 바 자리만 남고 눌러도 탭이 바뀌지 않는다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.My, liveContent = { _, _ -> }, myContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(true, true) }
+                Text("팩 상세")
+            })
+        }
+
+        composeRule.onAllNodes(hasText("라이브") and isSelectable()).assertCountEquals(0)
+        composeRule.onAllNodesWithText("타임테이블").assertCountEquals(0)
+    }
+
     /** iOS `MTC:93`: 로그인 시트가 떠 있는 동안은 어느 탭이든 탭 바를 숨긴다. */
     @Test
     fun `로그인 시트가 떠 있으면 탭 바를 숨긴다`() {
@@ -120,6 +162,7 @@ private fun HoistedMainTabScreen(
     liveContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit, onFlagTabRequested: () -> Unit) -> Unit,
     initial: FCTabBarTab = FCTabBarTab.Live,
     isLoginSheetPresented: Boolean = false,
+    myContent: @Composable (onHidesTabBarChanged: (hides: Boolean, reservesSpace: Boolean) -> Unit) -> Unit = { Text("마이 흐름") },
 ) {
     var selection by rememberSaveable { mutableStateOf(initial) }
     MainTabScreen(
@@ -128,6 +171,7 @@ private fun HoistedMainTabScreen(
         onFlagTabRequested = { selection = FCTabBarTab.Flag },
         liveContent = liveContent,
         flagContent = { Text("깃발 흐름") },
+        myContent = myContent,
         isLoginSheetPresented = isLoginSheetPresented,
     )
 }
