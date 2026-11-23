@@ -1,11 +1,11 @@
 ---
 spec: my-tab
-modules: [feature/profile, feature/web, domain/festival, domain/auth]
+modules: [feature/profile, feature/web, domain/festival, domain/auth, domain/notice]
 ---
 
 # 마이 탭 Spec
 
-> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3)이 있다. 공지(S4)는 그 PR에서 이 문서에 더한다.
+> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3) · 공지 목록 · 상세(S4)가 있다.
 
 iOS 대응: `Projects/Feature/Profile/Sources/Main/{Reducer/ProfileFeature.swift,View/ProfileView.swift}`, `Interface/Sources/ProfileDelegate.swift`, 테스트 `Tests/Sources/ProfileFeatureTests.swift`.
 설계: `.claude/docs/specs/2026-11-23-my-tab-android-design.md`(화면 1 · 쟁점 M1 · M7 · M12 · M13 · PR S1).
@@ -75,10 +75,29 @@ iOS 대응: `Account/{Reducer/AccountSettingsFeature.swift,Reducer/NicknameEditF
 8. 계정 입력(`onAccountChanged`)은 `profile` · `isLoading` · `message`를 그대로 바꾼다. 세션을 잃었을 때 계정 화면을 닫는 것은 설정 홈 `SessionLost` → Coordinator(T1)다.
 9. 이동 · 요청은 SideEffect → Screen 콜백: `BackRequested` · `LogoutRequested` · `WithdrawRequested` · `RefreshRequested` · `NicknameUpdated(AuthUser)`. 로그아웃 · 탈퇴 실행(기기 연결 해제 · 세션 정리 · 결과 문구 · 화면 정리)은 앱 `AccountCoordinator`(A1), 설정 홈을 거쳐 앱으로 넘기는 연결은 T1이다.
 
+## 공지 (S4)
+
+iOS 대응: `Notice/{Reducer/NoticeListFeature.swift,Reducer/NoticeDetailFeature.swift,View/NoticeListView.swift,View/NoticeDetailView.swift}`, 테스트 `NoticeFeatureTests`. 설계 화면 8.
+
+1. 목록: 배경 `backgroundNormal`, `FCTopBar(Back, "공지사항")`. 처음 나타날 때(`Idle`일 때만) `Loading`으로 바꾸고 `NoticeUseCase.notices()`를 읽는다. 성공 → `Loaded`, 실패 → `Failed`.
+   - `Idle` · `Loading`: 스켈레톤 높이 56 · r16 4개(간격 `P8`, 패딩 `P16`, 접근성 "공지사항을 불러오는 중").
+   - `Failed`: "공지사항을 불러오지 못했어요"(`baseBodyRegular` · `labelNeutral`) + `FCButton("다시 시도", Secondary, Medium)`, 간격 `P12`, 가운데.
+   - 빈 목록: "등록된 공지사항이 없어요"(같은 문구 스타일, 버튼 없음).
+   - 행: r16로 자른 묶음(패딩 `P16`)에 `FCListRow(제목, value = yyyy.MM.dd)`, 첫 줄이 아닌 줄 위에 구분선(1, `lineNormal`, 왼쪽 `P16` 안쪽).
+2. "다시 시도"는 `Failed`일 때만 `Loading`으로 바꾸고 다시 읽는다.
+3. 행 → 목록에 있는 공지면 `NoticeDetailRequested(id, 제목)`. 없는 id는 무시한다. 뒤로 → `BackRequested`. 상세를 열고 닫는 것은 Coordinator다(T1, iOS `destination`).
+4. 상세: `FCTopBar(Back, "공지사항")`. 처음 나타날 때(`Idle`일 때만) `NoticeUseCase.notice(id)`를 읽는다. "다시 시도"는 `Failed`일 때만.
+   - `Idle` · `Loading`: 스켈레톤 r4 전체 폭 24 · 90×14 · 전체 폭 180(간격 `P16`, 패딩 `P20`, 접근성 "공지사항을 불러오는 중").
+   - `Failed`: 목록과 같은 실패 문구 + "다시 시도".
+   - `Loaded`: 세로 스크롤(좌우 · 위 `P20`, 간격 `P16`)에 제목 `baseTitle3Bold` · `labelNormal`, 날짜 `baseCaption1Regular` · `labelAssistive`, 구분선(1, `lineNormal`), 본문 `baseBodyRegular` · `labelNormal`. 본문은 iOS `Text(String)`처럼 일반 텍스트다(마크다운 · 링크 해석 없음).
+5. 날짜 `yyyy.MM.dd`는 서울 기준(iOS `AppDateFormat.noticeDay`). feature는 `core`를 의존하지 않으므로 `NoticePresentation`이 같은 패턴을 둔다.
+6. 이동은 SideEffect → Screen 콜백: 목록 `BackRequested` · `NoticeDetailRequested(id, title)`, 상세 `BackRequested`. 설정 홈 `NoticeListRequested`에서 목록을 여는 연결은 T1이다.
+
 ## 엣지 케이스
 
 - 진행 중 읽기를 취소하는 iOS `cancelInFlight`는 두지 않는다. `Loading` 중 `onAppear`는 무시하고, 팩 상세 결과로 다시 읽는 경우만 겹칠 수 있다(마지막 응답이 남는다).
 - 바뀐 공연 수는 팩마다 차례로 묻는다(iOS는 동시에). 결과는 같다.
+- 공지 읽기의 iOS `cancelInFlight`는 두지 않는다. `Idle` · `Failed`일 때만 읽어 요청이 겹치지 않는다.
 - 닉네임 저장의 iOS `cancelInFlight`는 두지 않는다. 저장 중 다시 누르기를 무시해 요청이 겹치지 않는다.
 
 ## 제약 / 가정
@@ -94,11 +113,11 @@ iOS 대응: `Account/{Reducer/AccountSettingsFeature.swift,Reducer/NicknameEditF
 | 모듈                        | 계층    | 변경 내용                                                                                 |
 | --------------------------- | ------- | ----------------------------------------------------------------------------------------- |
 | `feature/profile/interface` | feature | `AccountState`(앱 → 마이 계정 입력)                                                       |
-| `feature/profile/sources`   | feature | `main/`(Contract · ViewModel · Screen · Presentation · 프리뷰), `settings/` · `appearance/`(S2), `account/`(S3), `di/ProfileFeatureModule` |
+| `feature/profile/sources`   | feature | `main/`(Contract · ViewModel · Screen · Presentation · 프리뷰), `settings/` · `appearance/`(S2), `account/`(S3), `notice/`(S4, `domain/notice/interface` 의존), `di/ProfileFeatureModule` |
 | `feature/featureassembly`   | feature | `profileFeatureModule` 등록                                                               |
 | `feature/web`               | feature | `LegalDocumentUrls`를 `interface`로 옮기고 https · host 검증(S2)                          |
 | `app`                       | app     | `AppearanceModeSettings` 등록(`StoredAppearanceModeSettings`, S2)                         |
 
 ## 영향 범위
 
-앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`(`FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`)은 읽기만 하고, `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다.
+앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`(`FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`)은 읽기만 하고, `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다. `domain/notice`(`NoticeUseCase`)는 읽기만 한다.
