@@ -16,7 +16,7 @@
 4. **계정(AccountSettings, S13-D)** + **닉네임 변경 시트** — 내 정보 · 계정 삭제(탈퇴) · 로그아웃.
 5. **화면 모드(Appearance, S13-J)** — 시스템 · 라이트 · 다크.
 6. **알림(NotificationSettings, S13-A)** — 서버 기기 알림 설정 토글 7종(쟁점 M4: P0 게이트).
-7. **잠금화면(LockScreen, S13-C)** + 대표 깃발 고르기 — Live Activity 설정(쟁점 M5: 이번 범위에서 숨김).
+7. **잠금화면(LockScreen, S13-C)** + 대표 깃발 고르기 — Live Activity 설정(쟁점 M5: 라이브 액티비티 단계 전까지 숨김).
 8. **공지사항 목록 · 상세**, **약관 · 정보 출처 문서(Web)**.
 9. **로그아웃 · 탈퇴 실행**(iOS `AccountCoordinator`, 앱 계층).
 
@@ -177,7 +177,7 @@ Android 약어: `MTS` = `app/src/main/kotlin/io/festicore/app/navigation/MainTab
 
 ## 화면 7: 잠금화면 (LockScreen) — 숨김
 
-iOS는 Live Activity 목록 · "모두 끄기" · "당일 자동 시작" · 대표 깃발 고르기(`PUT me/pinned-flag`)를 둔다(`LSF`, `LSV:22-206`, `PPV`). Android는 Live Activity를 옮기지 않으므로(`ios-parity.md`) 설정 홈의 "잠금화면" 줄을 숨긴다(쟁점 M5). 깃발 탭 설계의 결정 F4-1(대표 깃발은 라이브 액티비티 단계)과 같은 원칙이다.
+iOS는 Live Activity 목록 · "모두 끄기" · "당일 자동 시작" · 대표 깃발 고르기(`PUT me/pinned-flag`)를 둔다(`LSF`, `LSV:22-206`, `PPV`). Android는 Live Activity를 진행 중 알림(Live Updates)으로 옮기는 별도 단계에서 다룬다. 그 단계 전까지 설정 홈의 "잠금화면" 줄을 숨긴다(쟁점 M5). 깃발 탭 설계의 결정 F4-1(대표 깃발은 라이브 액티비티 단계)과 같은 원칙이다.
 
 ## 화면 8: 공지 · 문서
 
@@ -190,7 +190,7 @@ iOS는 Live Activity 목록 · "모두 끄기" · "당일 자동 시작" · 대�
 iOS는 마이 Feature가 `logoutRequested` · `withdrawRequested`를 올리면 `MainTabCoordinator`가 `AccountCoordinator`로 넘긴다(`MTCSc:254-258`). Android는 `app/navigation/AccountCoordinator`(iOS와 같은 자리 · 이름)로 옮기고 `AppCoordinator`가 소유한다.
 
 1. 시작 조건: 세션 있음 · 처리 중 아님. 세대(`generation`)를 올리고 메시지를 비우고 `isLoading = true`(`AcC:140-153`).
-2. 순서(`AcC:155-194`): 기기 사용자 연결 해제(`DELETE devices/bind-user`, 실패해도 계속 — `ADS:30-41`, 쟁점 M3) → (iOS만: 로컬 Live Activity 종료 — 옮기지 않음) → `signOut()` / `withdraw()`. 취소되면 아무것도 보내지 않는다.
+2. 순서(`AcC:155-194`): 기기 사용자 연결 해제(`DELETE devices/bind-user`, 실패해도 계속 — `ADS:30-41`, 쟁점 M3) → (로컬 Live Activity 종료 — Android 진행 중 알림 단계에서 진행 중 알림 취소로 잇는다) → `signOut()` / `withdraw()`. 취소되면 아무것도 보내지 않는다.
 3. 실패 시: 이미 로그인이 풀렸으면 세션 만료 처리로 넘긴다. 아니면 해제했던 기기 연결을 복원(`linkDeviceToCurrentUser`)하고 실패 결과를 보낸다.
 4. 결과(`AcC:196-228`): 세대가 다르면 버린다. 성공 → 계정 화면 데이터 비우기(현재 사용자 ID null, 마이 · 깃발 · 라이브 · 타임테이블 계정 데이터 정리 `MTC:527-536`) + 분석 초기화(Android 분석 모듈 생기면). `notAuthenticated` → 같은 정리 + 탈퇴면 메시지 "로그인이 만료되어 회원 탈퇴 결과를 확인할 수 없어요. 다시 로그인해 계정 상태를 확인해 주세요.". 그 외 실패 → "회원 탈퇴에 실패했습니다. 다시 시도해 주세요." / "로그아웃에 실패했습니다. 다시 시도해 주세요."(`AFS:207 · 218-219`). 로그인 시트 상태는 되돌리지 않는다(`AcC:231-242`).
 5. 세션이 만료되면 진행 중 작업을 취소한다(`AcC` `cancelOperation`).
@@ -272,7 +272,7 @@ iOS는 마이 Feature가 `logoutRequested` · `withdrawRequested`를 올리면 `
 | `MapAppClient.isInstalled`(`nmap` · `kakaomap` 스킴)                         | `PackageManager` 패키지 조회 + `<queries>`(쟁점 M10)                                                         | 패키지 가시성                                           |
 | `FCLoginButton(.apple)` · `.google`                                          | Google만                                                                                                     | `ios-parity.md`                                         |
 | 분석 `screen_view` · `profile_logout` · `profile_withdraw`                   | 넣지 않음(분석 모듈 단계)                                                                                    | `service/analytics` 없음                                |
-| Live Activity 종료(`ADS:49-53`)                                              | 없음                                                                                                         | 옮기지 않음                                             |
+| Live Activity 종료(`ADS:49-53`)                                              | 없음                                                                                                         | 라이브 액티비티 단계에서 진행 중 알림 취소로 잇는다     |
 
 ## PR 묶음 (데이터 → 화면들 → 탭 연결)
 
@@ -328,7 +328,7 @@ iOS는 마이 Feature가 `logoutRequested` · `withdrawRequested`를 올리면 `
 - **M2 로그아웃 · 탈퇴 로컬 정리.** iOS는 요청 전 "되돌림 차단" 기록을 디스크에 남기고 결과 불명 · 로컬 삭제 실패 · 재시작 뒤 정리를 상태 기계로 다룬다(`ARI:119-210`, `ASv:39-58`). (a) iOS 상태 기계를 `service/auth` `CredentialStore`에 그대로 옮긴다 — 동작은 같지만 `AuthSession`에 상태 7종이 늘고 테스트가 크다. (b) 단순화(추천): 요청 성공 또는 401이면 `clearSessionIf(sessionId)`로 지우고, 그 외 실패면 세션을 두고 오류 문구. 탈퇴 401은 `notAuthenticated`. Android `CredentialStore` 삭제는 한 번의 DataStore 쓰기이고, 서버가 refresh 토큰을 이미 폐기했으면 다음 갱신 401이 세션 만료로 정리한다(위험 절, 확인 필요). 결과 문구 · 화면 동작은 iOS와 같다.
 - **M3 기기 연결 해제(`AccountDeviceSync`).** P0 전에는 기기 등록이 없다. (a) A1에 `unbindCurrentUser` · `linkDeviceToCurrentUser` 자리를 두고 P0 전까지 아무 일도 하지 않게 둔다(추천, iOS도 해제 실패를 막지 않음 `ADS:30-41`). (b) A1을 P0 뒤로 미룬다 — 로그아웃 · 탈퇴 출시가 늦어진다.
 - **M4 알림 화면.** 서버 알림 설정은 기기 등록이 필요하다(`NDS`). (a) P0 머지 전까지 설정 홈 "알림" 줄을 숨기고, S6을 P0 뒤에 넣는다(추천, 타임테이블 문서의 P0 게이트와 같은 원칙). (b) 줄을 보이고 "알림 설정을 불러오지 못했어요"로 끝낸다 — 늘 실패하는 화면이 보인다.
-- **M5 잠금화면.** (a) 줄을 숨긴다(추천, Live Activity 미이식 · 깃발 문서 F4-1과 같은 원칙). (b) Android 진행 중 알림 설계와 함께 다시 정한다 — 라이브 액티비티 단계 문서에서.
+- **M5 잠금화면.** (a) 라이브 액티비티(진행 중 알림) 단계 전까지 줄을 숨기고 그 단계에서 연다(추천, 깃발 문서 F4-1과 같은 원칙). (b) Android 진행 중 알림 설계와 함께 다시 정한다 — 라이브 액티비티 단계 문서에서.
 - **M6 화면 모드 기본값 · 적용 방식.** 기본값: (a) iOS와 같게 `dark`(추천, "디자인은 iOS 그대로"), (b) Android는 `system` — 지금 동작 유지. 적용: (가) 앱 루트에서 `LocalConfiguration`의 `uiMode` 야간 비트를 덮어써 생성된 `SC`의 `isSystemInDarkTheme()`이 따르게 하고, 시스템 바는 `enableEdgeToEdge(SystemBarStyle)`로 맞춘다(추천, 생성 코드 · 토큰을 고치지 않음). (나) `AppCompatDelegate.setDefaultNightMode` — `AppCompatActivity` · appcompat 의존 추가가 필요(지금 `ComponentActivity`). (다) `UiModeManager.setApplicationNightMode` — API 31+만(minSdk 26). (가)가 WebView · Custom Tabs에 적용되는지는 구현 PR에서 공식 문서로 확인한다.
 - **M7 기수 카드 · 내 깃발 카드.** iOS는 로그인 상태에서 기수 카드(`FCBearerPrompt`) 또는 내 깃발 카드(+ "기수 보드 열기" · "다른 페스티벌 깃발 만들기")를 보이고 기수 흐름을 push한다(`PV:48-53 · 146-196`, 5,138행). (a) 기수 문서가 기수 흐름을 옮길 때까지 두 카드를 숨기고, `ProfileContract`에 자리만 둔다(추천, 누를 곳이 없는 카드를 보이지 않음). (b) 카드만 보이고 누르면 아무 일 없음.
 - **M8 팩 30일 자동 삭제 안내.** iOS는 앱 시작 때 마지막 날 끝 + 30일이 지난 팩을 지운다(`iOS/App/Sources/Navigation/Main/AppCoordinator.swift:198-212`, `FestivalPackExpiryTests` 5건). Android에는 없다. (a) D3에 만료 삭제를 옮기고 `AppCoordinator` 시작 때 부른다(추천, 안내 문구와 동작을 맞춤). (b) 안내 문구를 숨긴다.
