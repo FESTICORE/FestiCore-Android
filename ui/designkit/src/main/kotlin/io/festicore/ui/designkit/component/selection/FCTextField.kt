@@ -37,6 +37,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import java.text.BreakIterator
 
 private val Height = 52.dp
@@ -96,7 +97,9 @@ fun FCTextField(
                 value = text,
                 onValueChange = { onTextChange(limitTextLength(it, maxLength)) },
                 modifier = Modifier.weight(1f).semantics { contentDescription = label ?: placeholder },
-                textStyle = FestiCoreTextStyle.baseBodyRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                textStyle = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelNormal.color,
+                ),
                 singleLine = true,
                 interactionSource = interactionSource,
                 cursorBrush = SolidColor(FestiCoreSemanticColor.labelNormal.color),
@@ -105,7 +108,7 @@ fun FCTextField(
                         if (text.isEmpty()) {
                             BasicText(
                                 text = placeholder,
-                                style = FestiCoreTextStyle.baseBodyRegular.textStyle.copy(
+                                style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox.copy(
                                     color = FestiCoreSemanticColor.labelAssistive.color,
                                 ),
                                 maxLines = 1,

@@ -19,6 +19,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private const val STALE_OPACITY = 0.6f
 
@@ -81,7 +82,7 @@ fun FCCrewRow(
                 BasicText(
                     text = status,
                     modifier = Modifier.weight(1f),
-                    style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = primaryColor),
+                    style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = primaryColor),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -90,7 +91,7 @@ fun FCCrewRow(
         BasicText(
             text = time,
             style =
-                FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(
+                FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
                     color = if (isStale) FestiCoreSemanticColor.labelDisable.color else FestiCoreSemanticColor.labelAssistive.color,
                 ),
             maxLines = 1,

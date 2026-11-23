@@ -38,7 +38,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val PointsPerMinute = 2.dp
 private val BorderWidth = 1.dp
@@ -131,7 +131,7 @@ fun FCSetBlock(
                     {
                         ArtistText(
                             artist = artist,
-                            style = FestiCoreTextStyle.baseCaption1Bold.textStyle,
+                            style = FestiCoreTextStyle.baseCaption1Bold.textStyleWithoutLineBox,
                             color = artistColor,
                             modifier =
                                 Modifier.padding(
@@ -192,7 +192,7 @@ private fun SetBlockContent(
         modifier = Modifier.fillMaxWidth().padding(contentInsets),
         verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP4),
     ) {
-        ArtistText(artist = artist, style = FestiCoreTextStyle.baseCalloutBold.textStyle, color = artistColor)
+        ArtistText(artist = artist, style = FestiCoreTextStyle.baseCalloutBold.textStyleWithoutLineBox, color = artistColor)
         if (showsTime) TimeRow(time = time, state = state)
         if (showsTag) Tag(state = state)
     }
@@ -217,7 +217,9 @@ private fun ArtistText(
 @Composable
 private fun TimeRow(time: String, state: FCSetBlockState) {
     if (state is FCSetBlockState.Changed) {
-        val assistive = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color)
+        val assistive = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+            color = FestiCoreSemanticColor.labelAssistive.color,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP4)) {
             BasicText(
                 text = state.oldTime,
@@ -228,7 +230,9 @@ private fun TimeRow(time: String, state: FCSetBlockState) {
             BasicText(text = "→", style = assistive, maxLines = 1, softWrap = false)
             BasicText(
                 text = time,
-                style = FestiCoreTextStyle.baseCaption1Bold.textStyle.copy(color = FestiCoreSemanticColor.accentForegroundOrange.color),
+                style = FestiCoreTextStyle.baseCaption1Bold.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.accentForegroundOrange.color,
+                ),
                 maxLines = 1,
                 softWrap = false,
             )
@@ -238,7 +242,7 @@ private fun TimeRow(time: String, state: FCSetBlockState) {
         BasicText(
             text = time,
             style =
-                FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(
+                FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
                     color = if (isOnLime) FestiCoreSemanticColor.staticalphaBlack60.color else FestiCoreSemanticColor.labelAssistive.color,
                 ),
             maxLines = 1,
@@ -283,7 +287,7 @@ private fun TagText(
             Modifier
                 .background(background.color, RoundedCornerShape(radius))
                 .padding(vertical = FestiCoreSpacing.marginM2, horizontal = FestiCoreSpacing.marginM6),
-        style = FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(color = foreground.color),
+        style = FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(color = foreground.color),
         maxLines = 1,
     )
 }

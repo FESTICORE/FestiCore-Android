@@ -34,6 +34,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 360.dp
 private val DividerHeight = 1.dp
@@ -88,7 +89,9 @@ fun FCFlagHero(
                         BasicText(
                             text = name,
                             modifier = Modifier.alignByBaseline().weight(1f, fill = false),
-                            style = FestiCoreTextStyle.baseTitle2Bold.textStyle.copy(color = FestiCoreSemanticColor.staticWhite.color),
+                            style = FestiCoreTextStyle.baseTitle2Bold.textStyleWithoutLineBox.copy(
+                                color = FestiCoreSemanticColor.staticWhite.color,
+                            ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -96,7 +99,7 @@ fun FCFlagHero(
                             text = followers,
                             modifier = Modifier.alignByBaseline(),
                             style =
-                                FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(
+                                FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(
                                     color = FestiCoreSemanticColor.staticalphaWhite80.color,
                                 ),
                             maxLines = 1,

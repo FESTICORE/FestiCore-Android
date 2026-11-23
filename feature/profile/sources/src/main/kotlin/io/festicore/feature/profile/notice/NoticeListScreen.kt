@@ -34,7 +34,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -159,7 +159,7 @@ internal fun NoticeMessage(message: String, onRetryTapped: (() -> Unit)?) {
     ) {
         Text(
             text = message,
-            style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNeutral.color,
         )
         if (onRetryTapped != null) {

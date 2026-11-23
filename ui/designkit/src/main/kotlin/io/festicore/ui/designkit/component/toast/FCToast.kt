@@ -34,7 +34,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -72,7 +72,7 @@ fun FCToast(
         )
         BasicText(
             text = item.message,
-            style = FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(color = FestiCoreSemanticColor.staticWhite.color),
+            style = FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.staticWhite.color),
         )
     }
 }

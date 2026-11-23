@@ -41,7 +41,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val MediaHeight = 140.dp
 private val BookmarkSize = 36.dp
@@ -134,7 +134,9 @@ fun FCFestivalCard(
                 BasicText(
                     text = title,
                     modifier = Modifier.weight(1f).alpha(endedOpacity),
-                    style = FestiCoreTextStyle.baseHeadlineBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                    style = FestiCoreTextStyle.baseHeadlineBold.textStyleWithoutLineBox.copy(
+                        color = FestiCoreSemanticColor.labelNormal.color,
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -143,7 +145,9 @@ fun FCFestivalCard(
             BasicText(
                 text = meta,
                 modifier = Modifier.alpha(endedOpacity),
-                style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelNeutral.color,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -209,7 +213,7 @@ private fun StatusTag(status: FCFestivalCardStatus) {
             Modifier
                 .background(background.color, RoundedCornerShape(FestiCoreRadius.r4))
                 .padding(vertical = FestiCoreSpacing.paddingP4, horizontal = FestiCoreSpacing.marginM6),
-        style = FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(color = foreground.color),
+        style = FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(color = foreground.color),
         maxLines = 1,
     )
 }
@@ -220,7 +224,9 @@ private fun PackArea(pack: FCFestivalCardPack) {
         is FCFestivalCardPack.Unavailable ->
             BasicText(
                 text = pack.text,
-                style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
             )
 
         is FCFestivalCardPack.Ready ->
@@ -247,7 +253,9 @@ private fun PackArea(pack: FCFestivalCardPack) {
                 )
                 BasicText(
                     text = pack.text,
-                    style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                    style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(
+                        color = FestiCoreSemanticColor.labelNormal.color,
+                    ),
                 )
             }
     }
@@ -265,7 +273,7 @@ private fun TicketLink(
             modifier = Modifier.fillMaxWidth().padding(FestiCoreSpacing.paddingP12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BasicText(text = title, style = FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(color = color))
+            BasicText(text = title, style = FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(color = color))
             Spacer(modifier = Modifier.weight(1f))
             Image(
                 painter = painterResource(R.drawable.ic_arrow_up_right_from_square_16),

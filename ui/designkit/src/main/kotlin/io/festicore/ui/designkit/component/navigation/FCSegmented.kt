@@ -30,7 +30,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 40.dp
 private const val SHADOW_OPACITY = 0.08f
@@ -111,7 +111,7 @@ fun FCSegmented(
                 ) {
                     BasicText(
                         text = item,
-                        style = textStyle.textStyle.copy(color = textColor.color),
+                        style = textStyle.textStyleWithoutLineBox.copy(color = textColor.color),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

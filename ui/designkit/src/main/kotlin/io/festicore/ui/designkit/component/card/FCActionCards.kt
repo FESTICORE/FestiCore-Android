@@ -42,7 +42,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val NextSetProgressHeight = 4.dp
 private val HomeIconSize = 16.dp
@@ -103,9 +103,9 @@ fun FCNextSetCard(
         verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP20),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BasicText(text = label, style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = ink))
+            BasicText(text = label, style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = ink))
             Spacer(modifier = Modifier.weight(1f))
-            BasicText(text = updated, style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = subtle))
+            BasicText(text = updated, style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(color = subtle))
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP12),
@@ -117,18 +117,18 @@ fun FCNextSetCard(
             ) {
                 BasicText(
                     text = artist,
-                    style = FestiCoreTextStyle.baseTitle1Bold.textStyle.copy(color = ink),
+                    style = FestiCoreTextStyle.baseTitle1Bold.textStyleWithoutLineBox.copy(color = ink),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 BasicText(
                     text = meta,
-                    style = FestiCoreTextStyle.baseSubheadlineRegular.textStyle.copy(color = subtle),
+                    style = FestiCoreTextStyle.baseSubheadlineRegular.textStyleWithoutLineBox.copy(color = subtle),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            BasicText(text = remain, style = FestiCoreTextStyle.pointTitle.textStyle.copy(color = ink))
+            BasicText(text = remain, style = FestiCoreTextStyle.pointTitle.textStyleWithoutLineBox.copy(color = ink))
         }
         BoxWithConstraints(
             modifier =
@@ -189,11 +189,11 @@ fun FCHomeCard(
                 modifier = Modifier.size(HomeIconSize),
                 colorFilter = ColorFilter.tint(foreground),
             )
-            BasicText(text = label, style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = foreground))
+            BasicText(text = label, style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = foreground))
         }
-        BasicText(text = remain, style = FestiCoreTextStyle.pointHeading.textStyle.copy(color = foreground))
+        BasicText(text = remain, style = FestiCoreTextStyle.pointHeading.textStyleWithoutLineBox.copy(color = foreground))
         Column(verticalArrangement = Arrangement.spacedBy(HomeRideLineSpacing)) {
-            val rideStyle = FestiCoreTextStyle.baseCalloutMedium.textStyle.copy(color = foreground)
+            val rideStyle = FestiCoreTextStyle.baseCalloutMedium.textStyleWithoutLineBox.copy(color = foreground)
             if (shuttle != null) BasicText(text = shuttle, style = rideStyle)
             if (train != null) BasicText(text = train, style = rideStyle)
         }
@@ -230,11 +230,13 @@ fun FCDoneCard(
         Column(verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP4)) {
             BasicText(
                 text = title,
-                style = FestiCoreTextStyle.pointHeading.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                style = FestiCoreTextStyle.pointHeading.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
             )
             BasicText(
                 text = sub,
-                style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8)) {
@@ -250,13 +252,17 @@ fun FCDoneCard(
                 ) {
                     BasicText(
                         text = stat.value,
-                        style = FestiCoreTextStyle.baseTitle2Bold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                        style = FestiCoreTextStyle.baseTitle2Bold.textStyleWithoutLineBox.copy(
+                            color = FestiCoreSemanticColor.labelNormal.color,
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     BasicText(
                         text = stat.label,
-                        style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                        style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                            color = FestiCoreSemanticColor.labelNeutral.color,
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -315,7 +321,7 @@ fun FCEmptyCard(
                 BasicText(
                     text = title,
                     style =
-                        FestiCoreTextStyle.baseHeadlineBold.textStyle.copy(
+                        FestiCoreTextStyle.baseHeadlineBold.textStyleWithoutLineBox.copy(
                             color = FestiCoreSemanticColor.labelNormal.color,
                             textAlign = TextAlign.Center,
                         ),
@@ -323,7 +329,7 @@ fun FCEmptyCard(
                 BasicText(
                     text = message,
                     style =
-                        FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(
+                        FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
                             color = FestiCoreSemanticColor.labelNeutral.color,
                             textAlign = TextAlign.Center,
                         ),
@@ -374,11 +380,11 @@ fun FCGuideSection(
         BasicText(
             text = title,
             modifier = Modifier.semantics { heading() },
-            style = FestiCoreTextStyle.baseHeadlineBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.baseHeadlineBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
         )
         BasicText(
             text = message,
-            style = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+            style = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNeutral.color),
         )
         if (actions.isNotEmpty()) {
             Box(modifier = Modifier.padding(top = FestiCoreSpacing.paddingP4)) { FCCardActionRow(actions) }

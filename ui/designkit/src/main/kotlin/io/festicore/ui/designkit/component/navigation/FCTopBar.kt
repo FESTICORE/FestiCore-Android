@@ -50,7 +50,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 52.dp
 private val LargeHeight = 60.dp
@@ -206,7 +206,9 @@ fun FCTopBar(
                     BasicText(
                         text = "취소",
                         modifier = Modifier.clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onCancel),
-                        style = FestiCoreTextStyle.baseCalloutMedium.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                        style = FestiCoreTextStyle.baseCalloutMedium.textStyleWithoutLineBox.copy(
+                            color = FestiCoreSemanticColor.labelNormal.color,
+                        ),
                     )
                 }
             }
@@ -271,7 +273,7 @@ private fun RowScope.Title(
     BasicText(
         text = title,
         modifier = Modifier.weight(1f).semantics { heading() },
-        style = style.textStyle.copy(color = color.color, textAlign = textAlign),
+        style = style.textStyleWithoutLineBox.copy(color = color.color, textAlign = textAlign),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
@@ -365,7 +367,9 @@ private fun TrailingButton(
                     ) {
                         BasicText(
                             text = if (badgeCount > 99) "99+" else "$badgeCount",
-                            style = FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(color = FestiCoreSemanticColor.staticWhite.color),
+                            style = FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(
+                                color = FestiCoreSemanticColor.staticWhite.color,
+                            ),
                         )
                     }
                 } else if (badgeCount == null && showsBadge) {
@@ -404,7 +408,7 @@ private fun BearerButton(title: String, onClick: () -> Unit) {
             modifier = Modifier.size(SmallIconSize),
             colorFilter = ColorFilter.tint(color),
         )
-        BasicText(text = title, style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = color))
+        BasicText(text = title, style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = color))
     }
 }
 
@@ -433,7 +437,7 @@ private fun SearchField(
             modifier = Modifier.size(SmallIconSize),
             colorFilter = ColorFilter.tint(assistive),
         )
-        val textStyle = FestiCoreTextStyle.baseCalloutRegular.textStyle
+        val textStyle = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox
         BasicTextField(
             value = text,
             onValueChange = onTextChange,

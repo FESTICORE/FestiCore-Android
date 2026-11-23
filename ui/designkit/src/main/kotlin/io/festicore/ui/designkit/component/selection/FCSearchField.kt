@@ -33,7 +33,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 40.dp
 private val IconSize = 16.dp
@@ -65,7 +65,9 @@ fun FCSearchField(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.weight(1f).semantics { contentDescription = placeholder },
-            textStyle = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            textStyle = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox.copy(
+                color = FestiCoreSemanticColor.labelNormal.color,
+            ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
             singleLine = true,
@@ -75,7 +77,7 @@ fun FCSearchField(
                     if (text.isEmpty()) {
                         BasicText(
                             text = placeholder,
-                            style = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(
+                            style = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox.copy(
                                 color = FestiCoreSemanticColor.labelAssistive.color,
                             ),
                             maxLines = 1,

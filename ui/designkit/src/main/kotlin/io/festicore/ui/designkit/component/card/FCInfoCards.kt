@@ -31,7 +31,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val PlanIconSize = 20.dp
 private val DividerWidth = 1.dp
@@ -68,11 +68,15 @@ fun FCPlanPrivate(
         ) {
             BasicText(
                 text = title,
-                style = FestiCoreTextStyle.baseCalloutMedium.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                style = FestiCoreTextStyle.baseCalloutMedium.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelNeutral.color,
+                ),
             )
             BasicText(
                 text = message,
-                style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
             )
         }
     }
@@ -97,17 +101,19 @@ fun FCCountdownCard(
     ) {
         BasicText(
             text = label,
-            style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+            style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNeutral.color),
         )
         BasicText(
             text = time,
             modifier = Modifier.padding(top = CountdownLabelToTime),
-            style = FestiCoreTextStyle.pointTitle.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.pointTitle.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
         )
         BasicText(
             text = sub,
             modifier = Modifier.padding(top = FestiCoreSpacing.marginM6),
-            style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+            style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                color = FestiCoreSemanticColor.labelAssistive.color,
+            ),
         )
     }
 }
@@ -145,13 +151,13 @@ private fun LastRideColumn(
     ) {
         BasicText(
             text = label,
-            style = FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+            style = FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelAssistive.color),
         )
         BasicText(
             text = time,
             // iOS monospacedDigit: 숫자 폭을 고르게 한다.
             style =
-                FestiCoreTextStyle.baseTitle1Bold.textStyle.copy(
+                FestiCoreTextStyle.baseTitle1Bold.textStyleWithoutLineBox.copy(
                     color = FestiCoreSemanticColor.labelNormal.color,
                     fontFeatureSettings = "tnum",
                 ),
@@ -181,7 +187,7 @@ fun FCBearerHeader(
         BasicText(
             text = name,
             modifier = Modifier.semantics { heading() },
-            style = FestiCoreTextStyle.baseTitle1Bold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.baseTitle1Bold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
         )
         Row(
             horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8),
@@ -191,14 +197,18 @@ fun FCBearerHeader(
             BasicText(
                 text = statusText,
                 modifier = Modifier.weight(1f),
-                style = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                style = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelNeutral.color,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
         BasicText(
             text = followers,
-            style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+            style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                color = FestiCoreSemanticColor.labelAssistive.color,
+            ),
         )
     }
 }

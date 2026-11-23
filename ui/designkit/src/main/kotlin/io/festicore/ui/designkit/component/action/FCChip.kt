@@ -37,7 +37,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 32.dp
 private val BorderWidth = 1.dp
@@ -66,7 +66,7 @@ fun FCChip(
         BasicText(
             text = label,
             style =
-                FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(
+                FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(
                     color = if (isSelected) FestiCoreSemanticColor.inverseLabel.color else FestiCoreSemanticColor.labelNeutral.color,
                 ),
             maxLines = 1,

@@ -28,6 +28,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val IconWrapSize = 40.dp
 private val IconSize = 16.dp
@@ -98,7 +99,9 @@ fun FCNotificationRow(
                 )
                 BasicText(
                     text = time,
-                    style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                    style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                        color = FestiCoreSemanticColor.labelAssistive.color,
+                    ),
                     maxLines = 1,
                 )
             }

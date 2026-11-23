@@ -38,6 +38,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val FlagMarkSize = 96.dp
 private val FlagIconSize = 42.dp
@@ -138,7 +139,7 @@ fun FCBearerCTA(
             BasicText(
                 text = text.buttonTitle,
                 style =
-                    FestiCoreTextStyle.baseCalloutBold.textStyle.copy(
+                    FestiCoreTextStyle.baseCalloutBold.textStyleWithoutLineBox.copy(
                         color = if (isStart) FestiCoreSemanticColor.staticInk.color else FestiCoreSemanticColor.inverseLabel.color,
                         textAlign = TextAlign.Center,
                     ),

@@ -17,7 +17,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 20.dp
 private val LineHeight = 2.dp
@@ -50,7 +50,7 @@ fun FCNowLine(time: String, modifier: Modifier = Modifier) {
                 Modifier
                     .background(inverseBackground, RoundedCornerShape(FestiCoreRadius.r8))
                     .padding(vertical = FestiCoreSpacing.marginM2, horizontal = FestiCoreSpacing.marginM6),
-            style = FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(color = FestiCoreSemanticColor.inverseLabel.color),
+            style = FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.inverseLabel.color),
             maxLines = 1,
         )
     }

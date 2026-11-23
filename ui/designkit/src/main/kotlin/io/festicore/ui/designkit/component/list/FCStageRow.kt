@@ -24,7 +24,7 @@ import io.festicore.ui.designkit.component.label.FCTagTone
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val IconSize = 16.dp
 
@@ -59,7 +59,7 @@ fun FCStageRow(
             BasicText(
                 text = stage,
                 modifier = Modifier.weight(1f),
-                style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNeutral.color),
             )
             if (isMine) {
                 FCTag("내 일정", tone = FCTagTone.Lime)
@@ -98,14 +98,16 @@ private fun FCStageRowSlotView(
                 text = slot.artist,
                 style =
                     (if (kind == FCLiveBadgeKind.Now) FestiCoreTextStyle.baseHeadlineBold else FestiCoreTextStyle.baseCalloutMedium)
-                        .textStyle
+                        .textStyleWithoutLineBox
                         .copy(color = FestiCoreSemanticColor.labelNormal.color),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             BasicText(
                 text = slot.time,
-                style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

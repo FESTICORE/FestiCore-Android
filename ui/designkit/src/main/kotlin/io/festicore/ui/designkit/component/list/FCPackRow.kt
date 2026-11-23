@@ -25,7 +25,7 @@ import io.festicore.ui.designkit.component.media.FCThumbnail
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val ThumbnailSize = 44.dp
 private val IconSize = 16.dp
@@ -62,7 +62,7 @@ fun FCPackRow(
         ) {
             BasicText(
                 text = name,
-                style = FestiCoreTextStyle.baseCalloutMedium.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                style = FestiCoreTextStyle.baseCalloutMedium.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -77,7 +77,9 @@ fun FCPackRow(
                         val placeable = measurable.measure(constraints.copy(maxWidth = maxWidth))
                         layout(minOf(placeable.width, constraints.maxWidth), placeable.height) { placeable.place(0, 0) }
                     },
-                style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

@@ -30,7 +30,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val ThumbnailSize = 56.dp
 private val BorderWidth = 1.dp
@@ -103,7 +103,9 @@ fun FCFlagCard(
                 BasicText(
                     text = name,
                     modifier = Modifier.weight(1f, fill = false),
-                    style = FestiCoreTextStyle.baseHeadlineBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                    style = FestiCoreTextStyle.baseHeadlineBold.textStyleWithoutLineBox.copy(
+                        color = FestiCoreSemanticColor.labelNormal.color,
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -118,7 +120,9 @@ fun FCFlagCard(
                         FCZoneChip(zone, onClick = onZoneTap)
                         BasicText(
                             text = context.activity,
-                            style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                            style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(
+                                color = FestiCoreSemanticColor.labelNormal.color,
+                            ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -126,7 +130,7 @@ fun FCFlagCard(
                             text = "· ${context.time}",
                             modifier = Modifier.weight(1f),
                             style =
-                                FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(
+                                FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
                                     color = FestiCoreSemanticColor.labelAssistive.color,
                                 ),
                             maxLines = 1,
@@ -138,7 +142,9 @@ fun FCFlagCard(
                 is FCFlagCardContext.Directory -> {
                     BasicText(
                         text = context.followers,
-                        style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                        style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                            color = FestiCoreSemanticColor.labelNeutral.color,
+                        ),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP4)) {
                         context.tags.forEach { FCTag(it) }

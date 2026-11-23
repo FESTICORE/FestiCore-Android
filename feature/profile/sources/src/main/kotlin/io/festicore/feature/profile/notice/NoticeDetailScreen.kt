@@ -29,7 +29,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -97,19 +97,19 @@ private fun NoticeDetailBody(detail: NoticeDetail) {
     ) {
         Text(
             text = detail.title,
-            style = FestiCoreTextStyle.baseTitle3Bold.textStyle,
+            style = FestiCoreTextStyle.baseTitle3Bold.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNormal.color,
         )
         Text(
             text = NoticePresentation.day(detail.publishedAt),
-            style = FestiCoreTextStyle.baseCaption1Regular.textStyle,
+            style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelAssistive.color,
         )
         Box(modifier = Modifier.fillMaxWidth().height(NoticeDividerHeight).background(FestiCoreSemanticColor.lineNormal.color))
         Text(
             text = detail.content,
             modifier = Modifier.fillMaxWidth(),
-            style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNormal.color,
         )
     }

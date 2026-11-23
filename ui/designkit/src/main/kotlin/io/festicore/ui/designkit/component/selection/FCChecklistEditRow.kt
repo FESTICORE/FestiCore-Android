@@ -27,7 +27,7 @@ import io.festicore.ui.designkit.component.label.FCTag
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 56.dp
 private val DeleteSize = 32.dp
@@ -52,7 +52,7 @@ fun FCChecklistEditRow(
         BasicText(
             text = label,
             modifier = Modifier.weight(1f),
-            style = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

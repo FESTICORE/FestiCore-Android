@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import java.text.BreakIterator
 
 enum class FCAvatarTint {
@@ -69,7 +69,7 @@ fun FCAvatar(
     ) {
         BasicText(
             text = first,
-            style = size.textStyle.textStyle.copy(color = foreground.color),
+            style = size.textStyle.textStyleWithoutLineBox.copy(color = foreground.color),
         )
     }
 }
