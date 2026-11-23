@@ -1,8 +1,15 @@
 package io.festicore.domain.festival.sources.di
 
+import io.festicore.domain.auth.CurrentUserProvider
 import io.festicore.domain.festival.FestivalBoardSelectionUseCase
 import io.festicore.domain.festival.FestivalCatalogRepository
 import io.festicore.domain.festival.FestivalCatalogUseCase
+import io.festicore.domain.festival.FestivalCrewRepository
+import io.festicore.domain.festival.FestivalCrewUseCase
+import io.festicore.domain.festival.FestivalFlagDetailRepository
+import io.festicore.domain.festival.FestivalFlagDetailUseCase
+import io.festicore.domain.festival.FestivalFlagRepository
+import io.festicore.domain.festival.FestivalFlagUseCase
 import io.festicore.domain.festival.FestivalLibraryUseCase
 import io.festicore.domain.festival.FestivalLiveBoardPreferenceUseCase
 import io.festicore.domain.festival.FestivalLiveBoardRepository
@@ -16,6 +23,12 @@ import io.festicore.domain.festival.FestivalZoneMapUseCase
 import io.festicore.domain.festival.sources.FestivalBoardSelectionStore
 import io.festicore.domain.festival.sources.FestivalCatalogRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalCatalogUseCaseImpl
+import io.festicore.domain.festival.sources.FestivalCrewRepositoryImpl
+import io.festicore.domain.festival.sources.FestivalCrewUseCaseImpl
+import io.festicore.domain.festival.sources.FestivalFlagDetailRepositoryImpl
+import io.festicore.domain.festival.sources.FestivalFlagDetailUseCaseImpl
+import io.festicore.domain.festival.sources.FestivalFlagRepositoryImpl
+import io.festicore.domain.festival.sources.FestivalFlagUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalLibraryUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalLiveBoardPreferenceUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalLiveBoardRepositoryImpl
@@ -46,4 +59,13 @@ val domainFestivalModule = module {
     single { FestivalScheduleSavedEvents() }
     factory<FestivalScheduleUseCase> { FestivalScheduleUseCaseImpl(get(), get()) }
     single<FestivalBoardSelectionUseCase> { FestivalBoardSelectionStore() }
+    single<FestivalFlagDetailRepository> { FestivalFlagDetailRepositoryImpl(get(), get()) }
+    factory<FestivalFlagDetailUseCase> { FestivalFlagDetailUseCaseImpl(get()) }
+    single<FestivalFlagRepository> { FestivalFlagRepositoryImpl(get()) }
+    factory<FestivalFlagUseCase> { FestivalFlagUseCaseImpl(get()) }
+    single<FestivalCrewRepository> {
+        val currentUser = get<CurrentUserProvider>()
+        FestivalCrewRepositoryImpl(get()) { currentUser.currentUserId.value }
+    }
+    factory<FestivalCrewUseCase> { FestivalCrewUseCaseImpl(get()) }
 }

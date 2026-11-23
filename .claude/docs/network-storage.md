@@ -45,3 +45,6 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - 세션이 없거나 기대 sessionId와 다른 Bearer 요청은 보내지 않는다. 공개 API는 `AuthSession`(isLoggedIn · currentSessionId · saveLogin · clear)과 `SessionExpiryEvents`다.
 - HttpClient는 `serviceAuthModule(baseUrl)`이 인증 플러그인을 붙여 등록하고, app은 `BuildConfig.BASE_URL`만 넘긴다.
 - 내 알림(`UserNotificationApi`, `domain/usernotification`)은 모든 요청을 현재 세션 ID에 묶어 보낸다(`bearerAuthorization(expectedSessionId)`, 재시도 0). 읽음 · 삭제(`POST`)는 `festiCoreExchange`로 보내 2xx면 본문을 보지 않는다(204 빈 본문 포함). 로컬 저장은 없고 배지는 메모리 공유 상태다(`domain/usernotification/.spec/user-notification.md`).
+- 깃발 쓰기 · 크루(`FlagApi` · `CrewApi`)는 재시도 0이다. 깃발 상세는 로그인 세션이 있을 때만 Bearer, 크루 초대 미리보기(`GET crews/invite/{code}`)는 인증 없음, 나머지는 현재 세션 ID에 묶은 Bearer이고 서비스가 세션이 없으면 요청 전에 `AuthSessionError.NotAuthenticated`를 던진다.
+- 서버가 `Idempotency-Key`를 받는 쓰기(깃발 팔로우 `PUT` · 크루 상태 `POST`)는 `HttpRequestBuilder.idempotencyKey()`(`service/api/IdempotencyKey.kt`, `UUID.randomUUID()`)로 요청마다 새 키를 붙인다. 재시도가 없으므로 키를 저장하지 않는다.
+- `FestiCoreJson`은 `explicitNulls = false`라 null 필드를 빼고 보낸다. null을 보내야 하는 본문(`PUT me/pinned-flag {"flagId": null}`)은 그 DTO에 전용 serializer를 둔다(`PinnedFlagBody`).
