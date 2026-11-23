@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    api(project(":core:network"))
+    api(project(":core:network:interface"))
 }

@@ -4,6 +4,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 
 ## core/network
 
+- `core/network/interface`: `BaseResponse` · `NetworkError` · `festiCoreRequest` · `festiCoreExchange` · `FestiCoreJson` · WebSocket 계약(`FestiCoreWebSocket` · `FestiCoreWebSocketClient` · `WebSocketError`). `core/network/sources`: `createFestiCoreHttpClient` · `createFestiCoreWebSocketClient` · `webSocketUrl` · `coreNetworkModule`(OkHttp · ContentNegotiation · Koin). 다른 모듈은 interface만 의존하고 클라이언트를 만드는 `service/auth/sources` · `service/pack/sources`와 assembly만 sources를 의존한다.
 - 클라이언트는 `createFestiCoreHttpClient(baseUrl, engine, json, configure)`로 만든다. `baseUrl`은 app이 `BuildConfig.BASE_URL`(끝이 `/`)로 넘기고, 요청 경로는 앞 `/` 없이 쓴다(`api/v1/me`). 인증 플러그인은 `configure`로 붙인다.
 - 요청은 `HttpClient.festiCoreRequest<T> { ... }`로 보낸다. 서버 응답 래퍼 `{code, message, data}`에서 `code == "SUCCESS"`일 때 `data`를 돌려준다.
 - 실패는 `NetworkError`를 던진다.
@@ -28,7 +29,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - `connect`가 handshake까지 마친 `FestiCoreWebSocket`(send · receive(텍스트) · cancel)을 돌려준다. 오류: 101이 아닌 응답 `HandshakeRejected`, 닫힌 연결 `Closed`, 텍스트 아님 `NonTextMessage`, 입출력 `NetworkError.Offline` · `Timeout`, 인증서(`SSLException`) `NetworkError.Unknown`.
 - MockEngine은 WebSocket을 지원하지 않는다. 테스트는 `FestiCoreWebSocketClient` 가짜 구현을 쓴다. 쓰는 곳: `service/pack`(`service/pack/.spec/pack-sync.md`).
 
-## core/datastore
+## core/storage
 
 - `FirstInstallOnboardingStore`: 첫 설치 온보딩 완료 여부(DataStore Preferences).
 - `RecentSearchStore`: 사용자별 최근 검색어(DataStore Preferences, iOS와 같은 키 · `\n` 형식). 규칙은 `domain/festival/.spec/recent-search.md`.
@@ -42,7 +43,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - 경로는 `service/api`의 기능 폴더 `<X>Api`(예: `auth/AuthApi`), 요청은 `service/apiendpoint`의 같은 폴더 `<X>Request`(예: `auth/AuthRequest`: login · refresh · me · patchMe), 요청 본문은 `<X>RequestBody.kt`다. iOS `Service/API` · `Service/APIEndpoint`와 같다. `<X>Request`는 응답 타입을 모른다: 축제 · 크루 · 깃발 · 알림 요청은 `suspend inline fun <reified T>`로 응답 타입을 호출하는 쪽에서 받고(iOS `networkClient.request(_:as:)`처럼), 응답 DTO는 `domain/*/sources/model/dto`에 있다. 인증 응답 DTO(`AuthDto.kt`)만 `service/auth`가 토큰 갱신에 쓰므로 `service/api`에 남는다. Bearer가 필요한 요청은 `bearerAuthorization(expectedSessionId)` 속성으로 표시하고, 표시가 있는 요청에만 인증 플러그인이 토큰을 붙인다. refresh는 표시가 없어 플러그인을 거치지 않는다.
 - 세션은 `{sessionId, revision, accessToken, refreshToken}` JSON 하나로 `SecureStorage` 한 키에 저장한다(`CredentialStore`). 저장 · 갱신 · 삭제는 `(sessionId, revision)` compare-and-set으로만 한다.
 - 401은 `TokenRefresher`(Mutex) 한 경로로만 갱신한다. 세션이 없거나 sessionId가 바뀌면 재전송하지 않고 `AuthSessionError.NotAuthenticated`, revision만 바뀌었으면 refresh 없이 현재 토큰으로 한 번 재요청한다. refresh 401은 세션을 지우고 `SessionExpiryEvents`에 한 번 알린다. 오프라인 · 5xx는 세션을 유지하고 그 `NetworkError`로 실패한다.
-- 세션이 없거나 기대 sessionId와 다른 Bearer 요청은 보내지 않는다. 공개 API는 `AuthSession`(isLoggedIn · currentSessionId · saveLogin · clear)과 `SessionExpiryEvents`다.
+- 세션이 없거나 기대 sessionId와 다른 Bearer 요청은 보내지 않는다. 공개 API는 `service/auth/interface`의 `AuthSession`(isLoggedIn · currentSessionId · saveLogin · clear · clearIfCurrent)과 `SessionExpiryEvents`(인터페이스)다. 구현 `AuthSessionImpl` · `SessionExpiryEventsImpl`은 `service/auth/sources`에 있고 Koin은 인터페이스 타입으로 등록한다.
 - HttpClient는 `serviceAuthModule(baseUrl)`이 인증 플러그인을 붙여 등록하고, app은 `BuildConfig.BASE_URL`만 넘긴다.
 - 내 알림(`UserNotificationRequest`, `domain/usernotification`)은 모든 요청을 현재 세션 ID에 묶어 보낸다(`bearerAuthorization(expectedSessionId)`, 재시도 0). 읽음 · 삭제(`POST`)는 `festiCoreExchange`로 보내 2xx면 본문을 보지 않는다(204 빈 본문 포함). 로컬 저장은 없고 배지는 메모리 공유 상태다(`domain/usernotification/.spec/user-notification.md`).
 - 깃발 쓰기 · 크루(`FlagRequest` · `CrewRequest`)는 재시도 0이다. 깃발 상세는 로그인 세션이 있을 때만 Bearer, 크루 초대 미리보기(`GET crews/invite/{code}`)는 인증 없음, 나머지는 현재 세션 ID에 묶은 Bearer이고 `FestivalCrewRepositoryImpl` · `FestivalFlagDetailRepositoryImpl`이 요청을 직접 부르며 세션이 없으면 요청 전에 `AuthSessionError.NotAuthenticated`를 던진다.

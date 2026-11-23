@@ -17,8 +17,11 @@ feature/featureassembly           feature Koin 목록 (iOS `Feature/FeatureAssem
 domain/{기능}/interface           entity/ · <기능>/(Repository · UseCase 인터페이스) (순수 Kotlin)
 domain/{기능}/sources             <기능>/(UseCase 구현) · repository/ · model/{dto,mapper} · di/
 service/{이름}                    API 경로 · 인증 세션 · 분석 등 앱 서비스
+service/{pack,device,auth}/interface  계약 · 공개 타입 (iOS `Service/*/Interface`)
+service/{pack,device,auth}/sources    구현 · di/ (iOS `Service/*/Sources`)
 service/serviceassembly           service Koin 목록 (iOS `Service/ServiceAssembly`)
-core/{이름}                       network · datastore · logger · utility
+core/{이름}                       network · storage · logger · utility
+core/network/{interface,sources}  요청 함수 · 오류 · JSON · WebSocket 계약 / HttpClient · WebSocket 구현 · di/
 core/coreassembly                 core Koin 목록 (iOS `Core/CoreAssembly`)
 ui/{이름}                         designkit(토큰 · 컴포넌트) · sharedui · animation
 build-logic/                      convention plugin
@@ -33,11 +36,15 @@ app → feature/*/sources → feature/*/interface
                         → domain/*/interface
                         → ui/*
 app → domain/*/sources → domain/*/interface
-                       → service/apiendpoint · service/auth · service/pack → core/*
+                       → service/apiendpoint · service/{auth,pack,device}/interface → core/network/interface · core/*
 service/festivalcatalog → domain/festival/sources (서비스 계약 · 응답 DTO, iOS `FestiCoreFestivalCatalog → FestivalDomain`)
 app → core/coreassembly · service/serviceassembly · feature/featureassembly  (Koin 목록만, 정의 없음)
-app → service/auth · core/*  (루트 Coordinator가 세션 · 저장소를 직접 쓴다)
+app → service/auth/interface · core/*  (루트 Coordinator가 세션 · 저장소를 직접 쓴다)
+*assembly → service/*/sources · core/network/sources
+service/auth/sources · service/pack/sources → core/network/sources (createFestiCoreHttpClient · createFestiCoreWebSocketClient)
 ```
+
+- `service/{pack,device,auth}` · `core/network`의 `sources`는 main(`implementation`/`api`)으로 `*assembly` · app · `service/auth/sources` · `service/pack/sources`만 의존한다. 테스트는 `testImplementation(...:sources)` 허용(`check-boundaries`). 패키지는 interface · sources가 같은 `io.festicore.service.pack` 등을 같이 쓴다.
 
 - 응답 DTO는 `domain/*/sources/model/dto`, DTO → Entity 매핑은 `model/mapper`(iOS `Sources/Model/{DTO,Mapper}`). `service/apiendpoint`의 `<X>Request`는 요청만 만들고 응답은 `reified T`로 받아, 호출하는 쪽(Repository · 서비스 구현)이 DTO 타입으로 디코딩한다. 인증 응답(`AuthDto.kt`)만 `service/auth`(토큰 갱신)가 쓰므로 `service/api`에 남는다.
 - 서비스 계약(`FestivalCatalogService` · `FestivalLiveBoardService` · `FestivalOfficialNewsService` · `FestivalScheduleService` · `FestivalFlagFollowService`)과 서비스 오류는 iOS는 `FestivalDomain/Interface`에 있지만 Android 계약은 DTO를 돌려주므로 DTO와 같은 `domain/festival/sources/service`에 둔다(interface에 두면 interface → sources 순환). 구현은 `service/festivalcatalog`의 `NetworkFestival*Service`.
@@ -67,14 +74,14 @@ app → service/auth · core/*  (루트 Coordinator가 세션 · 저장소를 �
 | `Domain/{Bearer,Notice}Domain` | 없음 | 아직 옮기지 않았다 |
 | `Service/API` | `service/api` | 기능 폴더(`auth` · `crew` · `festival` · `flag` · `usernotification`)마다 경로 `<X>Api`(iOS `<X>API`, 예: `crew/CrewApi`), `base/ApiAuthorization.kt`(`bearerAuthorization` · `AuthSessionError`). 응답 DTO는 `domain/*/sources/model/dto`로 옮겼고, 인증 응답 `AuthDto.kt`만 `service/auth`가 쓰므로 루트 패키지 `io.festicore.service.api`에 남는다 |
 | `Service/APIEndpoint` | `service/apiendpoint` | 같은 기능 폴더에 Ktor 요청 `<X>Request`(iOS `<X>Request`, 예: `crew/CrewRequest`)와 요청 본문 `<X>RequestBody.kt`(한 클래스면 클래스 이름 파일, 예: `festival/FestivalScheduleReplaceBody.kt`), 쓰기 요청 멱등 키 `common/IdempotencyKey.kt`. Koin은 `serviceApiEndpointModule`. `service/api`를 `api`로 노출한다 |
-| `Service/FestiCoreAuth` | `service/auth` | 세션 · 토큰 갱신 |
+| `Service/FestiCoreAuth` | `service/auth/{interface,sources}` | 세션 · 토큰 갱신. interface: `AuthSession` · `SessionExpiry` · `SessionExpiryEvents`(iOS `AuthSessionExpiryClient`). sources: `AuthSessionImpl` · `SessionExpiryEventsImpl` · `CredentialStore` · `TokenRefresher` · 인증 플러그인 · `serviceAuthModule` |
 | `Service/FestiCoreAnalytics` | 없음 | 아직 옮기지 않았다. 분석을 옮기는 PR에서 `service/analytics`로 만든다 |
 | `Service/FestiCoreConfig` | 없음 | Android는 `google-services` 플러그인이 Firebase를 자동 초기화해 옮길 코드가 없다 |
-| `Service/FestiCoreDevice` · `FestiCorePack` | `service/{device,pack}` | `service/device`: 설치 기기 ID(`DeviceInstallationService`, `SecureStorage` 키 `deviceID`)만 옮겼다. 서버 기기 등록은 아직. `service/pack`: 팩 WebSocket 동기화(`PackSyncService` · `NetworkPackSyncService` · `PackWire` · `ReconnectBackoff`)와 축제별 JSON 파일 저장(`PackCache`, `AtomicFile`, `filesDir/festicore/packs/{id}.json`). `servicePackModule(baseUrl)`. 규칙은 `service/pack/.spec/pack-sync.md` |
+| `Service/FestiCoreDevice` · `FestiCorePack` | `service/{device,pack}/{interface,sources}` | `service/device`: 설치 기기 ID(interface `DeviceInstallationService`, sources `DeviceInstallationServiceImpl`, `SecureStorage` 키 `deviceID`)만 옮겼다. 서버 기기 등록은 아직. `service/pack`: 팩 WebSocket 동기화(interface `PackSyncService.kt` 계약 · 결과 · 오류, sources `NetworkPackSyncService` · `PackWire` · `ReconnectBackoff`)와 축제별 JSON 파일 저장(`PackCache`, `AtomicFile`, `filesDir/festicore/packs/{id}.json`). `servicePackModule(baseUrl)`. 규칙은 `service/pack/.spec/pack-sync.md` |
 | `Service/FestiCoreFestivalCatalog` | `service/festivalcatalog` | `domain/festival/sources/service`의 계약 구현 `NetworkFestivalCatalogService`(목록 조회 · 전체 갱신 · 상세 `festivalDetail`) · `NetworkFestivalLiveBoardService`(세션별 ETag · 429 대기 · 마지막 조회 결과(`cachedFetch`) 메모리 캐시) · `NetworkFestivalOfficialNewsService` · `NetworkFestivalScheduleService`(내 일정 읽기 · 바꾸기) · `NetworkFestivalFlagFollowService`, JSON 파일 캐시 `FestivalCatalogCache`(`AtomicFile`, `filesDir/festicore/festival-catalog.json`) · 썸네일 주소 결합 `FestivalImageUrlResolver`. `domain/festival/sources`(계약 · DTO) · `service/auth` · `service/device` 의존. 크루 · 깃발 상세 · 신고 · 대표 깃발 요청은 iOS처럼 `FestivalCrewRepositoryImpl` · `FestivalFlagDetailRepositoryImpl`이 `CrewRequest` · `FlagRequest`를 직접 부른다. 캐시 규칙은 `service/festivalcatalog/.spec/catalog-cache.md`, 라이브 규칙은 `domain/festival/.spec/live-board.md` |
-| `Core/FestiCoreNetwork` | `core/network` | Ktor. WebSocket은 `FestiCoreWebSocketClient`(Ktor `WebSockets` 플러그인 + OkHttp 엔진) |
-| `Core/FestiCoreStorage` | `core/datastore` | 보안 값 · 설정. Room 모듈(`core/database`)은 아직 없다. 라이브 보드 선택 축제 · 팔로우 안내 숨김은 `LiveBoardPreferenceStore`(iOS `UserDefaults` 키 그대로), 대기 딥링크는 `PendingDeeplinkStore`(키 `FestiCore.pendingDeeplink`) |
-| `Core/FestiCoreLogger` · `FestiCoreUtility` | `core/{logger,utility}` | `core/utility`: 딥링크 경로 · 파서(`FestiCoreDeeplink` · `FestiCoreDeeplinkParser`, 순수 Kotlin). 대기 딥링크는 `core/datastore` `PendingDeeplinkStore`. 규칙은 `core/utility/.spec/deeplink.md` |
+| `Core/FestiCoreNetwork` | `core/network/{interface,sources}` | Ktor. interface: `BaseResponse` · `NetworkError` · `festiCoreRequest` · `FestiCoreJson` · `FestiCoreWebSocket` · `FestiCoreWebSocketClient` · `WebSocketError`. sources: `createFestiCoreHttpClient` · `createFestiCoreWebSocketClient`(Ktor `WebSockets` 플러그인 + OkHttp 엔진) · `coreNetworkModule` |
+| `Core/FestiCoreStorage` | `core/storage` | 보안 값 · 설정(단일 모듈, `coreStorageModule`). Room(DB)도 이 모듈에 두되 아직 없다. 라이브 보드 선택 축제 · 팔로우 안내 숨김은 `LiveBoardPreferenceStore`(iOS `UserDefaults` 키 그대로), 대기 딥링크는 `PendingDeeplinkStore`(키 `FestiCore.pendingDeeplink`) |
+| `Core/FestiCoreLogger` · `FestiCoreUtility` | `core/{logger,utility}` | `core/utility`: 딥링크 경로 · 파서(`FestiCoreDeeplink` · `FestiCoreDeeplinkParser`, 순수 Kotlin). 대기 딥링크는 `core/storage` `PendingDeeplinkStore`. 규칙은 `core/utility/.spec/deeplink.md` |
 | `UI/FestiCoreDesignKit` · `UI/FestiCoreDesignSystem` | `ui/designkit` | 토큰은 FestiCore-DesignSystem에서 생성 |
 | `UI/FestiCoreSharedUI` | `ui/sharedui` | `FCRemoteImage`(원격 이미지, Coil 3 `coil-compose` + `coil-network-okhttp`, Apache-2.0) · `FCSetSheet`(공연 상세 시트 내용) · 토스트 프리셋 `FCToastItems.scheduleAdded` · 신고 시트 `FCReportSheet`를 옮겼다. 로더는 Koin이 아닌 Coil 싱글톤이고 `app`이 `installFestiCoreImageLoader`로 설정한다. 동작은 `ui/sharedui/.spec/remote-image.md`. SVG 처리기 · 나머지 토스트 프리셋은 아직 옮기지 않았다 |
 | `UI/FestiCoreAnimation` | `ui/animation` | `FestiCoreLottieView` · `FestiCoreAnimationAsset`(`lottie-compose`, Apache-2.0). JSON은 iOS `Resources`와 같은 파일을 `res/raw`에 둔다. 원격 · `.lottie` 소스와 GIF(`FestiCoreAnimationView`)는 아직 옮기지 않았다 |

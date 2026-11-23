@@ -1,8 +1,8 @@
 package io.festicore.domain.usernotification.sources
-import io.festicore.core.datastore.SecureStorage
 import io.festicore.core.network.BaseResponse
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.di.coreNetworkModule
+import io.festicore.core.storage.SecureStorage
 import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
 import io.festicore.domain.usernotification.entity.UserNotificationError
 import io.festicore.domain.usernotification.entity.UserNotificationPage

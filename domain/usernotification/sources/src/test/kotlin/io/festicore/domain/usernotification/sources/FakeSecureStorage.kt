@@ -1,6 +1,6 @@
 package io.festicore.domain.usernotification.sources
 
-import io.festicore.core.datastore.SecureStorage
+import io.festicore.core.storage.SecureStorage
 import java.util.concurrent.ConcurrentHashMap
 
 /** 메모리 [SecureStorage]. Koin 모듈 해석 확인에만 쓴다. */

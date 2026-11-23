@@ -101,7 +101,7 @@ fun AuthFlow(coordinator: AuthCoordinator = koinViewModel(), onFinished: () -> U
 iOS 4단 그대로 둔다(규칙: `core/utility/.spec/deeplink.md`).
 
 1. 파싱: `core/utility` `FestiCoreDeeplink` · `FestiCoreDeeplinkParser`(스킴 `festicore`).
-2. 대기: `core/datastore` `PendingDeeplinkStore`(최신 하나, 꺼내면 비움).
+2. 대기: `core/storage` `PendingDeeplinkStore`(최신 하나, 꺼내면 비움).
 3. 브리지: `app` `AppDeeplinkBridge`. `MainActivity`(`launchMode="singleTop"`)의 `onCreate` · `onNewIntent` `ACTION_VIEW` 인텐트를 받아 대기에 넣고 신호를 보낸다.
 4. 라우팅: `AppCoordinator`가 홈이고 덮개가 없을 때만 꺼내 `OpenDeeplink` SideEffect로 보낸다. 홈 진입 · 덮개 닫힘 때 다시 꺼낸다. `MainTabCoordinator.open`이 탭을 고르고 라이브 경로는 `FestivalCoordinator.onDeeplinkFestival(List)Opened`로 넘긴다.
 

@@ -19,7 +19,7 @@
 - 모듈 의존 방향(`.claude/docs/architecture.md`)과 기능 모듈 이름이 iOS와 같은가
 - feature가 다른 feature · domain의 `sources`를 의존하지 않는가
 - 화면 전환이 기능별 Coordinator + Navigation 3로만 이뤄지는가
-- 보안 값 · 설정값 · DB 접근이 `core/datastore` · `core/database`에서만 일어나는가
+- 보안 값 · 설정값 · DB 접근이 `core/storage`에서만 일어나는가
 - 옮긴 화면의 동작(상태 · 문구 · 오류 처리)이 iOS 대응 파일과 같은가
 - 동작이 바뀌었으면 소유 모듈의 `.spec/`이 같은 PR에서 바뀌었는가
 - 주석이 이유 · 제약 · 외부 계약 · 보안 주의만 담고 있는가

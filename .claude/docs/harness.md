@@ -88,13 +88,16 @@ python3 -m unittest discover -s .claude/hooks/tests
 
 | 규칙                                                                             | 허용 위치                                             |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Keystore · `EncryptedSharedPreferences`                                          | `core/datastore`                                      |
-| `SharedPreferences` · DataStore                                                  | `core/datastore`                                      |
-| Room                                                                             | `core/database`                                       |
+| Keystore · `EncryptedSharedPreferences`                                          | `core/storage`                                        |
+| `SharedPreferences` · DataStore                                                  | `core/storage`                                        |
+| Room                                                                             | `core/storage`                                        |
 | feature `build.gradle.kts`에서 `*.sources` 의존                                  | `feature/featureassembly` (목록만) · app              |
+| `implementation`/`api`로 `:service:{pack,device,auth}:sources` · `:core:network:sources` 의존 | `*assembly` · app · `service/auth/sources` · `service/pack/sources` (테스트는 `testImplementation` 허용) |
 | `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`)                          |
 | `service/apiendpoint`에서 `io.festicore.domain.*` import (응답 DTO)              | 없음 (호출하는 쪽이 디코딩)                           |
 | domain `build.gradle.kts`에서 `:service:festivalcatalog` main 의존(`testImplementation` 허용) | 없음 (`service/festivalcatalog`가 domain 계약을 구현) |
+| `domain/*/interface` `.kt`에서 `android.*` · `androidx.*` · Koin · Ktor import | 없음 (순수 Kotlin, 구현은 sources) |
+| feature `build.gradle.kts`에서 `service` · `core` 모듈 의존 | `feature/featureassembly` (목록만) |
 | `*assembly` 모듈 `.kt`에서 `single` · `factory` · `viewModel` · `scoped` · `worker` · `module { }` 정의 | 없음 (각 모듈 `di/`, assembly는 목록만)               |
 
 재시도 한도:

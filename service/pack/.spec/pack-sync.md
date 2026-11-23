@@ -47,7 +47,7 @@ iOS 대응: `Projects/Service/FestiCorePack/{Interface/PackSyncService.swift,Int
 - WebSocket은 Ktor `WebSockets` 플러그인(결정 D3 (a)). 플러그인은 `ktor-client-core` 3.6.1 안(`io.ktor.client.plugins.websocket`)에 있어 새 아티팩트가 없다(`ktor-client-websockets`는 core만 의존하는 빈 묶음). 엔진은 기존 `ktor-client-okhttp`. 앱 API `HttpClient`와 따로 만들어 인증 · JSON 플러그인을 거치지 않는다.
 - MockEngine은 WebSocket을 지원하지 않는다. 단위 테스트는 가짜 `FestiCoreWebSocketClient` · 소켓(`ScriptSocket`)으로 하고 실서버를 부르지 않는다. 실제 Ktor 연결은 아래 stage 확인으로만 봤다.
 - base64는 `java.util.Base64`(minSdk 26). 설계 표의 `android.util.Base64`(minSdk 24 기준)와 다르다. sha256은 `MessageDigest("SHA-256")`.
-- 팩 파일은 공개 팩이라 `core/datastore`로 모으지 않는다(목록 캐시와 같은 판단, `service/festivalcatalog/.spec/catalog-cache.md`).
+- 팩 파일은 공개 팩이라 `core/storage`로 모으지 않는다(목록 캐시와 같은 판단, `service/festivalcatalog/.spec/catalog-cache.md`).
 
 ## stage 확인 (2026-11-22, 읽기 전용 `pack.get`만)
 

@@ -12,10 +12,10 @@ android {
 dependencies {
     val libs = catalog
     implementation(project(":core:logger"))
-    implementation(project(":core:datastore"))
+    implementation(project(":core:storage"))
     implementation(project(":core:utility"))
     implementation(project(":core:coreassembly"))
-    implementation(project(":service:auth"))
+    implementation(project(":service:auth:interface"))
     implementation(project(":service:serviceassembly"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":domain:festival:sources"))
