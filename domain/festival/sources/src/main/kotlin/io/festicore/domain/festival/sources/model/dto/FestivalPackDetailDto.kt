@@ -6,12 +6,11 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.doubleOrNull
@@ -130,7 +129,8 @@ private object FestivalPackChecklistListSerializer :
 object FestivalPackRulesOrNullSerializer : OrNullSerializer<List<String?>>(ListSerializer(String.serializer().nullable))
 
 object FestivalPackCoordinateSerializer : KSerializer<FestivalPackCoordinateDto?> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("FestivalPackCoordinate", PrimitiveKind.STRING)
+    // 객체 · 다른 형식을 모두 JSON 요소로 받는다. 원시 문자열 서술자로 두면 트리 디코딩에서 상태가 어긋나 상위 키까지 깨진다.
+    override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
 
     override fun serialize(encoder: Encoder, value: FestivalPackCoordinateDto?) = throw SerializationException("읽기 전용")
 
