@@ -3,6 +3,8 @@ package io.festicore.feature.profile.di
 import io.festicore.feature.profile.account.AccountSettingsViewModel
 import io.festicore.feature.profile.appearance.AppearanceSettingsViewModel
 import io.festicore.feature.profile.main.ProfileViewModel
+import io.festicore.feature.profile.notice.NoticeDetailViewModel
+import io.festicore.feature.profile.notice.NoticeListViewModel
 import io.festicore.feature.profile.settings.SettingsHomeViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -21,4 +23,8 @@ val profileFeatureModule = module {
     viewModelOf(::AppearanceSettingsViewModel)
     // 인자: 화면을 만들 때의 계정 상태(AccountState). 닉네임 저장은 domain/auth `AuthRepository.updateNickname`.
     viewModel { params -> AccountSettingsViewModel(initialAccount = params.get(), authRepository = get()) }
+    // 공지 읽기는 domain/notice `NoticeUseCase`(domainNoticeModule).
+    viewModelOf(::NoticeListViewModel)
+    // 인자: 목록에서 고른 공지 id · 제목.
+    viewModel { (id: String, title: String) -> NoticeDetailViewModel(id = id, title = title, noticeUseCase = get()) }
 }
