@@ -20,12 +20,14 @@ data class FestivalCoordinatorState(
     val liveBoardFestivalIds: Set<String> = emptySet(),
     /** 알림함에서 연 축제. 보드가 받아 그 축제로 바꾼 뒤 비운다(설계 E8). */
     val pendingBoardFestivalId: String? = null,
-    /** 보드가 마지막으로 알린 깃발 탭 기준 값. 보드가 스택에 없으면 쓰지 않는다([flagBoard]). */
+    /** 보드가 마지막으로 알린 깃발 탭 기준 값. 알린 보드 경로가 지금 맨 위 보드가 아니면 쓰지 않는다([flagBoard]). */
     val liveBoard: FlagBoard? = null,
+    /** [liveBoard]를 알린 보드 경로. */
+    val liveBoardRoute: FestivalRoute.LiveBoard? = null,
 ) {
     /** 깃발 탭이 따르는 보드(iOS `flagBoard`). 존 지도 · 알림함 · 크루가 위에 있어도 그 아래 보드를 기준으로 한다. 보드가 없으면 `null`. */
     val flagBoard: FlagBoard?
-        get() = liveBoard?.takeIf { routes.any { it is FestivalRoute.LiveBoard } }
+        get() = liveBoard?.takeIf { liveBoardRoute != null && routes.lastOrNull { it is FestivalRoute.LiveBoard } == liveBoardRoute }
 
     /**
      * 탭 바를 숨길지(iOS `MainTabCoordinator.shouldHideTabBar`의 라이브 탭 부분). 스택이 목록뿐이면 숨기고,
@@ -86,8 +88,8 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
             state.copy(
                 selectedFestivalId = festivalId,
                 routes = if (state.routes.lastOrNull() == route) state.routes else state.routes + route,
-                // 새 보드가 값을 알리기 전에 깃발 탭이 이전 축제 보드를 따르지 않게 한다.
-                liveBoard = state.liveBoard?.takeIf { it.festivalId == festivalId },
+                // 새 보드 화면이면 그 보드가 값을 알리기 전까지 깃발 탭이 이전 보드 값을 따르지 않게 비운다.
+                liveBoard = if (state.routes.lastOrNull() == route) state.liveBoard else null,
             )
         }
     }
@@ -200,8 +202,12 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
     }
 
     /** 보드의 깃발 탭 기준 값이 바뀌었다(iOS 깃발 탭 동기화가 읽는 `flagBoard`). */
-    fun onLiveBoardChanged(board: FlagBoard) = intent {
-        if (state.liveBoard != board) reduce { state.copy(liveBoard = board) }
+    fun onLiveBoardChanged(route: FestivalRoute.LiveBoard, board: FlagBoard) = intent {
+        // 빠진 보드 화면의 늦은 값은 받지 않는다. 맨 위 보드 경로가 알린 값만 받는다.
+        if (state.routes.lastOrNull { it is FestivalRoute.LiveBoard } != route) return@intent
+        if (state.liveBoard != board || state.liveBoardRoute != route) {
+            reduce { state.copy(liveBoard = board, liveBoardRoute = route) }
+        }
     }
 
     /** 보드가 바꿀 수 있는 축제 목록이 바뀌었다(알림 열기 판단용). */
@@ -245,7 +251,8 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
                 selectedFestivalId = festivalId,
                 isLiveBoardPresentingModal = false,
                 pendingBoardFestivalId = if (state.routes == routes) festivalId else null,
-                liveBoard = state.liveBoard?.takeIf { it.festivalId == festivalId },
+                // 경로를 새로 만들면 새 보드 화면이다. 그 보드가 알리기 전까지 이전 값을 비운다.
+                liveBoard = if (state.routes == routes) state.liveBoard else null,
             )
         }
     }

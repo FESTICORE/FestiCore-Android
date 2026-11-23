@@ -84,11 +84,11 @@ class FestivalCoordinatorTest {
     fun `깃발 탭은 스택에 보드가 있을 때만 보드가 알린 값을 따른다`() = runTest {
         val flagBoard = FlagBoard("fst_1", FlagDetailContext(accountId = "user-a"))
         FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
-            containerHost.onLiveBoardChanged(flagBoard)
+            containerHost.onLiveBoardChanged(board, flagBoard)
             val reported = awaitState()
             assertEquals(flagBoard, reported.flagBoard)
             // 같은 값이면 상태를 바꾸지 않는다.
-            containerHost.onLiveBoardChanged(flagBoard)
+            containerHost.onLiveBoardChanged(board, flagBoard)
             // 존 지도가 위에 있어도 그 아래 보드를 따른다.
             containerHost.onLiveBoardBoundary(LiveBoardBoundary.ZoneMap("fst_1", "zon_a"))
             assertEquals(flagBoard, awaitState().flagBoard)
@@ -98,17 +98,35 @@ class FestivalCoordinatorTest {
     }
 
     @Test
-    fun `다른 축제 보드로 바뀌면 새 보드가 알리기 전까지 깃발 탭은 이전 보드를 따르지 않는다`() = runTest {
+    fun `새 보드 화면을 쌓으면 그 보드가 알리기 전까지 깃발 탭은 이전 보드 값을 따르지 않는다`() = runTest {
         val flagBoard = FlagBoard("fst_1", FlagDetailContext(accountId = "user-a"))
         FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
-            containerHost.onLiveBoardChanged(flagBoard)
+            containerHost.onLiveBoardChanged(board, flagBoard)
             assertEquals(flagBoard, awaitState().flagBoard)
-            containerHost.onDeeplinkFestivalOpened("fst_2")
-            assertEquals(null, awaitState().flagBoard)
-            containerHost.onLiveBoardChanged(flagBoard)
+            // 목록으로 갔다가 같은 축제 보드를 다시 열어도 새 보드 화면이다.
+            containerHost.onDeeplinkFestivalListOpened()
             awaitState()
+            containerHost.onDeeplinkFestivalOpened("fst_1")
+            assertEquals(null, awaitState().flagBoard)
+            // 다른 축제를 고르면 위에 쌓인 새 보드가 알리기 전까지 비어 있다.
+            containerHost.onLiveBoardChanged(board, flagBoard)
+            assertEquals(flagBoard, awaitState().flagBoard)
             containerHost.onFestivalSelected("fst_3")
             assertEquals(null, awaitState().flagBoard)
+        }
+    }
+
+    @Test
+    fun `맨 위 보드가 아닌 보드 화면의 늦은 값은 받지 않는다`() = runTest {
+        val stale = FlagBoard("fst_1", FlagDetailContext(accountId = "user-a"))
+        val fresh = FlagBoard("fst_2", FlagDetailContext(accountId = "user-a"))
+        val newBoard = FestivalRoute.LiveBoard("fst_2")
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
+            containerHost.onDeeplinkFestivalOpened("fst_2")
+            awaitState()
+            containerHost.onLiveBoardChanged(board, stale)
+            containerHost.onLiveBoardChanged(newBoard, fresh)
+            assertEquals(fresh, awaitState().flagBoard)
         }
     }
 

@@ -89,7 +89,7 @@ fun FestivalFlow(
                         boardViewModel.container.stateFlow
                             .map(FlagBoard::of)
                             .distinctUntilChanged()
-                            .collect { coordinator.onLiveBoardChanged(it) }
+                            .collect { coordinator.onLiveBoardChanged(key, it) }
                     }
                     LiveBoardScreen(
                         viewModel = boardViewModel,
