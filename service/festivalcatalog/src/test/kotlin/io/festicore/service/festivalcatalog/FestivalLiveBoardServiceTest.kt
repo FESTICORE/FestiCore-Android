@@ -2,7 +2,7 @@ package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.service.api.FestivalApi
+import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
@@ -32,7 +32,7 @@ class FestivalLiveBoardServiceTest {
     /** `/flags` 응답 시 할 일(세션 바뀜 흉내). */
     private var onFlags: () -> Unit = {}
 
-    private val api = FestivalApi(
+    private val api = FestivalRequest(
         createFestiCoreHttpClient(
             baseUrl = "https://example.test/",
             engine = MockEngine { request ->

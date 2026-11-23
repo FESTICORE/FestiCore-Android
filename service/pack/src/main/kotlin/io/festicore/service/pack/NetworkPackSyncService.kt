@@ -3,7 +3,7 @@ package io.festicore.service.pack
 import io.festicore.core.network.FestiCoreWebSocket
 import io.festicore.core.network.FestiCoreWebSocketClient
 import io.festicore.core.network.WebSocketError
-import io.festicore.service.api.FestivalApiPath
+import io.festicore.service.api.festival.FestivalApi
 import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
@@ -291,7 +291,7 @@ class NetworkPackSyncService(
 
     /** 앱 서버 주소가 없거나 wss로 바꿀 수 없으면 [PackSyncError.Unconfigured]. */
     private suspend fun connect(): FestiCoreWebSocket = try {
-        client.connect(FestivalApiPath.PACK_UPDATES)
+        client.connect(FestivalApi.PACK_UPDATES)
     } catch (_: WebSocketError.InvalidUrl) {
         throw PackSyncError.Unconfigured()
     }

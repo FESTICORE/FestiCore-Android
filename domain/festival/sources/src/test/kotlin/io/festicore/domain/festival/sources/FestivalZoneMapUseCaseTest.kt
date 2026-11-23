@@ -7,7 +7,7 @@ import io.festicore.domain.festival.FestivalCatalogPage
 import io.festicore.domain.festival.FestivalCatalogRepository
 import io.festicore.domain.festival.FestivalPackError
 import io.festicore.domain.festival.FestivalZoneMap
-import io.festicore.service.api.FestivalApi
+import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackDownloadEvent as ServiceEvent
 import io.festicore.service.pack.PackSyncResult as ServiceResult
@@ -34,7 +34,7 @@ class FestivalZoneMapUseCaseTest {
     private var versionBody =
         """{"code":"SUCCESS","data":{"packVersion":9,"packUpdatedAt":"2026-11-08T00:00:00Z","etag":"\"cdm7-v9\"",""" +
             """"mapVersion":"zm-new"}}"""
-    private val api = FestivalApi(
+    private val api = FestivalRequest(
         createFestiCoreHttpClient(
             baseUrl = "https://example.test/",
             engine = MockEngine { request ->

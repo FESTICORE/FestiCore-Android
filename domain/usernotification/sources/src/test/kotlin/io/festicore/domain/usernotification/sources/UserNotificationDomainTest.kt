@@ -12,7 +12,7 @@ import io.festicore.domain.usernotification.UserNotificationUseCase
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
 import io.festicore.service.api.UserNotificationItemDto
 import io.festicore.service.api.UserNotificationListDto
-import io.festicore.service.api.di.serviceApiModule
+import io.festicore.service.apiendpoint.di.serviceApiEndpointModule
 import io.festicore.service.auth.di.serviceAuthModule
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.SerializationException
@@ -93,7 +93,7 @@ class UserNotificationDomainTest {
             koinApplication {
                 modules(
                     coreNetworkModule,
-                    serviceApiModule,
+                    serviceApiEndpointModule,
                     serviceAuthModule("https://example.test/"),
                     module { single<SecureStorage> { FakeSecureStorage() } },
                     domainUserNotificationModule,

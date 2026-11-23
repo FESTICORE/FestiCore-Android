@@ -2,7 +2,7 @@ package io.festicore.domain.festival.sources
 
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.service.api.FestivalApi
+import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.festivalcatalog.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.FestivalCatalogService
 import io.festicore.service.festivalcatalog.FestivalImageUrlResolver
@@ -28,7 +28,7 @@ class FestivalLiveBoardCacheTest {
     private var notFound = false
     private val received = Instant.parse("2026-11-22T00:00:05Z")
 
-    private val api = FestivalApi(
+    private val api = FestivalRequest(
         createFestiCoreHttpClient(
             baseUrl = "https://example.test/",
             engine = MockEngine { request ->

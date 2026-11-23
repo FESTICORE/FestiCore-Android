@@ -3,7 +3,7 @@ package io.festicore.domain.auth.sources
 import io.festicore.core.datastore.SecureStorage
 import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.domain.auth.AuthDomainError
-import io.festicore.service.api.AuthApi
+import io.festicore.service.apiendpoint.auth.AuthRequest
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.SessionExpiryEvents
 import io.festicore.service.auth.di.serviceAuthModule
@@ -38,7 +38,7 @@ class AuthRepositoryImplTest {
     private val session: AuthSession = koin.get()
 
     private val repository = AuthRepositoryImpl(
-        api = AuthApi(
+        api = AuthRequest(
             createFestiCoreHttpClient(
                 baseUrl = "https://example.test/",
                 engine = MockEngine { request ->

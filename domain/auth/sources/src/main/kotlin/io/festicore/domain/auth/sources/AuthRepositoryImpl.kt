@@ -6,11 +6,11 @@ import io.festicore.domain.auth.AuthNicknameRule
 import io.festicore.domain.auth.AuthProfile
 import io.festicore.domain.auth.AuthRepository
 import io.festicore.domain.auth.AuthUser
-import io.festicore.service.api.AuthApi
-import io.festicore.service.api.AuthLoginBody
 import io.festicore.service.api.AuthUserDto
 import io.festicore.service.api.MeResponse
-import io.festicore.service.api.SignUpBody
+import io.festicore.service.apiendpoint.auth.AuthLoginBody
+import io.festicore.service.apiendpoint.auth.AuthRequest
+import io.festicore.service.apiendpoint.auth.SignUpBody
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.SessionExpiryEvents
 import kotlin.coroutines.cancellation.CancellationException
@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.map
 
 /** iOS `AuthRepositoryImpl`. 401 뒤 세션 정리와 만료 알림은 service/auth의 토큰 갱신이 맡는다. */
 internal class AuthRepositoryImpl(
-    private val api: AuthApi,
+    private val api: AuthRequest,
     private val session: AuthSession,
     private val sessionExpiryEvents: SessionExpiryEvents,
 ) : AuthRepository {

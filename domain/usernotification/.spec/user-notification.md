@@ -42,7 +42,7 @@ iOS 대응: `Projects/Domain/UserNotificationDomain/**`, 요청 `Projects/Servic
 
 | 모듈 | 계층 | 변경 내용 |
 | --- | --- | --- |
-| `service/api` | service | `UserNotificationApiPath` · `UserNotificationApi` · DTO(`UserNotificationListDto` · `UserNotificationItemDto` · `UserNotificationCountDto` · `UserNotificationIdsBody`) · Koin |
+| `service/api` · `service/apiendpoint` | service | `UserNotificationApi`(경로) · `UserNotificationRequest` · DTO(`UserNotificationListDto` · `UserNotificationItemDto` · `UserNotificationCountDto` · `UserNotificationIdsBody`) · Koin |
 | `domain/usernotification` | domain | 신규. interface: Entity · 오류 · Repository · UseCase · 배지. sources: 저장소 · 매퍼 · 배지 저장소 · Koin |
 
 ## 영향 범위

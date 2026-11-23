@@ -1,8 +1,8 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.service.api.AuthSessionError
-import io.festicore.service.api.FlagApi
 import io.festicore.service.api.FlagFollowDto
+import io.festicore.service.api.base.AuthSessionError
+import io.festicore.service.apiendpoint.flag.FlagRequest
 
 /**
  * 깃발 팔로우(PUT + `Idempotency-Key`) · 언팔로우(DELETE). iOS `NetworkFestivalFlagFollowService`.
@@ -10,7 +10,7 @@ import io.festicore.service.api.FlagFollowDto
  * 다른 깃발 응답은 [FestivalFlagServiceError.InvalidResponse]. 나머지 실패는 그대로 던지고 재시도하지 않는다.
  */
 class FestivalFlagFollowService(
-    private val api: FlagApi,
+    private val api: FlagRequest,
     private val currentSessionId: suspend () -> String? = { null },
 ) {
     suspend fun setFollowing(following: Boolean, flagId: String): FlagFollowDto {

@@ -7,10 +7,10 @@ import io.festicore.domain.festival.FestivalFlagDetailError
 import io.festicore.domain.festival.FestivalFlagPinError
 import io.festicore.domain.festival.FestivalFlagReportError
 import io.festicore.domain.festival.FestivalFlagReportReason
-import io.festicore.service.api.BearerAuthorization
-import io.festicore.service.api.BearerAuthorizationKey
-import io.festicore.service.api.FestivalApi
-import io.festicore.service.api.FlagApi
+import io.festicore.service.api.base.BearerAuthorization
+import io.festicore.service.api.base.BearerAuthorizationKey
+import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.festicore.service.festivalcatalog.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.FestivalCatalogService
 import io.festicore.service.festivalcatalog.FestivalFlagDetailService
@@ -49,9 +49,9 @@ class FestivalFlagDetailRepositoryTest {
     )
     private val useCase = FestivalFlagDetailUseCaseImpl(
         FestivalFlagDetailRepositoryImpl(
-            FestivalFlagDetailService(FlagApi(client), currentSessionId = { sessionId }),
+            FestivalFlagDetailService(FlagRequest(client), currentSessionId = { sessionId }),
             FestivalCatalogService(
-                FestivalApi(client),
+                FestivalRequest(client),
                 FestivalCatalogCache(File("unused.json"), FestiCoreJson),
                 FestivalImageUrlResolver("https://example.test/"),
             ),

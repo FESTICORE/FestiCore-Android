@@ -2,7 +2,7 @@ package io.festicore.domain.auth.sources
 
 import io.festicore.core.network.NetworkError
 import io.festicore.domain.auth.AuthDomainError
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
 import kotlin.coroutines.cancellation.CancellationException
 
 /** 네트워크 · 세션 오류를 [AuthDomainError]로 바꾼다. 취소는 그대로 둔다. iOS `AuthDomainError+Network.swift`. */

@@ -1,7 +1,7 @@
 package io.festicore.service.auth
 
-import io.festicore.service.api.AuthSessionError
-import io.festicore.service.api.BearerAuthorizationKey
+import io.festicore.service.api.base.AuthSessionError
+import io.festicore.service.api.base.BearerAuthorizationKey
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin

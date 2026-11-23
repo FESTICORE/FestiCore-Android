@@ -4,7 +4,7 @@ import io.festicore.core.network.NetworkError
 import io.festicore.domain.festival.FestivalLiveBoardError
 import io.festicore.domain.festival.FestivalLiveBoardUseCase
 import io.festicore.domain.festival.FestivalScheduleError
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.festivalcatalog.FestivalLiveBoardServiceError
 import java.io.IOException
 import java.time.Instant

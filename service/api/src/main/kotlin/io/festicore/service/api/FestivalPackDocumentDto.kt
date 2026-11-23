@@ -44,7 +44,7 @@ data class FestivalPackDocumentDto(
 
 /** `GET api/v1/festivals/{id}/pack/version` 응답 봉투. `message`가 없을 수 있다. */
 @Serializable
-internal data class FestivalPackVersionResponseDto(
+data class FestivalPackVersionResponseDto(
     val code: String,
     val message: String? = null,
     val data: FestivalPackVersionDto? = null,

@@ -28,6 +28,9 @@ RULES = [
     ("feature는 다른 모듈의 sources를 의존하지 않는다", "feature/**/build.gradle.kts",
      [], r"projects\.\w+(\.\w+)*\.sources\b|project\(\s*\"[^\"]*:sources\"\s*\)",
      "다른 feature · domain은 interface 모듈만 의존한다. sources는 app이 연결한다"),
+    ("service:api는 요청을 보내지 않는다", "service/api/**/*.kt",
+     [], r"\bHttpClient\b|\bfestiCore(Request|Exchange)\b|\bimport org\.koin\.",
+     "service/api에는 경로 · 인증 정책 · 응답 DTO만 둔다. Ktor 요청 · Koin 등록은 service/apiendpoint에 둔다"),
 ]
 
 

@@ -1,9 +1,9 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.service.api.FlagApi
 import io.festicore.service.api.FlagDetailDto
-import io.festicore.service.api.FlagReportBody
-import io.festicore.service.api.PinnedFlagBody
+import io.festicore.service.apiendpoint.flag.FlagReportBody
+import io.festicore.service.apiendpoint.flag.FlagRequest
+import io.festicore.service.apiendpoint.flag.PinnedFlagBody
 
 /**
  * 깃발 상세(익명 허용) · 신고 · 대표 깃발 지정. iOS `FestivalFlagDetailRepositoryImpl`의 요청 부분.
@@ -11,7 +11,7 @@ import io.festicore.service.api.PinnedFlagBody
  * 나머지 실패는 [io.festicore.core.network.NetworkError] · [io.festicore.service.api.AuthSessionError] 그대로 던지고 재시도하지 않는다.
  */
 class FestivalFlagDetailService(
-    private val api: FlagApi,
+    private val api: FlagRequest,
     private val currentSessionId: suspend () -> String? = { null },
 ) {
     /** 로그인 중이면 그 세션의 Bearer를 붙인다. 익명이면 `isFollowing` · `isBearer` · `isPinned`가 null이다. */

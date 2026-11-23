@@ -8,7 +8,7 @@ plugins {
 
 dependencies {
     val libs = catalog
-    api(project(":service:api"))
+    api(project(":service:apiendpoint"))
     implementation(project(":core:datastore"))
     implementation(libs.lib("kotlinx-coroutines-core"))
 

@@ -4,7 +4,7 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
 import io.festicore.core.network.NetworkError
 import io.festicore.domain.auth.AuthDomainError
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import org.junit.Assert.assertEquals

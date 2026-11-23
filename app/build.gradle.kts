@@ -15,7 +15,7 @@ dependencies {
     implementation(project(":core:network"))
     implementation(project(":core:datastore"))
     implementation(project(":core:utility"))
-    implementation(project(":service:api"))
+    implementation(project(":service:apiendpoint"))
     implementation(project(":service:auth"))
     implementation(project(":service:device"))
     implementation(project(":service:festivalcatalog"))

@@ -1,10 +1,10 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.NetworkError
-import io.festicore.service.api.FestivalApi
 import io.festicore.service.api.FestivalItemDto
 import io.festicore.service.api.FestivalListDto
 import io.festicore.service.api.FestivalPackDocumentDto
+import io.festicore.service.apiendpoint.festival.FestivalRequest
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.withLock
  * 축제 목록 조회 · 캐시. 실패는 [NetworkError] 또는 [FestivalCatalogServiceError]. iOS `NetworkFestivalCatalogService`.
  */
 class FestivalCatalogService(
-    private val api: FestivalApi,
+    private val api: FestivalRequest,
     private val cache: FestivalCatalogCache,
     private val imageUrlResolver: FestivalImageUrlResolver,
 ) {

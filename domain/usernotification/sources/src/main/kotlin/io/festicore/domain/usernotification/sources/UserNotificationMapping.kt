@@ -4,9 +4,9 @@ import io.festicore.core.network.NetworkError
 import io.festicore.domain.usernotification.UserNotificationError
 import io.festicore.domain.usernotification.UserNotificationItem
 import io.festicore.domain.usernotification.UserNotificationPage
-import io.festicore.service.api.AuthSessionError
 import io.festicore.service.api.UserNotificationItemDto
 import io.festicore.service.api.UserNotificationListDto
+import io.festicore.service.api.base.AuthSessionError
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException

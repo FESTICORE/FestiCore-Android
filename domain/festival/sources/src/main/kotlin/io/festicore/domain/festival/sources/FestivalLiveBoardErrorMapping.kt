@@ -4,7 +4,7 @@ import io.festicore.core.network.NetworkError
 import io.festicore.domain.festival.FestivalLiveBoardError
 import io.festicore.domain.festival.FestivalSchedule
 import io.festicore.domain.festival.FestivalScheduleError
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.festivalcatalog.FestivalLiveBoardServiceError
 import io.festicore.service.festivalcatalog.FestivalScheduleServiceError
 import kotlin.coroutines.cancellation.CancellationException

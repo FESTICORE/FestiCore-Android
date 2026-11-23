@@ -4,10 +4,10 @@ import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.domain.festival.FestivalCrewError
 import io.festicore.domain.festival.FestivalCrewGatherResponse
 import io.festicore.domain.festival.FestivalCrewState
-import io.festicore.service.api.BearerAuthorization
-import io.festicore.service.api.BearerAuthorizationKey
-import io.festicore.service.api.CrewApi
-import io.festicore.service.api.IDEMPOTENCY_KEY_HEADER
+import io.festicore.service.api.base.BearerAuthorization
+import io.festicore.service.api.base.BearerAuthorizationKey
+import io.festicore.service.apiendpoint.common.IDEMPOTENCY_KEY_HEADER
+import io.festicore.service.apiendpoint.crew.CrewRequest
 import io.festicore.service.festivalcatalog.FestivalCrewService
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -43,7 +43,7 @@ class FestivalCrewRepositoryTest {
     )
     private val useCase = FestivalCrewUseCaseImpl(
         FestivalCrewRepositoryImpl(
-            FestivalCrewService(CrewApi(client), currentSessionId = { sessionId }, now = { Instant.parse("2026-11-23T01:02:03.456Z") }),
+            FestivalCrewService(CrewRequest(client), currentSessionId = { sessionId }, now = { Instant.parse("2026-11-23T01:02:03.456Z") }),
             currentUserId = { userId },
         ),
     )
