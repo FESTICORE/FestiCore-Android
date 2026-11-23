@@ -23,4 +23,15 @@ interface FestivalPackUseCase {
      * `Updated` · `NotModified`만 성공이고 `RetryAfter` · `Reconnecting`은 호출한 쪽이 실패로 본다. 실패는 [FestivalPackError].
      */
     suspend fun syncPack(festivalId: String): PackSyncResult
+
+    /**
+     * 마지막 날 종료 후 [FestivalPackRetention.DAYS]일이 지난 팩만 지우고 지운 축제 ID를 돌려준다. 종료 시각을 모르면 지우지 않는다.
+     * 한 팩을 지우지 못해도 나머지는 계속 확인한다. 내 일정 · 준비물은 남는다. iOS `deleteExpiredPacks`.
+     */
+    suspend fun deleteExpiredPacks(): List<String>
+}
+
+/** 받은 팩 보관 기간. iOS `FestivalPackRetention`. */
+object FestivalPackRetention {
+    const val DAYS = 30
 }

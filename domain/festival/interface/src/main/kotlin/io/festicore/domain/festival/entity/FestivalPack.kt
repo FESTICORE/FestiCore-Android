@@ -14,6 +14,8 @@ data class CachedFestivalPack(
     /** 서버와 마지막으로 버전을 맞춘 시각. */
     val checkedAt: Instant?,
     val document: FestivalPackDocument?,
+    /** 저장된 팩 JSON 크기(바이트). */
+    val sizeBytes: Int = 0,
 )
 
 /** 팩 맞추기 결과. iOS `PackSyncResult`. */
@@ -79,4 +81,7 @@ sealed class FestivalPackError : Exception() {
 
     /** 서버 주소 없음 · 저장소 접근 실패 등. */
     class Unavailable : FestivalPackError()
+
+    /** 서버가 바빠 재시도 지연을 알렸거나 다시 연결하는 중이다. 팩 상세 업데이트가 쓴다. iOS `retryLater`. */
+    class RetryLater : FestivalPackError()
 }

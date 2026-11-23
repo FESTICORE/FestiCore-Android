@@ -78,16 +78,24 @@ class FestivalRequest(@PublishedApi internal val client: HttpClient) {
             method = HttpMethod.Get
             url(FestivalApi.packVersion(festivalId))
         },
-        handle = { response ->
-            val text = response.bodyAsText()
-            if (!response.status.isSuccess()) {
-                val error = text.errorBodyOrNull()
-                throw NetworkError.Http(response.status.value, error?.code, error?.message)
-            }
-            val body = FestiCoreJson.decodeFromString(PackVersionResponse.serializer(dataSerializer), text)
-            if (body.code != SUCCESS) throw NetworkError.InvalidResponse(body.code, body.message.orEmpty())
-            body.data ?: throw NetworkError.Decoding(SerializationException("data가 없습니다"))
+        handle = { response -> response.packData(dataSerializer) },
+    )
+
+    /**
+     * `GET api/v1/festivals/{id}/pack/changes?from=`. 인증 없음. 봉투는 [packVersion]과 같게 `code` · `data`만 읽는다
+     * (iOS `FestivalPackRequest.changes` · `FestivalPackChangesResponseDTO`).
+     */
+    suspend fun <T> packChanges(
+        festivalId: String,
+        fromVersion: Int,
+        dataSerializer: KSerializer<T>,
+    ): T = client.festiCoreExchange(
+        block = {
+            method = HttpMethod.Get
+            url(FestivalApi.packChanges(festivalId))
+            parameter("from", fromVersion)
         },
+        handle = { response -> response.packData(dataSerializer) },
     )
 
     /** `GET api/v1/festivals/{id}/flags`. 인증 없음. */
@@ -149,6 +157,18 @@ class FestivalRequest(@PublishedApi internal val client: HttpClient) {
         }
     }
 
+    /** `code` · `data` 봉투. `code != "SUCCESS"`면 [NetworkError.InvalidResponse], 2xx가 아니면 [NetworkError.Http]. */
+    private suspend fun <T> HttpResponse.packData(dataSerializer: KSerializer<T>): T {
+        val text = bodyAsText()
+        if (!status.isSuccess()) {
+            val error = text.errorBodyOrNull()
+            throw NetworkError.Http(status.value, error?.code, error?.message)
+        }
+        val body = FestiCoreJson.decodeFromString(PackVersionResponse.serializer(dataSerializer), text)
+        if (body.code != SUCCESS) throw NetworkError.InvalidResponse(body.code, body.message.orEmpty())
+        return body.data ?: throw NetworkError.Decoding(SerializationException("data가 없습니다"))
+    }
+
     private fun String.errorBodyOrNull(): ErrorBody? = try {
         FestiCoreJson.decodeFromString(ErrorBody.serializer(), this)
     } catch (_: IllegalArgumentException) { // SerializationException 포함
@@ -187,7 +207,7 @@ sealed interface FestivalLiveResponse<out T> {
     data class RateLimited(val retryAfter: String?) : FestivalLiveResponse<Nothing>
 }
 
-/** `GET api/v1/festivals/{id}/pack/version` 응답 봉투. `message`가 없을 수 있다. iOS `FestivalPackVersionResponseDTO`. */
+/** `GET api/v1/festivals/{id}/pack/version` · `pack/changes` 응답 봉투. `message`가 없을 수 있다. iOS `FestivalPackVersionResponseDTO`. */
 @Serializable
 private class PackVersionResponse<T>(
     val code: String,

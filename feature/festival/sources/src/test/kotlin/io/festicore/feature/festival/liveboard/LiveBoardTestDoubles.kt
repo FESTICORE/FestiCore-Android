@@ -88,6 +88,8 @@ internal class FakeBoardPackUseCase(
     override fun downloadPack(festivalId: String): Flow<PackDownloadEvent> = emptyFlow()
 
     override suspend fun syncPack(festivalId: String): PackSyncResult = sync(festivalId)
+
+    override suspend fun deleteExpiredPacks(): List<String> = error("사용하지 않음")
 }
 
 internal class FakeScheduleUseCase(var schedule: suspend (String) -> FestivalSchedule = { FestivalSchedule(emptyList()) }) :

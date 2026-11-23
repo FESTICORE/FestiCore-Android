@@ -17,6 +17,7 @@ import io.festicore.service.auth.expiry.SessionExpiry
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import org.orbitmvi.orbit.Container
@@ -78,6 +79,8 @@ class AppCoordinator(
     private val updateCurrentUserId: (String?) -> Unit,
     private val deeplinkReceived: Flow<Unit>,
     private val consumePendingDeeplink: suspend () -> FestiCoreDeeplink?,
+    /** 페스티벌이 끝나고 30일이 지난 팩을 지운다(iOS `deleteExpiredPacks`, 설계 쟁점 M8). */
+    private val deleteExpiredPacks: suspend () -> Unit,
 ) : ViewModel(),
     OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, AppCoordinatorSideEffect> {
     override val container: Container<AppCoordinatorState, AppCoordinatorSideEffect> =
@@ -185,9 +188,27 @@ class AppCoordinator(
         reduce { state.copy(coverTop = route) }
     }
 
-    /** `ON_START`(포그라운드 진입). 홈이고 첫 진입 로그인 화면이 보이지 않을 때 프로필을 다시 확인한다. */
+    /**
+     * `ON_START`(포그라운드 진입). 홈이고 첫 진입 로그인 화면이 보이지 않을 때 프로필을 다시 확인한다.
+     * 홈이면 만료된 팩도 지운다. 이전 정리가 돌고 있으면 취소하고 새로 시작한다(iOS `cancelInFlight`).
+     */
     fun onForegrounded() = intent {
-        if (state.routes.lastOrNull() == AppRoute.Home) recheckProfile()
+        if (state.routes.lastOrNull() != AppRoute.Home) return@intent
+        expiredPackCleanup?.cancel()
+        expiredPackCleanup = intent { cleanUpExpiredPacks() }
+        recheckProfile()
+    }
+
+    private var expiredPackCleanup: Job? = null
+
+    private suspend fun cleanUpExpiredPacks() {
+        try {
+            deleteExpiredPacks()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            FestiCoreLogger.error("만료된 팩을 지우지 못함: ${e::class.simpleName}", LogCategory.APP)
+        }
     }
 
     /**

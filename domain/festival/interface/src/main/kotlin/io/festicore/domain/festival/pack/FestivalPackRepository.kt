@@ -1,7 +1,9 @@
 package io.festicore.domain.festival.pack
 import io.festicore.domain.festival.entity.CachedFestivalPack
+import io.festicore.domain.festival.entity.FestivalPackDetail
 import io.festicore.domain.festival.entity.FestivalPackError
 import io.festicore.domain.festival.entity.FestivalPackState
+import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.domain.festival.entity.PackDownloadEvent
 import io.festicore.domain.festival.entity.PackSyncResult
 import kotlinx.coroutines.flow.Flow
@@ -31,4 +33,10 @@ interface FestivalPackRepository {
 
     /** 기기에 저장한 팩을 지운다. 없으면 아무것도 하지 않는다. */
     suspend fun deletePack(festivalId: String)
+
+    /**
+     * 기기에 저장한 팩 JSON을 상세 전용으로 다시 읽는다. 없으면 null. 네트워크에 연결하지 않는다.
+     * [pack]으로 팩 요약을 만들고, 상세 키를 읽지 못하면 빈 상세를 돌려준다. iOS `FestivalPackDetailUseCaseImpl.detail(from:catalog:)`.
+     */
+    suspend fun packDetail(festivalId: String, pack: (CachedFestivalPack) -> FestivalReceivedPack): FestivalPackDetail?
 }

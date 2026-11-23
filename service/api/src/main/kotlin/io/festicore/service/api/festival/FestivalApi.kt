@@ -13,6 +13,9 @@ object FestivalApi {
     /** 현재 발행 팩 버전 · 지도 버전. 인증 없음. iOS `FestivalPackRequest.version`. */
     fun packVersion(festivalId: String) = "$FESTIVALS/$festivalId/pack/version"
 
+    /** 받은 팩과 현재 발행 팩의 차이(`?from=`). 인증 없음. iOS `FestivalAPI.packChanges`. */
+    fun packChanges(festivalId: String) = "$FESTIVALS/$festivalId/pack/changes"
+
     /** 라이브 상태. iOS `FestivalLiveRequest`. */
     fun live(festivalId: String) = "$FESTIVALS/$festivalId/live"
 

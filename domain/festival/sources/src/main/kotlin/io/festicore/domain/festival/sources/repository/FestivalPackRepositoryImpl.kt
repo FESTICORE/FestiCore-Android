@@ -1,12 +1,15 @@
 package io.festicore.domain.festival.sources.repository
 
 import io.festicore.domain.festival.entity.CachedFestivalPack
+import io.festicore.domain.festival.entity.FestivalPackDetail
 import io.festicore.domain.festival.entity.FestivalPackError
 import io.festicore.domain.festival.entity.FestivalPackState
+import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.domain.festival.entity.PackDownloadEvent
 import io.festicore.domain.festival.entity.PackDownloadProgress
 import io.festicore.domain.festival.entity.PackSyncResult
 import io.festicore.domain.festival.pack.FestivalPackRepository
+import io.festicore.domain.festival.sources.model.dto.FestivalPackDetailDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.model.mapper.toDomain
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
@@ -76,6 +79,19 @@ internal class FestivalPackRepositoryImpl(
         mutableState.update { it.copy(packs = it.packs - festivalId) }
     }
 
+    override suspend fun packDetail(festivalId: String, pack: (CachedFestivalPack) -> FestivalReceivedPack): FestivalPackDetail? =
+        mapPackErrors {
+            val cached = service.cachedPack(festivalId) ?: return@mapPackErrors null
+            val summary = pack(cached.toDomain())
+            // 상세 키를 읽지 못하면 빈 상세로 둔다(iOS `try?`). 라이브 보드 문서와 따로 읽는다(설계 D3).
+            val detail = try {
+                json.decodeFromString(FestivalPackDetailDto.serializer(), cached.pack.decodeToString())
+            } catch (_: IllegalArgumentException) { // SerializationException 포함
+                null
+            }
+            detail?.toDomain(summary) ?: FestivalPackDetail(summary)
+        }
+
     private fun setProgress(festivalId: String, progress: PackDownloadProgress?) {
         mutableState.update { state ->
             if (festivalId in state.downloads) state.copy(downloads = state.downloads + (festivalId to progress)) else state
@@ -110,6 +126,7 @@ internal class FestivalPackRepositoryImpl(
         packVersion = packVersion,
         etag = etag,
         checkedAt = checkedAtMillis?.let(Instant::ofEpochMilli),
+        sizeBytes = pack.size,
         document = try {
             json.decodeFromString(FestivalPackDocumentDto.serializer(), pack.decodeToString())
                 .takeIf { it.id == festivalId }

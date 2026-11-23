@@ -9,6 +9,7 @@ import io.festicore.core.coreassembly.coreModules
 import io.festicore.domain.auth.sources.ActivityProvider
 import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
+import io.festicore.domain.festival.pack.FestivalPackUseCase
 import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.domain.notice.sources.di.domainNoticeModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
@@ -40,6 +41,7 @@ private val appModule = module {
             updateCurrentUserId = get<CurrentUserStore>()::update,
             deeplinkReceived = get<AppDeeplinkBridge>().received,
             consumePendingDeeplink = get<AppDeeplinkBridge>()::consumePending,
+            deleteExpiredPacks = { get<FestivalPackUseCase>().deleteExpiredPacks() },
         )
     }
     viewModelOf(::MainTabCoordinator)
