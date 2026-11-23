@@ -8,7 +8,7 @@ plugins {
 dependencies {
     val libs = catalog
     api(project(":domain:usernotification:interface"))
-    implementation(project(":service:api"))
+    implementation(project(":service:apiendpoint"))
     implementation(project(":service:auth"))
 
     implementation(platform(libs.lib("koin-bom")))

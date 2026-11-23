@@ -3,7 +3,7 @@ package io.festicore.domain.festival.sources
 import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.domain.festival.FestivalFlagFollowError
 import io.festicore.domain.festival.FestivalFlagFollowResult
-import io.festicore.service.api.FlagApi
+import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.festicore.service.festivalcatalog.FestivalFlagFollowService
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -29,7 +29,7 @@ class FestivalFlagUseCaseTest {
     private val useCase = FestivalFlagUseCaseImpl(
         FestivalFlagRepositoryImpl(
             FestivalFlagFollowService(
-                FlagApi(
+                FlagRequest(
                     createFestiCoreHttpClient(
                         baseUrl = "https://example.test/",
                         engine = MockEngine { request ->

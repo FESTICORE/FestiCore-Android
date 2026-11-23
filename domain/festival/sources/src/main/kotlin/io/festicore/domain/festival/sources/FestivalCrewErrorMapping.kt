@@ -2,7 +2,7 @@ package io.festicore.domain.festival.sources
 
 import io.festicore.core.network.NetworkError
 import io.festicore.domain.festival.FestivalCrewError
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val TERMS_REQUIRED = "TERMS_REQUIRED"

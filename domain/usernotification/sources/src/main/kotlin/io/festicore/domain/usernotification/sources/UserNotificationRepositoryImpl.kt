@@ -3,8 +3,8 @@ package io.festicore.domain.usernotification.sources
 import io.festicore.domain.usernotification.UserNotificationError
 import io.festicore.domain.usernotification.UserNotificationPage
 import io.festicore.domain.usernotification.UserNotificationRepository
-import io.festicore.service.api.UserNotificationApi
-import io.festicore.service.api.UserNotificationIdsBody
+import io.festicore.service.apiendpoint.usernotification.UserNotificationIdsBody
+import io.festicore.service.apiendpoint.usernotification.UserNotificationRequest
 
 /**
  * 내 알림 저장소(iOS `UserNotificationRepositoryImpl`). 조회는 현재 세션을 확인하고 그 세션에 묶어 보낸다.
@@ -12,7 +12,7 @@ import io.festicore.service.api.UserNotificationIdsBody
  * 세션이 없거나 바뀌었으면 보내지 않고 [UserNotificationError.Unauthenticated]. 로컬 저장은 없다.
  */
 internal class UserNotificationRepositoryImpl(
-    private val api: UserNotificationApi,
+    private val api: UserNotificationRequest,
     private val currentSessionId: suspend () -> String?,
 ) : UserNotificationRepository {
     override suspend fun notifications(before: String?): UserNotificationPage = mapErrors {

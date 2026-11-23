@@ -25,7 +25,3 @@ data class UserNotificationItemDto(
 /** `GET api/v1/me/notifications/unread-count` 응답 `data`. iOS `UserNotificationCountDataDTO`. */
 @Serializable
 data class UserNotificationCountDto(val unreadCount: Int)
-
-/** 읽음 · 삭제 요청 본문 `{"ids":[…]}`. iOS `UserNotificationIDsBody`. */
-@Serializable
-data class UserNotificationIdsBody(val ids: List<String>)

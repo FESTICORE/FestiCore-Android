@@ -2,9 +2,9 @@ package io.festicore.service.auth
 
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.service.api.AuthApi
-import io.festicore.service.api.AuthLoginBody
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
+import io.festicore.service.apiendpoint.auth.AuthLoginBody
+import io.festicore.service.apiendpoint.auth.AuthRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
@@ -56,8 +56,8 @@ class FestiCoreAuthPluginTest {
     private fun api(
         onRefresh: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData = { refreshed("new-access", "new-refresh") },
         onMe: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
-    ): AuthApi {
-        lateinit var api: AuthApi
+    ): AuthRequest {
+        lateinit var api: AuthRequest
         val refresher = TokenRefresher(store, expiryEvents) { api.refresh(it) }
         val client = createFestiCoreHttpClient(
             baseUrl = "https://example.test/",
@@ -78,7 +78,7 @@ class FestiCoreAuthPluginTest {
                 }
             },
         ) { install(festiCoreAuthPlugin(store, refresher)) }
-        api = AuthApi(client)
+        api = AuthRequest(client)
         return api
     }
 

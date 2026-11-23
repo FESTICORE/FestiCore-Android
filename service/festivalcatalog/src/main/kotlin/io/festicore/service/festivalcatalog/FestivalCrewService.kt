@@ -1,21 +1,21 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.service.api.AuthSessionError
-import io.festicore.service.api.CrewApi
-import io.festicore.service.api.CrewCreateBody
 import io.festicore.service.api.CrewDto
-import io.festicore.service.api.CrewGatherBody
 import io.festicore.service.api.CrewGatherDto
 import io.festicore.service.api.CrewGatherReplyDto
-import io.festicore.service.api.CrewGatherResponseBody
 import io.festicore.service.api.CrewInviteCodeDto
 import io.festicore.service.api.CrewInviteDto
-import io.festicore.service.api.CrewJoinBody
-import io.festicore.service.api.CrewRenameBody
-import io.festicore.service.api.CrewStatusBody
 import io.festicore.service.api.CrewStatusDto
-import io.festicore.service.api.CrewTransferBody
-import io.festicore.service.api.crewClientAt
+import io.festicore.service.api.base.AuthSessionError
+import io.festicore.service.apiendpoint.crew.CrewCreateBody
+import io.festicore.service.apiendpoint.crew.CrewGatherBody
+import io.festicore.service.apiendpoint.crew.CrewGatherResponseBody
+import io.festicore.service.apiendpoint.crew.CrewJoinBody
+import io.festicore.service.apiendpoint.crew.CrewRenameBody
+import io.festicore.service.apiendpoint.crew.CrewRequest
+import io.festicore.service.apiendpoint.crew.CrewStatusBody
+import io.festicore.service.apiendpoint.crew.CrewTransferBody
+import io.festicore.service.apiendpoint.crew.crewClientAt
 import java.time.Instant
 
 /**
@@ -24,7 +24,7 @@ import java.time.Instant
  * iOS `FestivalCrewRepositoryImpl`의 요청 부분.
  */
 class FestivalCrewService(
-    private val api: CrewApi,
+    private val api: CrewRequest,
     private val currentSessionId: suspend () -> String? = { null },
     private val now: () -> Instant = Instant::now,
 ) {

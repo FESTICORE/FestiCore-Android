@@ -92,6 +92,7 @@ python3 -m unittest discover -s .claude/hooks/tests
 | `SharedPreferences` · DataStore | `core/datastore` |
 | Room | `core/database` |
 | feature `build.gradle.kts`에서 `*.sources` 의존 | 없음 (app만) |
+| `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`) |
 
 재시도 한도:
 

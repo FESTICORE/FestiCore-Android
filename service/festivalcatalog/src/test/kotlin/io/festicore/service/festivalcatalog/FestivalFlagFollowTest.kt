@@ -1,11 +1,11 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.service.api.AuthSessionError
-import io.festicore.service.api.BearerAuthorization
-import io.festicore.service.api.BearerAuthorizationKey
-import io.festicore.service.api.FlagApi
-import io.festicore.service.api.IDEMPOTENCY_KEY_HEADER
+import io.festicore.service.api.base.AuthSessionError
+import io.festicore.service.api.base.BearerAuthorization
+import io.festicore.service.api.base.BearerAuthorizationKey
+import io.festicore.service.apiendpoint.common.IDEMPOTENCY_KEY_HEADER
+import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -27,7 +27,7 @@ class FestivalFlagFollowTest {
     private val uuid = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
     private val service = FestivalFlagFollowService(
-        api = FlagApi(
+        api = FlagRequest(
             createFestiCoreHttpClient(
                 baseUrl = "https://example.test/",
                 engine = MockEngine { request ->

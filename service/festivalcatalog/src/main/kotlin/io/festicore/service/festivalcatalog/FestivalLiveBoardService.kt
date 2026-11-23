@@ -1,10 +1,10 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.NetworkError
-import io.festicore.service.api.FestivalApi
 import io.festicore.service.api.FestivalFlagProfileDto
 import io.festicore.service.api.FestivalLiveBoardDto
-import io.festicore.service.api.FestivalLiveResponse
+import io.festicore.service.apiendpoint.festival.FestivalLiveResponse
+import io.festicore.service.apiendpoint.festival.FestivalRequest
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -30,7 +30,7 @@ data class FestivalLiveBoardFetch(
  * 그 밖의 실패는 [NetworkError](401 포함, 토큰 갱신은 인증 플러그인).
  */
 class FestivalLiveBoardService(
-    private val api: FestivalApi,
+    private val api: FestivalRequest,
     private val deviceId: suspend () -> String,
     private val currentSessionId: suspend () -> String?,
     private val now: () -> Instant = Instant::now,

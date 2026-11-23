@@ -44,7 +44,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/Interface/Sources/{Catalog,Entity}/`
 | --- | --- | --- |
 | domain/festival/interface | interface | 엔티티 · `FestivalCatalogError` · `FestivalCatalogRepository` · `FestivalCatalogUseCase` |
 | domain/festival/sources | sources | Repository · UseCase 구현, DTO 매핑, 오류 매핑, `domainFestivalModule` |
-| service/api | service | `FestivalApiPath` · `FestivalApi` · 축제 DTO(손상 원소 건너뛰는 serializer) |
+| service/api · service/apiendpoint | service | `FestivalApi`(경로) · `FestivalRequest` · 축제 DTO(손상 원소 건너뛰는 serializer) |
 | service/festivalcatalog | service | `FestivalCatalogService` · `FestivalCatalogCache` · `FestivalImageUrlResolver` · `serviceFestivalCatalogModule` |
 | app | app | Koin 목록에 두 모듈 추가 |
 

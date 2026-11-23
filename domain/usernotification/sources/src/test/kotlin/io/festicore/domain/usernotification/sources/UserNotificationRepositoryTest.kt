@@ -3,8 +3,8 @@ package io.festicore.domain.usernotification.sources
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.domain.usernotification.UserNotificationError
-import io.festicore.service.api.BearerAuthorizationKey
-import io.festicore.service.api.UserNotificationApi
+import io.festicore.service.api.base.BearerAuthorizationKey
+import io.festicore.service.apiendpoint.usernotification.UserNotificationRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -37,7 +37,7 @@ class UserNotificationRepositoryTest {
         failure: Throwable? = null,
     ) = UserNotificationRepositoryImpl(
         api =
-            UserNotificationApi(
+            UserNotificationRequest(
                 createFestiCoreHttpClient(
                     baseUrl = "https://festicore.test/",
                     engine =

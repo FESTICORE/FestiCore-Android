@@ -1,9 +1,9 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.NetworkError
-import io.festicore.service.api.FestivalApi
 import io.festicore.service.api.FestivalScheduleDto
-import io.festicore.service.api.FestivalScheduleReplaceBody
+import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.festival.FestivalScheduleReplaceBody
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -17,7 +17,7 @@ import java.util.Locale
  * [currentSessionId]: 저장 PUT과 충돌 뒤 다시 읽기를 같은 세션에 묶는다(중간에 계정이 바뀌면 보내지 않는다).
  */
 class FestivalScheduleService(
-    private val api: FestivalApi,
+    private val api: FestivalRequest,
     private val currentSessionId: suspend () -> String? = { null },
 ) {
     suspend fun mySchedule(festivalId: String): FestivalScheduleDto {

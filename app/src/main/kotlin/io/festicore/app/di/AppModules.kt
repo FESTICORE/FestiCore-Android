@@ -16,7 +16,7 @@ import io.festicore.feature.auth.di.authFeatureModule
 import io.festicore.feature.festival.di.festivalFeatureModule
 import io.festicore.feature.onboarding.di.onboardingFeatureModule
 import io.festicore.feature.web.di.webFeatureModule
-import io.festicore.service.api.di.serviceApiModule
+import io.festicore.service.apiendpoint.di.serviceApiEndpointModule
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.SessionExpiryEvents
 import io.festicore.service.auth.di.serviceAuthModule
@@ -56,7 +56,7 @@ private val appModule = module {
 val appModules: List<Module> = listOf(
     coreNetworkModule,
     coreDataStoreModule,
-    serviceApiModule,
+    serviceApiEndpointModule,
     serviceAuthModule(baseUrl = BuildConfig.BASE_URL),
     serviceDeviceModule,
     serviceFestivalCatalogModule(baseUrl = BuildConfig.BASE_URL),

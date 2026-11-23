@@ -2,9 +2,9 @@ package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.service.api.BearerAuthorization
-import io.festicore.service.api.BearerAuthorizationKey
-import io.festicore.service.api.FestivalApi
+import io.festicore.service.api.base.BearerAuthorization
+import io.festicore.service.api.base.BearerAuthorizationKey
+import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -29,7 +29,7 @@ class FestivalScheduleServiceTest {
 
     private val service =
         FestivalScheduleService(
-            api = FestivalApi(
+            api = FestivalRequest(
                 createFestiCoreHttpClient(
                     baseUrl = "https://example.test/",
                     engine = MockEngine { request ->

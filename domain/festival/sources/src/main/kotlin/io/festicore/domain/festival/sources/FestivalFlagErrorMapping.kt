@@ -5,7 +5,7 @@ import io.festicore.domain.festival.FestivalFlagDetailError
 import io.festicore.domain.festival.FestivalFlagFollowError
 import io.festicore.domain.festival.FestivalFlagPinError
 import io.festicore.domain.festival.FestivalFlagReportError
-import io.festicore.service.api.AuthSessionError
+import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.festivalcatalog.FestivalFlagServiceError
 import kotlin.coroutines.cancellation.CancellationException
 
