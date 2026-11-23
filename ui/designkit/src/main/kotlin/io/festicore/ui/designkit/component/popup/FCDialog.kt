@@ -36,7 +36,8 @@ class FCDialogItem(
     val title: String,
     val message: String,
     val confirmTitle: String = "확인",
-    val cancelTitle: String = "취소",
+    /** `null`이면 확인 버튼 하나만 그린다(iOS 시스템 알림의 "확인" 하나). */
+    val cancelTitle: String? = "취소",
     val onConfirm: () -> Unit,
     val onCancel: () -> Unit = {},
 )
@@ -102,15 +103,17 @@ internal fun FCDialogCard(
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8)) {
-            FCButton(
-                title = item.cancelTitle,
-                modifier = Modifier.weight(1f),
-                style = FCButtonStyle.Secondary,
-                size = FCButtonSize.Medium,
-                isFullWidth = true,
-            ) {
-                item.onCancel()
-                onDismiss()
+            item.cancelTitle?.let { cancelTitle ->
+                FCButton(
+                    title = cancelTitle,
+                    modifier = Modifier.weight(1f),
+                    style = FCButtonStyle.Secondary,
+                    size = FCButtonSize.Medium,
+                    isFullWidth = true,
+                ) {
+                    item.onCancel()
+                    onDismiss()
+                }
             }
             FCButton(
                 title = item.confirmTitle,

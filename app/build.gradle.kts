@@ -28,6 +28,7 @@ dependencies {
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))
+    implementation(project(":feature:profile:sources"))
     implementation(project(":feature:featureassembly"))
     implementation(libs.lib("core-splashscreen"))
     implementation(libs.lib("lifecycle-runtime-compose"))

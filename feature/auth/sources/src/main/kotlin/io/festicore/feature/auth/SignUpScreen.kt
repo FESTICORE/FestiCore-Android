@@ -27,6 +27,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.auth.entity.AuthNicknameRule
+import io.festicore.feature.web.LegalDocumentUrls
 import io.festicore.feature.web.WebPage
 import io.festicore.ui.designkit.component.button.FCPrimaryButton
 import io.festicore.ui.designkit.component.divider.FCDivider
@@ -78,7 +79,8 @@ fun SignUpScreen(
 
             is SignUpSideEffect.OpenLegalDocument -> {
                 val document = sideEffect.document
-                onLegalDocumentRequested(WebPage(url = legalDocumentUrls.url(document).toString(), title = document.title))
+                // 기준 주소를 쓸 수 없으면 iOS처럼 '보기'를 무시한다(iOS `SignUpFeature` `LegalDocumentURL.baseURL == nil`).
+                legalDocumentUrls.url(document.path)?.let { url -> onLegalDocumentRequested(WebPage(url = url, title = document.title)) }
             }
         }
     }

@@ -11,7 +11,7 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 
 ## 개요
 
-진입 인자는 `WebPage(url, title)`(`interface`). 화면은 `WebScreen(page, onBackToRoot)`이고 닫기는 부모 Coordinator가 정한다(iOS `WebDelegate.backToRoot`). 지금 쓰는 곳은 가입 정보의 약관 상세(`AuthRoute.LegalDocument`)다.
+진입 인자는 `WebPage(url, title)`(`interface`). 화면은 `WebScreen(page, onBackToRoot)`이고 닫기는 부모 Coordinator가 정한다(iOS `WebDelegate.backToRoot`). 지금 쓰는 곳은 가입 정보의 약관 상세(`AuthRoute.LegalDocument`)와 설정 홈 문서(S2, 경로 연결은 T1)다.
 
 ## 동작 규칙
 
@@ -22,6 +22,7 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 5. 실패 판정: main frame 응답 상태가 200..<300이 아니면, main frame 로드 오류, 첫 페이지 전 인증서 오류(항상 거절), 렌더 프로세스 종료.
 6. 렌더 프로세스가 끝나면 실패를 보이고 웹뷰를 새로 만든다. 새 웹뷰는 다시 시도 전까지 로드하지 않는다.
 7. 웹뷰 설정은 iOS `WKWebViewConfiguration()` 기본값에 맞춘다: JavaScript · DOM 저장소 켜짐, 새 창 · 자동 팝업 없음(새 창 링크는 지금 웹뷰에서 정책을 거친다). 파일 · content 주소 접근, 혼합 콘텐츠, 위치 권한은 끈다. JavaScript 인터페이스 · 다운로드 처리는 두지 않는다.
+8. 문서 주소: `LegalDocumentUrls(baseUrl)`(`interface`, iOS `LegalDocumentURL`)가 가입 화면 · 설정 홈 공용이다. 기준 주소가 주소로 읽히고 scheme `https` · host 있음일 때만 `url(path)` = 기준 주소 + 경로 한 칸, 아니면 null. Koin 정의는 `webFeatureModule(legalBaseUrl)`.
 
 ## 엣지 케이스
 
@@ -46,14 +47,15 @@ iOS 대응: `Projects/Feature/Web/Sources/`(`Reducer/WebFeature.swift` · `View/
 
 | 모듈                  | 계층      | 변경 내용                                                     |
 | --------------------- | --------- | ------------------------------------------------------------- |
-| feature/web/interface | interface | `WebPage`                                                     |
+| feature/web/interface | interface | `WebPage` · `LegalDocumentUrls`                               |
 | feature/web/sources   | sources   | `WebScreen` · `WebViewModel` · `WebDocumentView` · 이동 정책 |
 
 ## 영향 범위
 
 | 모듈         | 계층    | 영향 이유                            |
 | ------------ | ------- | ------------------------------------ |
-| feature/auth | feature | 약관 상세를 `AuthRoute.LegalDocument`로 연다 |
+| feature/auth | feature | 약관 상세를 `AuthRoute.LegalDocument`로 연다. 주소가 없으면 '보기'를 무시 |
+| feature/profile | feature | 설정 홈 문서 4종. 주소가 없으면 "문서를 열 수 없어요" 팝업 |
 | app          | app     | `webFeatureModule` · 약관 상세 슬롯 |
 
 ## 미해결 질문

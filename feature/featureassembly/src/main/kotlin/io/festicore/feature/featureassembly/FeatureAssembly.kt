@@ -10,8 +10,8 @@ import org.koin.core.module.Module
 /** iOS `Feature/FeatureAssembly`처럼 feature 모듈의 Koin 목록만 합친다. 정의는 각 feature 모듈 `di/`에 둔다. */
 fun featureModules(legalBaseUrl: String): List<Module> = listOf(
     onboardingFeatureModule,
-    authFeatureModule(legalBaseUrl = legalBaseUrl),
-    webFeatureModule,
+    authFeatureModule,
+    webFeatureModule(legalBaseUrl = legalBaseUrl),
     festivalFeatureModule,
     profileFeatureModule,
 )

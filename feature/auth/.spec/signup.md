@@ -29,7 +29,7 @@ iOS 대응: `Projects/Feature/Auth/Sources/SignUp/`(`SignUpFeature` · `SignUpVi
 6. 세션 만료 이벤트: Launch 덮개 안에서 그 세션의 가입 화면이 보이면 덮개 세대를 올려 LaunchLogin부터 새로 만든다. 로그인 화면이 보이면(다른 세션의 로그인 진행 중일 수 있음) 그대로 둔다. Recheck 덮개면 닫아 비로그인 Home. 덮개가 없으면 launchLogin을 켜지 않는다.
 7. 가입 제출 401(만료 이벤트 없음): Launch는 LaunchLogin으로, Recheck는 덮개를 닫는다.
 8. 스크롤을 사용자가 끌기 시작하면 키보드를 숨긴다. 흐름 문구(오류 · 재동의)는 줄 박스 없는 글꼴(`textStyleWithoutLineBox`)을 쓴다.
-9. 약관 '보기': auth 스택의 가입 정보 위에 `AuthRoute.LegalDocument(WebPage)`를 push해 앱 안 웹 화면(`feature/web` `WebScreen`)으로 연다(iOS `AuthCoordinator.swift:366-378`). 주소는 `LegalDocumentUrls`(`LEGAL_BASE_URL` + 경로), 제목은 약관 제목. 이미 열려 있으면 다시 쌓지 않는다. 상단 back · 시스템 뒤로는 `goBack`으로 가입 정보에 돌아오고 입력 초안은 남는다. 약관 상세가 열려 있어도 상위에는 가입 화면이 보이는 것으로 알린다(규칙 4 · 5 · 6).
+9. 약관 '보기': auth 스택의 가입 정보 위에 `AuthRoute.LegalDocument(WebPage)`를 push해 앱 안 웹 화면(`feature/web` `WebScreen`)으로 연다(iOS `AuthCoordinator.swift:366-378`). 주소는 `feature/web` `LegalDocumentUrls`(`LEGAL_BASE_URL` + 경로, https · host 있음만). 주소가 없으면 iOS처럼 '보기'를 무시한다, 제목은 약관 제목. 이미 열려 있으면 다시 쌓지 않는다. 상단 back · 시스템 뒤로는 `goBack`으로 가입 정보에 돌아오고 입력 초안은 남는다. 약관 상세가 열려 있어도 상위에는 가입 화면이 보이는 것으로 알린다(규칙 4 · 5 · 6).
 
 ## 엣지 케이스
 
