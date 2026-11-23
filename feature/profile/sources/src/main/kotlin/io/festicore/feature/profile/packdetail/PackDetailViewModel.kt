@@ -10,6 +10,8 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
@@ -28,6 +30,8 @@ class PackDetailViewModel(
     OrbitContainerHost<PackDetailState, PackDetailState, PackDetailSideEffect> {
     override val container =
         orbitContainer<PackDetailState, PackDetailSideEffect>(PackDetailState(festivalId = festivalId, title = title))
+
+    private val checklistSaveLock = Mutex()
 
     /** 진행 중 업데이트. 삭제를 확인하면 멈춘다(iOS `CancelID.update`). */
     private val updateJob = AtomicReference<Job?>(null)
@@ -210,7 +214,10 @@ class PackDetailViewModel(
     }
 
     private suspend fun saveChecklist() = subIntent {
-        ignoringFailure { packDetailUseCase.saveChecklist(state.checklist, state.festivalId) }
+        // 저장을 한 줄로 세우고 잠금을 얻은 뒤의 최신 준비물을 쓴다. 빠른 연속 변경에서 오래된 저장이 나중에 덮어쓰지 않게 한다.
+        checklistSaveLock.withLock {
+            ignoringFailure { packDetailUseCase.saveChecklist(state.checklist, state.festivalId) }
+        }
     }
 
     /** iOS는 저장 실패를 알리지 않는다(저장 함수가 던지지 않음). 화면 값은 그대로 둔다. */
