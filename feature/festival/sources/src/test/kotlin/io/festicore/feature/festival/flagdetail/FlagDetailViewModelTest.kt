@@ -1,11 +1,11 @@
 package io.festicore.feature.festival.flagdetail
 
-import io.festicore.domain.festival.FestivalFlagDetail
-import io.festicore.domain.festival.FestivalFlagDetailError
-import io.festicore.domain.festival.FestivalFlagFollowError
-import io.festicore.domain.festival.FestivalFlagFollowResult
-import io.festicore.domain.festival.FestivalFlagReportError
-import io.festicore.domain.festival.FestivalFlagReportReason
+import io.festicore.domain.festival.entity.FestivalFlagDetail
+import io.festicore.domain.festival.entity.FestivalFlagDetailError
+import io.festicore.domain.festival.entity.FestivalFlagFollowError
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalFlagReportError
+import io.festicore.domain.festival.entity.FestivalFlagReportReason
 import io.festicore.feature.festival.flagdetail.FlagDetailFixtures.NOW
 import io.festicore.feature.festival.liveboard.FakeFlagUseCase
 import io.festicore.feature.festival.liveboard.TestSleeper

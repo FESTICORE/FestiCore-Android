@@ -1,13 +1,13 @@
 package io.festicore.feature.festival.zonemap
 
-import io.festicore.domain.festival.CachedFestivalPack
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalLiveBoardUseCase
-import io.festicore.domain.festival.FestivalZoneMap
-import io.festicore.domain.festival.FestivalZoneMapUseCase
-import io.festicore.domain.festival.PackSyncResult
-import io.festicore.feature.festival.FakeCurrentUserProvider
+import io.festicore.domain.festival.entity.CachedFestivalPack
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalZoneMap
+import io.festicore.domain.festival.entity.PackSyncResult
+import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
+import io.festicore.domain.festival.zonemap.FestivalZoneMapUseCase
+import io.festicore.feature.festival.festivallist.FakeCurrentUserProvider
 import io.festicore.feature.festival.liveboard.FakeBoardPackUseCase
 import io.festicore.feature.festival.liveboard.FakeLiveBoardUseCase
 import io.festicore.feature.festival.liveboard.MutableClock

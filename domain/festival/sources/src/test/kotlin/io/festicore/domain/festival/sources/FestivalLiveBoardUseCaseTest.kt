@@ -1,9 +1,9 @@
 package io.festicore.domain.festival.sources
 
 import io.festicore.core.network.NetworkError
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardUseCase
-import io.festicore.domain.festival.FestivalScheduleError
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalScheduleError
+import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
 import io.festicore.domain.festival.sources.model.mapper.toFestivalLiveBoardError
 import io.festicore.domain.festival.sources.model.mapper.toFestivalScheduleError
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError

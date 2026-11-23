@@ -1,11 +1,11 @@
 package io.festicore.feature.festival.liveboard
 
-import io.festicore.domain.festival.FestivalIsoTime
-import io.festicore.domain.festival.FestivalLiveBoardSchedule
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalOverview
-import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.feature.festival.FestivalListPresentation
+import io.festicore.domain.festival.entity.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalOverview
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.feature.festival.festivallist.FestivalListPresentation
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate

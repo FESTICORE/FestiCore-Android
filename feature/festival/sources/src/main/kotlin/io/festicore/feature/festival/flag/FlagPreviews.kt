@@ -2,7 +2,7 @@ package io.festicore.feature.festival.flag
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import java.time.Instant
 
 // 프리뷰 전용 가짜 값.

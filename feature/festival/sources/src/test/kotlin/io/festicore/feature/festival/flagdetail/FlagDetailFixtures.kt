@@ -1,8 +1,8 @@
 package io.festicore.feature.festival.flagdetail
 
-import io.festicore.domain.festival.FestivalFlagDetail
-import io.festicore.domain.festival.FestivalFlagDetailUseCase
-import io.festicore.domain.festival.FestivalFlagReportReason
+import io.festicore.domain.festival.entity.FestivalFlagDetail
+import io.festicore.domain.festival.entity.FestivalFlagReportReason
+import io.festicore.domain.festival.flagdetail.FestivalFlagDetailUseCase
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId

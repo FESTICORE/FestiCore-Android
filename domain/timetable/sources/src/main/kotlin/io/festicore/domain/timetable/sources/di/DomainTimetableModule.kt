@@ -1,6 +1,6 @@
 package io.festicore.domain.timetable.sources.di
 
-import io.festicore.domain.festival.FestivalCatalogUseCase
+import io.festicore.domain.festival.catalog.FestivalCatalogUseCase
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
 import io.festicore.domain.timetable.TimetableOverlapCalculator
 import io.festicore.domain.timetable.sources.FestivalPackTimetableMapperImpl

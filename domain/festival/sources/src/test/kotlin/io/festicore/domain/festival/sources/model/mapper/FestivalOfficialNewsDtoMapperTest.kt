@@ -1,7 +1,7 @@
 package io.festicore.domain.festival.sources.model.mapper
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.domain.festival.FestivalOfficialNews
+import io.festicore.domain.festival.entity.FestivalOfficialNews
 import io.festicore.domain.festival.sources.model.dto.FestivalOfficialNewsDto
 import java.time.Instant
 import org.junit.Assert.assertEquals

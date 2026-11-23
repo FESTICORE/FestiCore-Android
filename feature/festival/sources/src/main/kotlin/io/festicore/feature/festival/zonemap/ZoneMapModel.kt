@@ -1,7 +1,7 @@
 package io.festicore.feature.festival.zonemap
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalZoneMap
 import io.festicore.feature.festival.liveboard.LiveBoardPresentation
 import io.festicore.ui.designkit.component.label.FCStatusChipStatus
 import io.festicore.ui.designkit.component.media.FCAvatarTint

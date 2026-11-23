@@ -2,7 +2,7 @@ package io.festicore.feature.festival
 
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import io.festicore.domain.auth.CurrentUserProvider
+import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer

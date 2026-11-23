@@ -1,28 +1,20 @@
 package io.festicore.app.di
 
-import io.festicore.app.AppDeeplinkBridge
 import io.festicore.app.BuildConfig
-import io.festicore.app.MainActivityProvider
+import io.festicore.app.application.MainActivityProvider
+import io.festicore.app.deeplink.AppDeeplinkBridge
 import io.festicore.app.navigation.AppCoordinator
 import io.festicore.app.navigation.MainTabCoordinator
-import io.festicore.core.datastore.di.coreDataStoreModule
-import io.festicore.core.network.di.coreNetworkModule
+import io.festicore.core.coreassembly.coreModules
 import io.festicore.domain.auth.sources.ActivityProvider
 import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
-import io.festicore.feature.auth.di.authFeatureModule
-import io.festicore.feature.festival.di.festivalFeatureModule
-import io.festicore.feature.onboarding.di.onboardingFeatureModule
-import io.festicore.feature.web.di.webFeatureModule
-import io.festicore.service.apiendpoint.di.serviceApiEndpointModule
+import io.festicore.feature.featureassembly.featureModules
 import io.festicore.service.auth.AuthSession
-import io.festicore.service.auth.SessionExpiryEvents
-import io.festicore.service.auth.di.serviceAuthModule
-import io.festicore.service.device.di.serviceDeviceModule
-import io.festicore.service.festivalcatalog.di.serviceFestivalCatalogModule
-import io.festicore.service.pack.di.servicePackModule
+import io.festicore.service.auth.expiry.SessionExpiryEvents
+import io.festicore.service.serviceassembly.serviceModules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,21 +44,14 @@ private val appModule = module {
     viewModelOf(::MainTabCoordinator)
 }
 
-/** 각 모듈이 공개한 Koin 모듈 목록만 합친다. 정의는 그 모듈의 di/에 둔다. */
-val appModules: List<Module> = listOf(
-    coreNetworkModule,
-    coreDataStoreModule,
-    serviceApiEndpointModule,
-    serviceAuthModule(baseUrl = BuildConfig.BASE_URL),
-    serviceDeviceModule,
-    serviceFestivalCatalogModule(baseUrl = BuildConfig.BASE_URL),
-    servicePackModule(baseUrl = BuildConfig.BASE_URL),
-    domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),
-    domainFestivalModule,
-    domainUserNotificationModule,
-    onboardingFeatureModule,
-    authFeatureModule(legalBaseUrl = BuildConfig.LEGAL_BASE_URL),
-    webFeatureModule,
-    festivalFeatureModule,
-    appModule,
-)
+/** core · service · domain · feature 목록과 app 정의를 합친다. 정의는 각 모듈의 di/에 두고, core · service · feature 목록은 각 assembly 모듈이 가진다. */
+val appModules: List<Module> =
+    coreModules +
+        serviceModules(baseUrl = BuildConfig.BASE_URL) +
+        listOf(
+            domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),
+            domainFestivalModule,
+            domainUserNotificationModule,
+        ) +
+        featureModules(legalBaseUrl = BuildConfig.LEGAL_BASE_URL) +
+        appModule

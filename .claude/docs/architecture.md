@@ -10,13 +10,16 @@
 ## 모듈 배치
 
 ```
-app/                              Application · MainActivity · 루트 Coordinator · Koin 목록
+app/                              application/(Application · Activity 제공) · deeplink/ · navigation/(루트 Coordinator) · di/(목록 합치기)
 feature/{기능}/interface          NavKey 경로 · 진입 인자 · 결과 타입 (Compose · Koin 없음)
-feature/{기능}/sources            Coordinator · Screen · ViewModel · Contract · di/
-domain/{기능}/interface           Entity · Repository · UseCase 인터페이스 (순수 Kotlin)
-domain/{기능}/sources             Repository · UseCase 구현 · model/{dto,mapper} · di/
+feature/{기능}/sources            Coordinator · Screen · ViewModel · Contract · di/ (화면별 하위 패키지, iOS `Sources/<화면>`)
+feature/featureassembly           feature Koin 목록 (iOS `Feature/FeatureAssembly`)
+domain/{기능}/interface           entity/ · <기능>/(Repository · UseCase 인터페이스) (순수 Kotlin)
+domain/{기능}/sources             <기능>/(UseCase 구현) · repository/ · model/{dto,mapper} · di/
 service/{이름}                    API 경로 · 인증 세션 · 분석 등 앱 서비스
+service/serviceassembly           service Koin 목록 (iOS `Service/ServiceAssembly`)
 core/{이름}                       network · datastore · logger · utility
+core/coreassembly                 core Koin 목록 (iOS `Core/CoreAssembly`)
 ui/{이름}                         designkit(토큰 · 컴포넌트) · sharedui · animation
 build-logic/                      convention plugin
 ```
@@ -32,7 +35,8 @@ app → feature/*/sources → feature/*/interface
 app → domain/*/sources → domain/*/interface
                        → service/apiendpoint · service/auth · service/pack → core/*
 service/festivalcatalog → domain/festival/sources (서비스 계약 · 응답 DTO, iOS `FestiCoreFestivalCatalog → FestivalDomain`)
-app → service/* · core/*  (Koin 목록 합치기만)
+app → core/coreassembly · service/serviceassembly · feature/featureassembly  (Koin 목록만, 정의 없음)
+app → service/auth · core/*  (루트 Coordinator가 세션 · 저장소를 직접 쓴다)
 ```
 
 - 응답 DTO는 `domain/*/sources/model/dto`, DTO → Entity 매핑은 `model/mapper`(iOS `Sources/Model/{DTO,Mapper}`). `service/apiendpoint`의 `<X>Request`는 요청만 만들고 응답은 `reified T`로 받아, 호출하는 쪽(Repository · 서비스 구현)이 DTO 타입으로 디코딩한다. 인증 응답(`AuthDto.kt`)만 `service/auth`(토큰 갱신)가 쓰므로 `service/api`에 남는다.
@@ -51,10 +55,10 @@ app → service/* · core/*  (Koin 목록 합치기만)
 | iOS (`Projects/`) | Android | 비고 |
 |-------------------|---------|------|
 | `App` · `Feature/AppNavigation` | `app` | 루트 Coordinator(스플래시 · 온보딩 · 로그인 · 탭) |
-| `Feature/FeatureAssembly` · `Service/ServiceAssembly` · `Core/CoreAssembly` | 각 모듈 `di/` + `app` 목록 | 조립 모듈을 따로 두지 않는다 |
+| `Feature/FeatureAssembly` · `Service/ServiceAssembly` · `Core/CoreAssembly` | `feature/featureassembly` · `service/serviceassembly` · `core/coreassembly` | 목록만(`featureModules(legalBaseUrl)` · `serviceModules(baseUrl)` · `coreModules`). 정의는 각 모듈 `di/`. domain 목록은 iOS처럼 조립 모듈 없이 `app`이 나열 |
 | `Feature/Auth` | `feature/auth` | Google 로그인만. Apple 로그인 제외 |
 | `Feature/Onboarding` | `feature/onboarding` | |
-| `Feature/Festival` | `feature/festival` | 목록 · 라이브 보드 · 알림함. S00 목록(`FestivalFlow` 라이브 탭 루트 · `FestivalCoordinator` · `FestivalListViewModel` · `FestivalListPresentation`)과 S01 라이브 보드(`liveboard/`: `FestivalRoute.LiveBoard` · `LiveBoardViewModel` · `LiveBoardPresentation` · `LiveBoardScreenModel` · `HomeDeparture` · `FestivalSwitcherSheet`)를 옮겼다. 예매처 · 인스타그램은 Custom Tabs(`androidx.browser`, Apache-2.0). S06 존 지도(`zonemap/`: `FestivalRoute.ZoneMap` · `ZoneMapViewModel` · `ZoneMapModel` · `ZoneMapCanvas`(비율 좌표 Compose 레이아웃, 세로 스크롤만))는 보드 크루 존 칩에서 push하고 계정이 바뀌면 Coordinator가 뺀다. 존 지도의 팔로우 안내는 `FestivalFlow(onFlagTabRequested)` → `MainTabScreen`이 깃발 탭으로 바꾼다. 탭 바는 `FestivalCoordinatorState.hidesTabBar`(목록뿐 · 보드 시트/다이얼로그 · 알림함 맨 위)일 때 `MainTabScreen`이 숨긴다(존 지도는 보임). 알림함(`inbox/`: `FestivalRoute.NotificationInbox` · `NotificationInboxViewModel` · `NotificationInboxPresentation`)은 보드 종 아이콘 · 새 알림 배너에서 push하고, 라이브 보드 알림을 열면 Coordinator 대기 값(`pendingBoardFestivalId`)으로 보드 축제를 바꾸며, 계정이 바뀌면 Coordinator가 뺀다. 보드 배지 · 배너는 `domain/usernotification` 공유 배지를 따른다. 크루 등은 보드가 콜백만 보낸다. 깃발 탭은 목록(`flag/`: `FlagViewModel` · `FlagDirectory`)과 상세(`flagdetail/`: `FlagDetailViewModel` · `FlagDetailContext`)를 옮겼고, `FlagFlow`(깃발 탭 루트) · `FlagCoordinator`가 목록 위에 상세 하나를 push한다(`FlagRoute`, 탭 연결은 아직). 동작은 `feature/festival/.spec/festival-list-screen.md` · `live-board-screen.md` · `zone-map-screen.md` · `notification-inbox-screen.md` · `flag-tab.md` |
+| `Feature/Festival` | `feature/festival` | 목록 · 라이브 보드 · 알림함. S00 목록(`FestivalFlow` 라이브 탭 루트 · `FestivalCoordinator` · `FestivalListViewModel` · `FestivalListPresentation`)과 S01 라이브 보드(`liveboard/`: `FestivalRoute.LiveBoard` · `LiveBoardViewModel` · `LiveBoardPresentation` · `LiveBoardScreenModel` · `HomeDeparture` · `FestivalSwitcherSheet`)를 옮겼다. 예매처 · 인스타그램은 Custom Tabs(`androidx.browser`, Apache-2.0). S06 존 지도(`zonemap/`: `FestivalRoute.ZoneMap` · `ZoneMapViewModel` · `ZoneMapModel` · `ZoneMapCanvas`(비율 좌표 Compose 레이아웃, 세로 스크롤만))는 보드 크루 존 칩에서 push하고 계정이 바뀌면 Coordinator가 뺀다. 존 지도의 팔로우 안내는 `FestivalFlow(onFlagTabRequested)` → `MainTabScreen`이 깃발 탭으로 바꾼다. 탭 바는 `FestivalCoordinatorState.hidesTabBar`(목록뿐 · 보드 시트/다이얼로그 · 알림함 맨 위)일 때 `MainTabScreen`이 숨긴다(존 지도는 보임). 알림함(`notificationinbox/`: `FestivalRoute.NotificationInbox` · `NotificationInboxViewModel` · `NotificationInboxPresentation`)은 보드 종 아이콘 · 새 알림 배너에서 push하고, 라이브 보드 알림을 열면 Coordinator 대기 값(`pendingBoardFestivalId`)으로 보드 축제를 바꾸며, 계정이 바뀌면 Coordinator가 뺀다. 보드 배지 · 배너는 `domain/usernotification` 공유 배지를 따른다. 크루 등은 보드가 콜백만 보낸다. 깃발 탭은 목록(`flag/`: `FlagViewModel` · `FlagDirectory`)과 상세(`flagdetail/`: `FlagDetailViewModel` · `FlagDetailContext`)를 옮겼고, `FlagFlow`(깃발 탭 루트) · `FlagCoordinator`가 목록 위에 상세 하나를 push한다(`FlagRoute`, 탭 연결은 아직). 동작은 `feature/festival/.spec/festival-list-screen.md` · `live-board-screen.md` · `zone-map-screen.md` · `notification-inbox-screen.md` · `flag-tab.md` |
 | `Feature/Timetable` | `feature/timetable` | S02 타임테이블(`main/`: `TimetableRoute` · `TimetableViewModel` · `TimetableBoard`(고정 높이 `Box` 절대 배치 + 세로 · 가로 `ScrollState`, 무대 머리글은 가로 값만 따름, 두 손가락 확대) · 공개 전 라인업)과 S03 공연 상세 시트(`setdetail/`, 상태는 `TimetableViewModel`이 가짐) · 공연 검색 · 변경 목록(`setlist/`: `TimetableSetListViewModel`)을 옮겼다. 입력은 보드가 쓴 `FestivalBoardSelectionUseCase` 공유 상태를 읽어 `domain/timetable` 매퍼로 옮긴다. 내 일정 서버 동기화 · 고르기 · 알림 켜기 · 탭 연결(Coordinator · `MainTabScreen` 슬롯 · app Koin 등록)은 아직. 동작은 `feature/timetable/.spec/timetable-screen.md` |
 | `Feature/Profile` | 없음 | 아직 옮기지 않았다. 옮길 때 `feature/profile`로 만든다 |
 | `Feature/Bearer` | 없음 | 아직 옮기지 않았다. 옮길 때 `feature/bearer`로 만든다 |

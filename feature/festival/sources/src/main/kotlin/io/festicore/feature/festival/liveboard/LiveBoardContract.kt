@@ -1,15 +1,15 @@
 package io.festicore.feature.festival.liveboard
 
-import io.festicore.domain.festival.CachedFestivalPack
-import io.festicore.domain.festival.FestivalBoardSelection
-import io.festicore.domain.festival.FestivalCatalogItem
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalOfficialNews
-import io.festicore.domain.festival.FestivalOverview
-import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.domain.festival.PackDownloadProgress
-import io.festicore.domain.usernotification.UserNotificationItem
-import io.festicore.feature.festival.FestivalListPresentation
+import io.festicore.domain.festival.entity.CachedFestivalPack
+import io.festicore.domain.festival.entity.FestivalBoardSelection
+import io.festicore.domain.festival.entity.FestivalCatalogItem
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalOfficialNews
+import io.festicore.domain.festival.entity.FestivalOverview
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.festival.entity.PackDownloadProgress
+import io.festicore.domain.usernotification.entity.UserNotificationItem
+import io.festicore.feature.festival.festivallist.FestivalListPresentation
 import java.time.Instant
 
 /** 선택 축제 팩 감시 상태. iOS `FestivalFeature.Connection`. */

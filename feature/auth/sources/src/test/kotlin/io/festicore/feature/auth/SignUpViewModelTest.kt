@@ -1,7 +1,7 @@
 package io.festicore.feature.auth
 
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthProfile
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthProfile
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -62,7 +62,7 @@ class SignUpViewModelTest {
             containerHost.onNicknameChanged("가나다라마바사아자차카타파하")
             expectState { copy(nickname = "가나다라마바사아자차카타", nicknameEdited = true) }
         }
-        assertEquals("12 / 12", io.festicore.domain.auth.AuthNicknameRule.counterText("가나다라마바사아자차카타"))
+        assertEquals("12 / 12", io.festicore.domain.auth.entity.AuthNicknameRule.counterText("가나다라마바사아자차카타"))
     }
 
     @Test

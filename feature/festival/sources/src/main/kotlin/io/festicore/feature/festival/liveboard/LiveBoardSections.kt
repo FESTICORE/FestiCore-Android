@@ -35,10 +35,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalOfficialNews
-import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.feature.festival.FestivalAccessibilityId
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalOfficialNews
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.feature.festival.accessibility.FestivalAccessibilityId
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButton
 import io.festicore.ui.designkit.component.action.FCButtonSize

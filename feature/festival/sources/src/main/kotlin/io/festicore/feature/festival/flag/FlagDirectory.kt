@@ -1,7 +1,6 @@
 package io.festicore.feature.festival.flag
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 /** 깃발 성향 태그. [rawValue]는 서버 값이다. iOS `FestivalFlagDirectory.Tag`. */
 enum class FlagTag(val rawValue: String) {
     Slam("slam"),

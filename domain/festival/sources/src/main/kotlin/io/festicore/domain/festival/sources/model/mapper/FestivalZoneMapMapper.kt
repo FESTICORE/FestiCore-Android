@@ -1,8 +1,8 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.domain.festival.FestivalIsoTime
-import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.entity.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalZoneMap
 import java.time.Instant
 
 /**

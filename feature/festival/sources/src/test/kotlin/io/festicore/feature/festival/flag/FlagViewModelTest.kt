@@ -1,7 +1,7 @@
 package io.festicore.feature.festival.flag
 
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.feature.festival.liveboard.FakeFlagUseCase
 import io.festicore.feature.festival.liveboard.FakeLiveBoardUseCase
 import kotlinx.coroutines.CompletableDeferred

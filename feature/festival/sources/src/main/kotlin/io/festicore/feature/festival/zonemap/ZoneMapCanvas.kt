@@ -42,7 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.entity.FestivalZoneMap
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.label.FCTag
 import io.festicore.ui.designkit.component.label.FCTagTone

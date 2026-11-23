@@ -3,10 +3,10 @@ package io.festicore.service.auth.di
 import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.service.apiendpoint.auth.AuthRequest
 import io.festicore.service.auth.AuthSession
-import io.festicore.service.auth.CredentialStore
-import io.festicore.service.auth.SessionExpiryEvents
-import io.festicore.service.auth.TokenRefresher
+import io.festicore.service.auth.expiry.SessionExpiryEvents
 import io.festicore.service.auth.festiCoreAuthPlugin
+import io.festicore.service.auth.refresh.TokenRefresher
+import io.festicore.service.auth.store.CredentialStore
 import io.ktor.client.HttpClient
 import org.koin.core.module.Module
 import org.koin.dsl.module

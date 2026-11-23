@@ -1,11 +1,11 @@
 package io.festicore.feature.auth
 
 import androidx.lifecycle.ViewModel
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthNicknameRule
-import io.festicore.domain.auth.AuthProfile
-import io.festicore.domain.auth.AuthRepository
-import io.festicore.domain.auth.AuthUser
+import io.festicore.domain.auth.auth.AuthRepository
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthNicknameRule
+import io.festicore.domain.auth.entity.AuthProfile
+import io.festicore.domain.auth.entity.AuthUser
 import kotlin.coroutines.cancellation.CancellationException
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer

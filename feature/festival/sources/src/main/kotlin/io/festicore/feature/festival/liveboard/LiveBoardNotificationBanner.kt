@@ -20,8 +20,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.usernotification.UserNotificationItem
-import io.festicore.feature.festival.inbox.NotificationInboxPresentation
+import io.festicore.domain.usernotification.entity.UserNotificationItem
+import io.festicore.feature.festival.notificationinbox.NotificationInboxPresentation
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing

@@ -1,8 +1,8 @@
 package io.festicore.feature.festival.liveboard
 
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalOverview
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalOverview
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import java.time.Instant
 import java.time.OffsetDateTime
 

@@ -43,9 +43,9 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import io.festicore.domain.festival.FestivalLiveBoardSchedule
-import io.festicore.domain.festival.FestivalLiveBoardUseCase
-import io.festicore.domain.festival.FestivalOverview
+import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
+import io.festicore.domain.festival.entity.FestivalOverview
+import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButtonStyle
 import io.festicore.ui.designkit.component.card.FCCardAction

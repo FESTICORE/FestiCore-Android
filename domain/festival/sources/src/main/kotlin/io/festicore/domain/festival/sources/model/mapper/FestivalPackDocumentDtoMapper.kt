@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackPerformanceDto
 

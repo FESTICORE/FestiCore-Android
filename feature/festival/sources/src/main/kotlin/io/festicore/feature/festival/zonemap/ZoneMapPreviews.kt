@@ -2,8 +2,8 @@ package io.festicore.feature.festival.zonemap
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalZoneMap
 import io.festicore.ui.designkit.theme.FestiCoreTheme
 import java.time.Instant
 

@@ -2,16 +2,16 @@ package io.festicore.app.navigation
 
 import io.festicore.core.datastore.FirstInstallOnboardingStore
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthLoginResult
-import io.festicore.domain.auth.AuthProfile
-import io.festicore.domain.auth.AuthRepository
-import io.festicore.domain.auth.AuthUser
+import io.festicore.domain.auth.auth.AuthRepository
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthLoginResult
+import io.festicore.domain.auth.entity.AuthProfile
+import io.festicore.domain.auth.entity.AuthUser
 import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.onboarding.OnboardingRoute
-import io.festicore.service.auth.SessionExpiry
+import io.festicore.service.auth.expiry.SessionExpiry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow

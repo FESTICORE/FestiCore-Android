@@ -1,11 +1,11 @@
 package io.festicore.domain.usernotification.sources.di
 
-import io.festicore.domain.usernotification.UserNotificationBadgeUseCase
-import io.festicore.domain.usernotification.UserNotificationRepository
-import io.festicore.domain.usernotification.UserNotificationUseCase
-import io.festicore.domain.usernotification.sources.UserNotificationBadgeStore
-import io.festicore.domain.usernotification.sources.UserNotificationRepositoryImpl
-import io.festicore.domain.usernotification.sources.UserNotificationUseCaseImpl
+import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
+import io.festicore.domain.usernotification.sources.repository.UserNotificationRepositoryImpl
+import io.festicore.domain.usernotification.sources.repository.local.UserNotificationBadgeStore
+import io.festicore.domain.usernotification.sources.usernotification.UserNotificationUseCaseImpl
+import io.festicore.domain.usernotification.usernotification.UserNotificationRepository
+import io.festicore.domain.usernotification.usernotification.UserNotificationUseCase
 import io.festicore.service.auth.AuthSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

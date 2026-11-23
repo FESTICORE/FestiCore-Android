@@ -91,10 +91,11 @@ python3 -m unittest discover -s .claude/hooks/tests
 | Keystore · `EncryptedSharedPreferences`                                          | `core/datastore`                                      |
 | `SharedPreferences` · DataStore                                                  | `core/datastore`                                      |
 | Room                                                                             | `core/database`                                       |
-| feature `build.gradle.kts`에서 `*.sources` 의존                                  | 없음 (app만)                                          |
+| feature `build.gradle.kts`에서 `*.sources` 의존                                  | `feature/featureassembly` (목록만) · app              |
 | `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`)                          |
 | `service/apiendpoint`에서 `io.festicore.domain.*` import (응답 DTO)              | 없음 (호출하는 쪽이 디코딩)                           |
 | domain `build.gradle.kts`에서 `:service:festivalcatalog` main 의존(`testImplementation` 허용) | 없음 (`service/festivalcatalog`가 domain 계약을 구현) |
+| `*assembly` 모듈 `.kt`에서 `single` · `factory` · `viewModel` · `scoped` · `worker` · `module { }` 정의 | 없음 (각 모듈 `di/`, assembly는 목록만)               |
 
 재시도 한도:
 

@@ -1,11 +1,14 @@
 package io.festicore.domain.festival.sources
-
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.domain.festival.FestivalBoardSelection
-import io.festicore.domain.festival.FestivalSchedule
-import io.festicore.domain.festival.FestivalScheduleError
-import io.festicore.domain.festival.FestivalScheduleRepository
-import io.festicore.domain.festival.FestivalScheduleSaved
+import io.festicore.domain.festival.entity.FestivalBoardSelection
+import io.festicore.domain.festival.entity.FestivalSchedule
+import io.festicore.domain.festival.entity.FestivalScheduleError
+import io.festicore.domain.festival.entity.FestivalScheduleSaved
+import io.festicore.domain.festival.schedule.FestivalScheduleRepository
+import io.festicore.domain.festival.sources.repository.FestivalScheduleRepositoryImpl
+import io.festicore.domain.festival.sources.schedule.FestivalScheduleSavedEvents
+import io.festicore.domain.festival.sources.schedule.FestivalScheduleUseCaseImpl
+import io.festicore.domain.festival.sources.selection.FestivalBoardSelectionStore
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.festivalcatalog.NetworkFestivalScheduleService
 import io.ktor.client.engine.mock.MockEngine

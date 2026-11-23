@@ -35,9 +35,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.festival.FestivalFlagDetail
-import io.festicore.domain.festival.FestivalFlagReportReason
-import io.festicore.feature.festival.FestivalAccessibilityId
+import io.festicore.domain.festival.entity.FestivalFlagDetail
+import io.festicore.domain.festival.entity.FestivalFlagReportReason
+import io.festicore.feature.festival.accessibility.FestivalAccessibilityId
 import io.festicore.feature.festival.flag.FlagPresentation
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButton

@@ -1,12 +1,15 @@
 package io.festicore.domain.festival.sources
-
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.domain.festival.FestivalCatalogItem
-import io.festicore.domain.festival.FestivalCatalogPage
-import io.festicore.domain.festival.FestivalCatalogRepository
-import io.festicore.domain.festival.FestivalPackError
-import io.festicore.domain.festival.FestivalZoneMap
+import io.festicore.domain.festival.catalog.FestivalCatalogRepository
+import io.festicore.domain.festival.entity.FestivalCatalogItem
+import io.festicore.domain.festival.entity.FestivalCatalogPage
+import io.festicore.domain.festival.entity.FestivalPackError
+import io.festicore.domain.festival.entity.FestivalZoneMap
+import io.festicore.domain.festival.sources.pack.FestivalPackUseCaseImpl
+import io.festicore.domain.festival.sources.repository.FestivalPackRepositoryImpl
+import io.festicore.domain.festival.sources.repository.FestivalZoneMapRepositoryImpl
+import io.festicore.domain.festival.sources.zonemap.FestivalZoneMapUseCaseImpl
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackDownloadEvent as ServiceEvent
@@ -134,13 +137,13 @@ class FestivalZoneMapUseCaseTest {
 
         val result = packUseCase.syncPack("fst_a")
 
-        assertTrue(result is io.festicore.domain.festival.PackSyncResult.Updated)
+        assertTrue(result is io.festicore.domain.festival.entity.PackSyncResult.Updated)
         assertEquals(listOf("fst_a"), packService.synced)
         assertEquals(1, catalog.refreshCount)
         assertEquals(10, packRepository.state.value.packs.getValue("fst_a").packVersion)
 
         packService.syncResult = ServiceResult.RetryAfter(5.seconds)
-        assertTrue(packUseCase.syncPack("fst_a") is io.festicore.domain.festival.PackSyncResult.RetryAfter)
+        assertTrue(packUseCase.syncPack("fst_a") is io.festicore.domain.festival.entity.PackSyncResult.RetryAfter)
         assertEquals(1, catalog.refreshCount)
     }
 }

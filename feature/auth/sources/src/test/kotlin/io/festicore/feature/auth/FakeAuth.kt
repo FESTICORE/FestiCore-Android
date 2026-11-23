@@ -1,11 +1,11 @@
 package io.festicore.feature.auth
 
-import io.festicore.domain.auth.AuthDomainError
-import io.festicore.domain.auth.AuthLoginResult
-import io.festicore.domain.auth.AuthProfile
-import io.festicore.domain.auth.AuthRepository
-import io.festicore.domain.auth.AuthUser
-import io.festicore.domain.auth.GoogleLoginUseCase
+import io.festicore.domain.auth.auth.AuthRepository
+import io.festicore.domain.auth.entity.AuthDomainError
+import io.festicore.domain.auth.entity.AuthLoginResult
+import io.festicore.domain.auth.entity.AuthProfile
+import io.festicore.domain.auth.entity.AuthUser
+import io.festicore.domain.auth.google.GoogleLoginUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 

@@ -1,9 +1,9 @@
 package io.festicore.feature.festival.flag
 
-import io.festicore.domain.festival.FestivalFlagFollowError
-import io.festicore.domain.festival.FestivalFlagFollowResult
-import io.festicore.domain.festival.FestivalLiveBoardError
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalFlagFollowError
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalLiveBoardError
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.feature.festival.flag.FlagFixtures.board
 import io.festicore.feature.festival.flag.FlagFixtures.flag
 import io.festicore.feature.festival.flag.FlagFixtures.loadedState

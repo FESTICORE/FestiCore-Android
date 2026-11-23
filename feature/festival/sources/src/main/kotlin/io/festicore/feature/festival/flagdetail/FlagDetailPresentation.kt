@@ -1,6 +1,6 @@
 package io.festicore.feature.festival.flagdetail
 
-import io.festicore.domain.festival.FestivalFlagDetail
+import io.festicore.domain.festival.entity.FestivalFlagDetail
 import io.festicore.feature.festival.flag.FlagPresentation
 import io.festicore.feature.festival.flag.FlagPresentation.title
 import io.festicore.feature.festival.flag.FlagTag

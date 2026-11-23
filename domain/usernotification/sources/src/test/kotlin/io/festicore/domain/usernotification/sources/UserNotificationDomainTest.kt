@@ -1,18 +1,19 @@
 package io.festicore.domain.usernotification.sources
-
 import io.festicore.core.datastore.SecureStorage
 import io.festicore.core.network.BaseResponse
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.di.coreNetworkModule
-import io.festicore.domain.usernotification.UserNotificationBadgeUseCase
-import io.festicore.domain.usernotification.UserNotificationError
-import io.festicore.domain.usernotification.UserNotificationPage
-import io.festicore.domain.usernotification.UserNotificationRepository
-import io.festicore.domain.usernotification.UserNotificationUseCase
+import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
+import io.festicore.domain.usernotification.entity.UserNotificationError
+import io.festicore.domain.usernotification.entity.UserNotificationPage
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
 import io.festicore.domain.usernotification.sources.model.dto.UserNotificationItemDto
 import io.festicore.domain.usernotification.sources.model.dto.UserNotificationListDto
 import io.festicore.domain.usernotification.sources.model.mapper.toDomain
+import io.festicore.domain.usernotification.sources.repository.UserNotificationRepositoryImpl
+import io.festicore.domain.usernotification.sources.usernotification.UserNotificationUseCaseImpl
+import io.festicore.domain.usernotification.usernotification.UserNotificationRepository
+import io.festicore.domain.usernotification.usernotification.UserNotificationUseCase
 import io.festicore.service.apiendpoint.di.serviceApiEndpointModule
 import io.festicore.service.auth.di.serviceAuthModule
 import kotlinx.coroutines.test.runTest

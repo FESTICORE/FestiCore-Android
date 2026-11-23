@@ -1,7 +1,7 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.domain.festival.FestivalIsoTime
-import io.festicore.domain.festival.FestivalOfficialNews
+import io.festicore.domain.festival.entity.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalOfficialNews
 import io.festicore.domain.festival.sources.model.dto.FestivalOfficialNewsDto
 import java.net.URI
 import java.net.URISyntaxException

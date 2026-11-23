@@ -44,7 +44,7 @@ iOS 대응: `Projects/Feature/Festival/Sources/NotificationInbox/**`, 전환 `Pr
 | 모듈 | 계층 | 변경 내용 |
 | --- | --- | --- |
 | `feature/festival/interface` | feature | `FestivalRoute.NotificationInbox` |
-| `feature/festival/sources` | feature | `inbox/`(Contract · ViewModel · Screen · Presentation · 프리뷰), Coordinator push/pop · 열기 · 계정 변경 · 탭 바, `FestivalFlow` 항목, 보드 축제 목록 알림 · 대기 축제 |
+| `feature/festival/sources` | feature | `notificationinbox/`(Contract · ViewModel · Screen · Presentation · 프리뷰), Coordinator push/pop · 열기 · 계정 변경 · 탭 바, `FestivalFlow` 항목, 보드 축제 목록 알림 · 대기 축제 |
 
 ## 영향 범위
 

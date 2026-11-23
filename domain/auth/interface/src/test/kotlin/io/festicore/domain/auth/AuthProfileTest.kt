@@ -1,5 +1,6 @@
 package io.festicore.domain.auth
-
+import io.festicore.domain.auth.entity.AuthProfile
+import io.festicore.domain.auth.entity.AuthUser
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

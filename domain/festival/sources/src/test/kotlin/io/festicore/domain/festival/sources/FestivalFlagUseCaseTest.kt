@@ -1,8 +1,9 @@
 package io.festicore.domain.festival.sources
-
 import io.festicore.core.network.createFestiCoreHttpClient
-import io.festicore.domain.festival.FestivalFlagFollowError
-import io.festicore.domain.festival.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalFlagFollowError
+import io.festicore.domain.festival.entity.FestivalFlagFollowResult
+import io.festicore.domain.festival.sources.flag.FestivalFlagUseCaseImpl
+import io.festicore.domain.festival.sources.repository.FestivalFlagRepositoryImpl
 import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.festicore.service.festivalcatalog.NetworkFestivalFlagFollowService
 import io.ktor.client.engine.mock.MockEngine

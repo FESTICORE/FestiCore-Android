@@ -1,9 +1,9 @@
 package io.festicore.feature.festival.liveboard
 
-import io.festicore.domain.festival.FestivalIsoTime
-import io.festicore.domain.festival.FestivalLiveBoardSchedule
-import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.feature.festival.FestivalListPresentation
+import io.festicore.domain.festival.entity.FestivalIsoTime
+import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.feature.festival.festivallist.FestivalListPresentation
 import java.time.Instant
 
 /** 라이브 보드 화면에 필요한 계산 값만 모은 표시 모델. iOS `FestivalLiveBoardScreenModel`. */

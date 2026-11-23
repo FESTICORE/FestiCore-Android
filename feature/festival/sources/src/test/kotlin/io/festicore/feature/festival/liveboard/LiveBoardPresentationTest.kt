@@ -1,8 +1,8 @@
 package io.festicore.feature.festival.liveboard
 
-import io.festicore.domain.festival.FestivalLiveBoardSchedule
-import io.festicore.domain.festival.FestivalLiveBoardSnapshot
-import io.festicore.domain.festival.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
+import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.feature.festival.liveboard.LiveBoardFixtures.date
 import io.festicore.feature.festival.liveboard.LiveBoardFixtures.festival
 import io.festicore.feature.festival.liveboard.LiveBoardFixtures.flag

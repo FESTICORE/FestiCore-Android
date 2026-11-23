@@ -12,14 +12,11 @@ android {
 dependencies {
     val libs = catalog
     implementation(project(":core:logger"))
-    implementation(project(":core:network"))
     implementation(project(":core:datastore"))
     implementation(project(":core:utility"))
-    implementation(project(":service:apiendpoint"))
+    implementation(project(":core:coreassembly"))
     implementation(project(":service:auth"))
-    implementation(project(":service:device"))
-    implementation(project(":service:festivalcatalog"))
-    implementation(project(":service:pack"))
+    implementation(project(":service:serviceassembly"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":domain:festival:sources"))
     implementation(project(":domain:usernotification:sources"))
@@ -30,6 +27,7 @@ dependencies {
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))
+    implementation(project(":feature:featureassembly"))
     implementation(libs.lib("core-splashscreen"))
     implementation(libs.lib("lifecycle-runtime-compose"))
 
