@@ -11,6 +11,7 @@ import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.festival.common.FestivalTransitions
 import io.festicore.feature.festival.crew.CrewScreen
 import io.festicore.feature.festival.crewcreate.CrewCreateScreen
+import io.festicore.feature.festival.crewjoin.CrewJoinScreen
 import io.festicore.feature.festival.festivallist.FestivalListScreen
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.festivallist.ListForegroundEffect
@@ -107,6 +108,14 @@ fun FestivalFlow(
                         viewModel = koinViewModel { parametersOf(key.festivalId, key.crewId) },
                         onBack = coordinator::onCrewBack,
                         onCrewClosed = coordinator::onCrewClosed,
+                    )
+                }
+                entry<FestivalRoute.CrewJoin> { key ->
+                    CrewJoinScreen(
+                        viewModel = koinViewModel { parametersOf(key.code) },
+                        onClose = coordinator::onCrewJoinClosed,
+                        onLoginRequested = coordinator::onCrewJoinLoginRequested,
+                        onJoined = { crewId, festivalId -> coordinator.onCrewJoined(festivalId, crewId) },
                     )
                 }
                 entry<FestivalRoute.NotificationInbox> {

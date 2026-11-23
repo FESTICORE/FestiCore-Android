@@ -3,6 +3,7 @@ package io.festicore.feature.festival.crew
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import io.festicore.domain.festival.entity.FestivalCrew
+import io.festicore.domain.festival.entity.FestivalCrewInvite
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.feature.festival.crewcreate.CrewCreateContent
@@ -10,6 +11,9 @@ import io.festicore.feature.festival.crewcreate.CrewCreateState
 import io.festicore.feature.festival.crewcreate.CrewCreateStep
 import io.festicore.feature.festival.crewgather.CrewGatherContent
 import io.festicore.feature.festival.crewgather.CrewGatherState
+import io.festicore.feature.festival.crewjoin.CrewJoinContent
+import io.festicore.feature.festival.crewjoin.CrewJoinLoad
+import io.festicore.feature.festival.crewjoin.CrewJoinState
 import java.time.Instant
 
 // 프리뷰 전용 가짜 값.
@@ -103,4 +107,47 @@ private fun CrewCreateCreatedPreview() {
 @Composable
 private fun CrewGatherPreview() {
     CrewGatherContent(state = CrewGatherState(crewId = "crew_preview", zones = PreviewZones, recipientCount = 2))
+}
+
+private val PreviewInvite =
+    FestivalCrewInvite(
+        code = "K7P2QX",
+        crewName = "펜타 크루",
+        festivalId = "fst_preview",
+        festivalName = "펜타포트",
+        inviterNickname = "민지",
+        memberCount = 5,
+        expiresAt = PreviewNow.plusSeconds(172_800),
+        memberPreview =
+            listOf(
+                FestivalCrewInvite.Member("민지", null),
+                FestivalCrewInvite.Member("준호", null),
+                FestivalCrewInvite.Member("서연", null),
+            ),
+    )
+
+private val PreviewJoinState = CrewJoinState(code = "K7P2QX", hasSession = true, invite = PreviewInvite, load = CrewJoinLoad.Loaded)
+
+@Preview(name = "CrewJoin · 초대", heightDp = 800)
+@Composable
+private fun CrewJoinPreview() {
+    CrewJoinContent(state = PreviewJoinState, now = PreviewNow)
+}
+
+@Preview(name = "CrewJoin · 만료", heightDp = 800)
+@Composable
+private fun CrewJoinExpiredPreview() {
+    CrewJoinContent(state = PreviewJoinState, now = PreviewInvite.expiresAt)
+}
+
+@Preview(name = "CrewJoin · 정원 초과", heightDp = 800)
+@Composable
+private fun CrewJoinFullPreview() {
+    CrewJoinContent(state = PreviewJoinState.copy(invite = PreviewInvite.copy(memberCount = FestivalCrew.MAX_MEMBERS)), now = PreviewNow)
+}
+
+@Preview(name = "CrewJoin · 불러오지 못함")
+@Composable
+private fun CrewJoinFailedPreview() {
+    CrewJoinContent(state = CrewJoinState(code = "K7P2QX", hasSession = false, load = CrewJoinLoad.Failed), now = PreviewNow)
 }

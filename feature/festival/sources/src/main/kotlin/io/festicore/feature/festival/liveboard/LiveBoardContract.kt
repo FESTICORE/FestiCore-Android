@@ -155,6 +155,9 @@ sealed interface LiveBoardBoundary {
 
     data object CrewLogin : LiveBoardBoundary
 
+    /** 참여 확인에서 비로그인으로 "참여하기"(iOS `crewJoinLoginRequested(crewName:)`). [crewName]은 로그인 시트 문구에 넣는 초대받은 크루 이름(불러오기 전이면 null). */
+    data class CrewJoinLogin(val crewName: String?) : LiveBoardBoundary
+
     data object FollowLogin : LiveBoardBoundary
 
     /** 팔로우 안내의 "깃발 찾기"(iOS `flagDirectoryRequested`). */

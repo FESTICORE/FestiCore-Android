@@ -5,13 +5,13 @@ modules: [feature/festival]
 
 # 크루 Spec
 
-> 라이브 탭 스택에 쌓는 크루 화면(S07) — 크루 만들기 · 크루 메인 · 크루장 메뉴 · 모여 시트의 동작 규칙. 참여 확인(S08)은 C2에서 이 문서에 더한다.
+> 라이브 탭 스택에 쌓는 크루 화면(S07) — 크루 만들기 · 크루 메인 · 크루장 메뉴 · 모여 시트 · 참여 확인(S08)의 동작 규칙.
 
-iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature.swift, Reducer/FestivalCrewMenuFeature.swift, Model/FestivalCrewPresentation.swift, View/FestivalCrewView.swift, View/FestivalCrewMenuView.swift}` · `Sources/LiveBoard/CrewCreate/FestivalCrewCreate{Feature,View}.swift` · `Sources/LiveBoard/CrewGather/FestivalCrewGather{Feature,View}.swift` · `App/Sources/Navigation/Festival/FestivalCoordinator.swift`. 테스트 `FestivalCrewFeatureTests` · `FestivalCrewCreateFeatureTests` · `FestivalCrewGatherFeatureTests` · `FestivalCrewCreateRoutingTests`. 설계: `.claude/docs/specs/2026-11-23-flag-tab-android-design.md` "화면 3: Crew".
+iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature.swift, Reducer/FestivalCrewMenuFeature.swift, Reducer/FestivalCrewJoinFeature.swift, View/FestivalCrewJoinView.swift, Model/FestivalCrewPresentation.swift, View/FestivalCrewView.swift, View/FestivalCrewMenuView.swift}` · `Sources/LiveBoard/CrewCreate/FestivalCrewCreate{Feature,View}.swift` · `Sources/LiveBoard/CrewGather/FestivalCrewGather{Feature,View}.swift` · `App/Sources/Navigation/Festival/FestivalCoordinator.swift`. 테스트 `FestivalCrewFeatureTests` · `FestivalCrewCreateFeatureTests` · `FestivalCrewGatherFeatureTests` · `FestivalCrewJoinFeatureTests` · `FestivalCrewCreateRoutingTests`. 설계: `.claude/docs/specs/2026-11-23-flag-tab-android-design.md` "화면 3: Crew".
 
 ## 개요
 
-크루 API는 `FestivalCrewUseCase`(D2)만 쓴다. 코드: `feature/festival/sources/.../crewcreate/` · `crew/` · `crewgather/`, 경로 `FestivalRoute.CrewCreate(festivalId)` · `FestivalRoute.Crew(festivalId, crewId)`. 크루 화면이 그리는 존 · 축제 이름 · 보관 시각은 보드 선택 공유 값(`FestivalBoardSelectionUseCase`)의 문서 중 ID가 같은 것만, 첫 크루원 값은 보드의 마지막 라이브 상태(`cachedLiveBoard(festivalId).crew`, ID가 같을 때)만 쓴다(iOS는 push할 때 보드 상태를 복사한다).
+크루 API는 `FestivalCrewUseCase`(D2)만 쓴다. 코드: `feature/festival/sources/.../crewcreate/` · `crew/` · `crewgather/` · `crewjoin/`, 경로 `FestivalRoute.CrewCreate(festivalId)` · `FestivalRoute.Crew(festivalId, crewId)` · `FestivalRoute.CrewJoin(code)`. 크루 화면이 그리는 존 · 축제 이름 · 보관 시각은 보드 선택 공유 값(`FestivalBoardSelectionUseCase`)의 문서 중 ID가 같은 것만, 첫 크루원 값은 보드의 마지막 라이브 상태(`cachedLiveBoard(festivalId).crew`, ID가 같을 때)만 쓴다(iOS는 push할 때 보드 상태를 복사한다).
 
 ## 동작 규칙
 
@@ -22,7 +22,8 @@ iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature
 - 만들기 "크루 보기" → 만들기 화면을 빼고 크루 화면을 쌓는다(크루에서 뒤로 가면 보드).
 - 만들기 닫기 · 크루 뒤로 → pop. 만들기 중 세션이 끊김(401) → 만들기 화면을 빼고 `CrewLogin` 경계(로그인 시트 L1 자리)를 남긴다.
 - 크루 해산 · 크루에서 빠짐(`CrewClosed`) → 크루 화면을 뺀다.
-- 크루 · 만들기가 맨 위면 탭 바를 숨긴다. 계정이 바뀌면 크루 · 만들기 화면을 뺀다.
+- 초대 코드(`onCrewInviteOpened(code)`) → 기존 참여 확인 · 크루 화면을 빼고 `CrewJoin(code)`를 쌓는다. 참여 확인 닫기 → pop. 참여 성공 → 참여 확인을 빼고 `Crew(festivalId, crewId)`를 쌓는다. 로그인 필요 → 화면을 두고 `CrewJoinLogin(crewName)` 경계를 남긴다.
+- 크루 · 만들기 · 참여 확인이 맨 위면 탭 바를 숨긴다. 참여 확인은 계정이 바뀌어도 닫지 않는다(로그인 상태만 바꾼다). 계정이 바뀌면 크루 · 만들기 화면을 뺀다.
 - 만든 뒤 · 크루가 닫힌 뒤 보드 크루 카드는 보드가 다시 보일 때(`onAppear` → 조회) 새로 받는다. iOS는 아래 화면 보드에 즉시 `retryLiveBoard`를 보내지만 Android 보드는 가려진 동안 조회를 멈추므로 돌아올 때 받는 것과 같다.
 
 ### 크루 만들기 (CrewCreate)
@@ -63,8 +64,15 @@ iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature
 - 존이 없으면 "공개된 존이 없어요" 카드. 받는 사람 수가 0 · 모름이면 "누르면 바로 크루원에게 소리 알림이 가요".
 - 보드 "모여!"와 크루 메인 "모여!"가 같은 시트를 쓴다. 보드 시트는 탭 바 숨김 대상이 아니다(iOS와 같음).
 
+### 참여 확인 (CrewJoin, S08)
+
+- 처음 보일 때만 초대를 불러온다(로그인 없이). 404 · 410 → "초대가 만료됐어요", 그 외 실패 → "초대를 불러오지 못했어요" + "다시 시도".
+- 차단: 만료(`expiresAt <= 지금`)를 정원(`memberCount >= 12`)보다 먼저 본다. 차단이면 안내 줄을 보이고 버튼은 "닫기" 하나다.
+- "참여하기"는 불러왔고 참여 중이 아닐 때만. 비로그인이면 요청 없이 로그인(크루 이름 문맥)을 요청한다. 로그인 상태가 바뀌면 `hasSession`만 바꾸고 자동 참여하지 않는다.
+- 참여 실패: 401 → 로그인 요청, 409 alreadyInCrew → 참여 중 표시를 유지한 채 라이브 보드에서 지금 크루를 찾아 "기존 크루에서 나갈까요?"(못 찾으면 "크루에 참여하지 못했어요" 안내). 확인 → 나간 뒤 참여, 나가기 실패면 참여하지 않는다(403 → 크루장 안내). 그 밖은 "크루에 참여하지 못했어요" + 오류 문구.
+
 ## 경계
 
-- 로그인 필요 지점(만들기 401)은 `LiveBoardBoundary.CrewLogin`으로 남긴다. 로그인 시트는 L1, 탭 연결은 T1.
+- 로그인 필요 지점(만들기 401)은 `LiveBoardBoundary.CrewLogin`, 참여 확인은 `LiveBoardBoundary.CrewJoinLogin(crewName)`으로 남긴다. 로그인 시트는 L1, 탭 연결은 T1.
 - 약관 재동의는 화면 문구만 보인다(설계 "비로그인 · 기기 · 권한").
-- 참여 확인(`CrewJoin`) · 초대 딥링크는 C2 · T1.
+- 초대 딥링크(`CrewInvite(code)`) · 라이브 탭 선택은 T1에서 `FestivalCoordinator.onCrewInviteOpened`로 잇는다.

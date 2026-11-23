@@ -22,7 +22,7 @@ data class FestivalCoordinatorState(
 ) {
     /**
      * 탭 바를 숨길지(iOS `MainTabCoordinator.shouldHideTabBar`의 라이브 탭 부분). 스택이 목록뿐이면 숨기고,
-     * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있거나 알림함 · 크루 · 크루 만들기가 맨 위면 숨긴다(설계 D9 · "탭 바 표시"). 존 지도는 탭 바를 보인다.
+     * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있거나 알림함 · 크루 · 크루 만들기 · 참여 확인이 맨 위면 숨긴다(설계 D9 · "탭 바 표시"). 존 지도는 탭 바를 보인다.
      */
     val hidesTabBar: Boolean
         get() {
@@ -30,9 +30,10 @@ data class FestivalCoordinatorState(
             return routes.size == 1 ||
                 (top is FestivalRoute.LiveBoard && isLiveBoardPresentingModal) ||
                 top is FestivalRoute.NotificationInbox ||
-                // 크루 · 만들기는 아래 고정 영역이 있어 탭 바 없이 보인다(iOS `isCrewOnTop`).
+                // 크루 · 만들기 · 참여 확인은 아래 고정 영역이 있어 탭 바 없이 보인다(iOS `isCrewOnTop`).
                 top is FestivalRoute.Crew ||
-                top is FestivalRoute.CrewCreate
+                top is FestivalRoute.CrewCreate ||
+                top is FestivalRoute.CrewJoin
         }
 }
 
@@ -46,7 +47,7 @@ sealed interface FestivalCoordinatorSideEffect {
  * 라이브 탭 흐름(iOS `FestivalCoordinator`). 첫 화면은 목록(`routes = [.festivalList]`)이다.
  * 목록에서 축제를 고르면 라이브 보드를 쌓고(iOS `routes.push(.liveBoard)`), 보드의 뒤로 · "전체 페스티벌 보기"는 pop이다.
  * 보드 크루 존 칩은 존 지도를, 종 아이콘 · 새 알림 배너는 알림함을 쌓는다(이미 있으면 무시).
- * 보드 "크루 만들기"는 만들기를, 크루 카드는 크루 화면을 쌓는다(spec `crew.md`).
+ * 보드 "크루 만들기"는 만들기를, 크루 카드는 크루 화면을 쌓는다. 초대 코드는 참여 확인을 쌓는다(spec `crew.md`).
  * 계정이 바뀌면 계정의 팔로우 · 크루를 보여 주는 존 지도 · 크루 · 만들기와 이전 계정의 알림함을 스택에서 뺀다(iOS `clearAccountData`, 설계 E9).
  */
 class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) :
@@ -132,6 +133,35 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
     /** 해산했거나 크루에서 빠졌다(iOS `crewClosed`). 크루 화면을 뺀다. 보드는 다시 보일 때 크루 카드를 새로 받는다. */
     fun onCrewClosed() = intent {
         reduce { state.copy(routes = state.routes.filterNot { it is FestivalRoute.Crew }) }
+    }
+
+    /**
+     * 초대 코드로 참여 확인을 연다(iOS `openCrewInvite(code)`). 기존 참여 확인 · 크루 화면을 빼고 쌓는다.
+     * 초대 딥링크 · 탭 선택은 T1에서 이 함수로 잇는다.
+     */
+    fun onCrewInviteOpened(code: String) = intent {
+        val routes = state.routes.filterNot { it is FestivalRoute.CrewJoin || it is FestivalRoute.Crew }
+        reduce { state.copy(routes = routes + FestivalRoute.CrewJoin(code)) }
+    }
+
+    /** 참여 확인 닫기(iOS `crewJoin(.delegate(.closeRequested))` → `goBack`). */
+    fun onCrewJoinClosed() = goBack()
+
+    /**
+     * 참여 확인에서 로그인이 필요하다(iOS `crewJoin(.delegate(.loginRequested))` → `crewJoinLoginRequested(crewName:)`).
+     * 화면은 그대로 두고 참여 문맥(크루 이름)을 담은 경계를 남긴다(로그인 시트는 L1). 로그인 뒤 자동 참여하지 않는다.
+     */
+    fun onCrewJoinLoginRequested(crewName: String?) = intent {
+        reduce { state.copy(lastBoundary = LiveBoardBoundary.CrewJoinLogin(crewName)) }
+    }
+
+    /**
+     * 참여했다(iOS `crewJoin(.delegate(.joined))`). 참여 확인을 빼고 크루 화면을 쌓는다. 보드 크루 카드는 보드가 다시 보일 때 새로 받는다
+     * (iOS는 `reloadLiveBoard`로 바로 다시 받는다, spec `crew.md`).
+     */
+    fun onCrewJoined(festivalId: String, crewId: String) = intent {
+        val routes = state.routes.filterNot { it is FestivalRoute.CrewJoin || it is FestivalRoute.Crew }
+        reduce { state.copy(routes = routes + FestivalRoute.Crew(festivalId, crewId)) }
     }
 
     /** iOS `pushCrew`. 이미 크루 화면이 있거나 보드가 없으면 쌓지 않는다. */
