@@ -1,5 +1,6 @@
 package io.festicore.feature.profile.di
 
+import io.festicore.feature.profile.account.AccountSettingsViewModel
 import io.festicore.feature.profile.appearance.AppearanceSettingsViewModel
 import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.settings.SettingsHomeViewModel
@@ -18,4 +19,6 @@ val profileFeatureModule = module {
         SettingsHomeViewModel(initialAccount = params.get(), legalDocumentUrls = get(), appearanceModeSettings = get())
     }
     viewModelOf(::AppearanceSettingsViewModel)
+    // 인자: 화면을 만들 때의 계정 상태(AccountState). 닉네임 저장은 domain/auth `AuthRepository.updateNickname`.
+    viewModel { params -> AccountSettingsViewModel(initialAccount = params.get(), authRepository = get()) }
 }
