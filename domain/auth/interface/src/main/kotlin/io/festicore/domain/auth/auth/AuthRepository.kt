@@ -33,6 +33,25 @@ interface AuthRepository {
         expectedSessionId: String? = null,
     ): AuthUser
 
+    /**
+     * 현재 세션으로 닉네임만 바꾼다(앞뒤 공백 제거). 규칙을 어기면 요청하지 않고 [AuthDomainError.InvalidNickname].
+     * 세션이 없으면 [AuthDomainError.NotAuthenticated]. 401이면 그 세션을 지우고 [AuthDomainError.NotAuthenticated].
+     */
+    suspend fun updateNickname(nickname: String): AuthUser
+
+    /**
+     * 서버에 로그아웃하고 로컬 세션을 지운다. 세션이 없으면 요청하지 않고 끝낸다.
+     * 성공 · 401이면 요청한 세션만 지우고 끝낸다. 그 외 실패는 세션을 두고 오류를 던진다.
+     * 단, 그 사이 토큰 갱신 실패로 세션이 이미 지워졌으면 로그아웃을 마친 것으로 본다.
+     */
+    suspend fun signOut()
+
+    /**
+     * 회원 탈퇴 뒤 로컬 세션을 지운다. 세션이 없으면 요청하지 않고 [AuthDomainError.NotAuthenticated].
+     * 401이면 요청한 세션을 지우고 [AuthDomainError.NotAuthenticated]. 그 외 실패는 세션을 두고 오류를 던진다.
+     */
+    suspend fun withdraw()
+
     suspend fun isLoggedIn(): Boolean
 
     suspend fun clearSession()

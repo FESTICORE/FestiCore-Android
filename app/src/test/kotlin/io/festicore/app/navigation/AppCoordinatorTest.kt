@@ -70,6 +70,12 @@ class AppCoordinatorTest {
             expectedSessionId: String?,
         ): AuthUser = throw AuthDomainError.Unavailable()
 
+        override suspend fun updateNickname(nickname: String): AuthUser = throw AuthDomainError.Unavailable()
+
+        override suspend fun signOut() = Unit
+
+        override suspend fun withdraw() = Unit
+
         override suspend fun isLoggedIn(): Boolean = sessionId != null
 
         override fun hasSessionExpired(sessionId: String): Boolean = expiredSessionId == sessionId

@@ -82,6 +82,12 @@ internal class FakeAuthRepository(
         return signUpResult()
     }
 
+    override suspend fun updateNickname(nickname: String): AuthUser = throw AuthDomainError.Unavailable()
+
+    override suspend fun signOut() = Unit
+
+    override suspend fun withdraw() = Unit
+
     override suspend fun isLoggedIn(): Boolean = true
 
     override fun hasSessionExpired(sessionId: String): Boolean = expiredSessionId == sessionId

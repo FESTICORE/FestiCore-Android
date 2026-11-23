@@ -1,6 +1,7 @@
 package io.festicore.service.apiendpoint.auth
 
 import io.festicore.core.network.FestiCoreJson
+import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
 import io.festicore.service.api.RefreshResponse
 import io.festicore.service.api.base.BearerAuthorization
@@ -10,6 +11,8 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
@@ -17,18 +20,19 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class AuthRequestTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
     private val requests = mutableListOf<HttpRequestData>()
 
-    private fun api(body: String) = AuthRequest(
+    private fun api(body: String, status: HttpStatusCode = HttpStatusCode.OK) = AuthRequest(
         createFestiCoreHttpClient(
             baseUrl = "https://example.test/",
             engine = MockEngine { request ->
                 requests += request
-                respond(body, headers = jsonHeaders)
+                respond(body, status, jsonHeaders)
             },
         ),
     )
@@ -112,5 +116,54 @@ class AuthRequestTest {
         assertEquals(HttpMethod.Patch, request.method)
         assertEquals("""{"nickname":"roy","acceptTerms":{"version":"2026-10"},"pushOptIn":false}""", request.textBody)
         assertEquals(BearerAuthorization(), request.attributes[BearerAuthorizationKey])
+    }
+
+    @Test
+    fun `logout은 시작 세션에 묶인 POST이고 본문이 없다`() = runTest {
+        val response = api("""{"code":"SUCCESS","message":"ok","data":{"success":true}}""").logout(expectedSessionId = "s1")
+
+        assertTrue(response.success)
+        val request = requests.single()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("https://example.test/api/v1/auth/logout", request.url.toString())
+        assertEquals(BearerAuthorization("s1"), request.attributes[BearerAuthorizationKey])
+        assertTrue(request.body is OutgoingContent.NoContent)
+    }
+
+    @Test
+    fun `withdraw는 세션에 묶인 DELETE이고 본문 없이 204 빈 응답을 받는다`() = runTest {
+        api("", HttpStatusCode.NoContent).withdraw(expectedSessionId = "s1")
+
+        val request = requests.single()
+        assertEquals(HttpMethod.Delete, request.method)
+        assertEquals("https://example.test/api/v1/me", request.url.toString())
+        assertEquals(BearerAuthorization("s1"), request.attributes[BearerAuthorizationKey])
+        assertTrue(request.body is OutgoingContent.NoContent)
+    }
+
+    @Test
+    fun `withdraw 실패는 상태 코드와 오류 본문을 Http로 던진다`() = runTest {
+        try {
+            api("""{"code":"CONFLICT","message":"마지막 owner 계정은 탈퇴할 수 없습니다."}""", HttpStatusCode.Conflict).withdraw()
+            fail("NetworkError.Http를 기대했다")
+        } catch (e: NetworkError.Http) {
+            assertEquals(409, e.status)
+            assertEquals("CONFLICT", e.code)
+        }
+    }
+
+    @Test
+    fun `patchNickname은 PATCH me로 nickname만 보낸다`() = runTest {
+        val user = api(
+            """{"code":"SUCCESS","message":"ok","data":{"id":"u1","provider":"google","nickname":"로이","nicknameConfirmed":true,""" +
+                """"pushOptIn":false}}""",
+        ).patchNickname(NicknameBody("로이"), expectedSessionId = "s1")
+
+        assertEquals("로이", user.nickname)
+        val request = requests.single()
+        assertEquals(HttpMethod.Patch, request.method)
+        assertEquals("https://example.test/api/v1/me", request.url.toString())
+        assertEquals("""{"nickname":"로이"}""", request.textBody)
+        assertEquals(BearerAuthorization("s1"), request.attributes[BearerAuthorizationKey])
     }
 }

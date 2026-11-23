@@ -6,10 +6,12 @@ import io.festicore.domain.auth.entity.AuthNicknameRule
 import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.domain.auth.entity.AuthUser
 import io.festicore.domain.auth.sources.model.mapper.mapAuthErrors
+import io.festicore.domain.auth.sources.model.mapper.toAuthDomainError
 import io.festicore.service.api.AuthUserDto
 import io.festicore.service.api.MeResponse
 import io.festicore.service.apiendpoint.auth.AuthLoginBody
 import io.festicore.service.apiendpoint.auth.AuthRequest
+import io.festicore.service.apiendpoint.auth.NicknameBody
 import io.festicore.service.apiendpoint.auth.SignUpBody
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.expiry.SessionExpiryEvents
@@ -64,6 +66,41 @@ internal class AuthRepositoryImpl(
         // 요청 사이 계정이 바뀌었으면 다른 계정의 가입 결과다.
         if (user.id != expectedUserId) throw AuthDomainError.Unavailable()
         return user.toDomain()
+    }
+
+    override suspend fun updateNickname(nickname: String): AuthUser {
+        val sessionId = session.currentSessionId() ?: throw AuthDomainError.NotAuthenticated()
+        val trimmed = AuthNicknameRule.trimmed(nickname)
+        if (!AuthNicknameRule.isValid(trimmed)) throw AuthDomainError.InvalidNickname()
+        return clearingUnauthorized(sessionId) { api.patchNickname(NicknameBody(trimmed), expectedSessionId = sessionId) }.toDomain()
+    }
+
+    override suspend fun signOut() {
+        val sessionId = session.currentSessionId() ?: return
+        val response = try {
+            clearingUnauthorized(sessionId) { api.logout(expectedSessionId = sessionId) }
+        } catch (e: AuthDomainError) {
+            // 401로 지웠거나 토큰 갱신 실패가 먼저 세션을 지웠으면 로그아웃을 마친 상태다.
+            if (!session.isLoggedIn()) return
+            throw e
+        }
+        if (!response.success) throw AuthDomainError.Unavailable()
+        session.clearIfCurrent(sessionId)
+    }
+
+    override suspend fun withdraw() {
+        val sessionId = session.currentSessionId() ?: throw AuthDomainError.NotAuthenticated()
+        clearingUnauthorized(sessionId) { api.withdraw(expectedSessionId = sessionId) }
+        session.clearIfCurrent(sessionId)
+    }
+
+    /** 실패를 [AuthDomainError]로 바꾸고, 인증 실패(401 · 세션 불일치)면 [sessionId] 세션만 지운다(설계 쟁점 M2 b). */
+    private suspend fun <T> clearingUnauthorized(sessionId: String, block: suspend () -> T): T = try {
+        block()
+    } catch (e: Exception) {
+        val error = e.toAuthDomainError()
+        if (error is AuthDomainError.NotAuthenticated) session.clearIfCurrent(sessionId)
+        throw error
     }
 
     override suspend fun isLoggedIn(): Boolean = session.isLoggedIn()

@@ -18,6 +18,10 @@ data class RefreshResponse(
     val refreshToken: String,
 )
 
+/** `POST api/v1/auth/logout` 응답 `data`(`{success: true}`). iOS `AuthLogoutResponseDTO`. */
+@Serializable
+data class LogoutResponse(val success: Boolean)
+
 /** 로그인 · 가입 응답의 사용자. iOS `AuthUserDTO`. */
 @Serializable
 data class AuthUserDto(
