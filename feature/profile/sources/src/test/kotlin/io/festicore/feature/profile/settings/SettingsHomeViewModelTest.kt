@@ -14,7 +14,7 @@ import org.orbitmvi.orbit.test.test
 
 /**
  * iOS `SettingsHomeFeatureTests` 11건 중 7건(같은 이름). 알림 2건 · 잠금화면 1건은 설계 쟁점 M4 · M5로 줄을 숨겨 S6 · 라이브 액티비티 단계에서,
- * `accountScreenRequestsAreForwardedToProfile`(계정 화면 요청 전달)은 계정 화면(S3)과 Coordinator(T1)에서 옮긴다.
+ * `accountScreenRequestsAreForwardedToProfile`(계정 화면 요청 전달)은 요청 쪽을 `AccountSettingsViewModelTest`(S3)로 옮겼고 전달은 Coordinator(T1)에서 옮긴다.
  * 하위 화면의 열기 · 닫기는 Coordinator가 하므로 여기서는 요청(SideEffect)까지 본다. 주소 · 계정 값은 테스트 가짜 값이다.
  */
 class SettingsHomeViewModelTest {

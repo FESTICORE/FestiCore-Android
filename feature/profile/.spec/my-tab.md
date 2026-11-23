@@ -5,7 +5,7 @@ modules: [feature/profile, feature/web, domain/festival, domain/auth]
 
 # 마이 탭 Spec
 
-> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2)가 있다. 계정 · 공지(S3 · S4)는 각 PR에서 이 문서에 더한다.
+> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3)이 있다. 공지(S4)는 그 PR에서 이 문서에 더한다.
 
 iOS 대응: `Projects/Feature/Profile/Sources/Main/{Reducer/ProfileFeature.swift,View/ProfileView.swift}`, `Interface/Sources/ProfileDelegate.swift`, 테스트 `Tests/Sources/ProfileFeatureTests.swift`.
 설계: `.claude/docs/specs/2026-11-23-my-tab-android-design.md`(화면 1 · 쟁점 M1 · M7 · M12 · M13 · PR S1).
@@ -53,16 +53,40 @@ iOS 대응: `Appearance/{Reducer/AppearanceSettingsFeature.swift,View/Appearance
 2. 고르면 바로 저장한다. 앱 루트(`MainActivity`)가 같은 저장소를 읽어 즉시 적용한다(D4). 저장 값 `system` · `light` · `dark`, 기본 · 알 수 없는 값은 `dark`.
 3. 저장소는 `AppearanceModeSettings`(`appearance/`). feature는 `core`를 의존하지 않으므로 app이 `core/storage` `AppearanceModeStore`를 감싸 등록한다(`domain/auth/sources` `ActivityProvider`와 같은 방식).
 
+## 계정 · 닉네임 (S3)
+
+iOS 대응: `Account/{Reducer/AccountSettingsFeature.swift,Reducer/NicknameEditFeature.swift,View/AccountSettingsView.swift,View/NicknameEditView.swift}`, `Interface/Sources/AccountSettingsDelegate.swift`, 테스트 `AccountSettingsFeatureTests`. 설계 화면 4 · "로그아웃 · 탈퇴 실행" · 쟁점 M1 · M2 · M13.
+
+1. 화면: 배경 `backgroundNormal`, `FCTopBar(Back, "계정")`. 세로 스크롤(간격 `P24`, 좌우 `P16`, 위 `P16`) + 아래 고정 `FCButton("로그아웃", Ghost, Medium)`(가운데, 좌우 · 아래 `P16`, 처리 중 비활성).
+2. "내 정보"(제목 `baseFootnoteBold` · `labelAssistive`, 좌우 `P4`, 간격 `P8`):
+   - 프로필 있음: `backgroundElevated` r16 카드에 `FCListRow("닉네임", 값 = 닉네임 ?: "설정 안 됨")` · 구분선(1, `lineNormal`, 카드 너비) · 정보 행 "로그인" / 로그인 방식(높이 56 이상, `baseBodyRegular`, 값 `labelNeutral`, 좌우 `P16`).
+   - 로그인 방식 표기는 iOS 매핑 그대로(M1): 대소문자 무시 `apple` → "Apple", `google` → "Google", 그 외 원문.
+   - 프로필 없음 + 처리 중: 스켈레톤(r16, 높이 113). 그 외: "계정 정보를 확인할 수 없습니다"(`baseSubheadlineRegular` · `labelNeutral`) + `FCButton("계정 정보 다시 확인", Secondary, Medium)` → `RefreshRequested`.
+3. "계정 삭제"(`baseBodyRegular` · `statusNegative`, 높이 56 이상 · r16 `backgroundElevated` 카드, 처리 중 비활성) + "계정을 삭제하면 내 일정, 크루, 깃발 기록이 모두 지워지고 되돌릴 수 없어요."(`baseFootnoteRegular` · `labelAssistive`, 좌우 `P4`).
+4. 결과 문구: `message`가 비어 있지 않고 처리 중이 아닐 때 `baseSubheadlineRegular` · `statusNegative`.
+5. 확인 팝업(`FCDialog`, 제목 · 설명 가운데 정렬, 취소 "취소"): 로그아웃 "로그아웃할까요?" / "받은 팩과 내 일정은 이 기기에 그대로 남아 있어요." / "로그아웃", 탈퇴 "회원 탈퇴" / "계정과 로그인 정보가 삭제됩니다. 이 작업은 되돌릴 수 없습니다." / "탈퇴". 처리 중이거나 같은 팝업이 떠 있으면 띄우지 않는다. 확인 → `LogoutRequested` · `WithdrawRequested`, 취소 · 딤 · 뒤로 → 닫기만.
+6. 닉네임 줄: 프로필이 있고 처리 중이 아닐 때만 시트(`FCSheet`)를 연다(처음 값 = 현재 닉네임, 없으면 빈 값).
+7. 닉네임 시트: "닉네임 변경"(`baseTitle2Bold`), `FCTextField(label "닉네임", placeholder "닉네임", counter "N / 12", helper "1~12자로 입력해 주세요", error)`, `FCButton("저장" / 저장 중 "저장하는 중", Primary, 전체 폭, 저장 중 비활성)`. 좌우 `P20`, 아래 `P24`, 간격 `P24`.
+   - 입력은 `AuthNicknameRule.limited`로 자르고 오류 문구를 지운다.
+   - 저장: 저장 중이면 무시. 앞뒤 공백을 뺀 길이가 1~12자가 아니면 요청하지 않고 "닉네임은 1~12자로 입력해 주세요.". 맞으면 `AuthRepository.updateNickname(trim 값)`.
+   - 성공: 시트를 닫고 화면 프로필의 사용자를 바꾼 뒤 `NicknameUpdated(user)`(앱이 계정 상태를 갱신 → 마이 · 설정 홈 값, A1 · T1).
+   - 실패: `AuthDomainError.InvalidNickname`이면 길이 문구, 그 외(세션 없음 · 401 포함) "닉네임을 바꾸지 못했어요. 다시 시도해 주세요.".
+   - 저장 중에는 딤 · 끌기 · 뒤로로 닫히지 않는다.
+8. 계정 입력(`onAccountChanged`)은 `profile` · `isLoading` · `message`를 그대로 바꾼다. 세션을 잃었을 때 계정 화면을 닫는 것은 설정 홈 `SessionLost` → Coordinator(T1)다.
+9. 이동 · 요청은 SideEffect → Screen 콜백: `BackRequested` · `LogoutRequested` · `WithdrawRequested` · `RefreshRequested` · `NicknameUpdated(AuthUser)`. 로그아웃 · 탈퇴 실행(기기 연결 해제 · 세션 정리 · 결과 문구 · 화면 정리)은 앱 `AccountCoordinator`(A1), 설정 홈을 거쳐 앱으로 넘기는 연결은 T1이다.
+
 ## 엣지 케이스
 
 - 진행 중 읽기를 취소하는 iOS `cancelInFlight`는 두지 않는다. `Loading` 중 `onAppear`는 무시하고, 팩 상세 결과로 다시 읽는 경우만 겹칠 수 있다(마지막 응답이 남는다).
 - 바뀐 공연 수는 팩마다 차례로 묻는다(iOS는 동시에). 결과는 같다.
+- 닉네임 저장의 iOS `cancelInFlight`는 두지 않는다. 저장 중 다시 누르기를 무시해 요청이 겹치지 않는다.
 
 ## 제약 / 가정
 
 - `feature`는 `core`를 의존하지 않으므로 `MM/dd HH:mm` 형식은 `ProfilePresentation`이 iOS `AppDateFormat.monthDayTime`과 같은 패턴 · 서울 시간대로 만든다.
-- 설정 홈 팝업은 designkit `FCDialog`가 버튼 두 개만 그려 "닫기" · "확인"(둘 다 닫기)이다. iOS는 "확인" 하나.
-- 옮기지 않음: `searchTapped` · `isSearchAvailable`(View 진입점 없음), 분석 `screen_view`(`service/analytics` 없음), 기수 카드 · 내 깃발(M7), 설정 홈 닫힘 때 알림 설정 보내기(알림 설정은 S6).
+- 설정 홈 팝업은 `FCDialogItem(cancelTitle = null)`로 iOS처럼 "확인" 하나다.
+- 계정 화면은 iOS 자식 Store(`NicknameEditFeature`) 대신 `AccountSettingsViewModel` 하나가 시트 상태(`AccountSettingsDestination.Nickname`)를 가진다(Orbit은 자식 Store가 없다).
+- 옮기지 않음: 분석 `profile_logout` · `profile_withdraw`(`service/analytics` 없음), `searchTapped` · `isSearchAvailable`(View 진입점 없음), 분석 `screen_view`(`service/analytics` 없음), 기수 카드 · 내 깃발(M7), 설정 홈 닫힘 때 알림 설정 보내기(알림 설정은 S6).
 - `loginTapped`(시트 요청)는 iOS처럼 ViewModel에 두되 화면에는 진입점이 없다.
 
 ## 작업 모듈
@@ -70,11 +94,11 @@ iOS 대응: `Appearance/{Reducer/AppearanceSettingsFeature.swift,View/Appearance
 | 모듈                        | 계층    | 변경 내용                                                                                 |
 | --------------------------- | ------- | ----------------------------------------------------------------------------------------- |
 | `feature/profile/interface` | feature | `AccountState`(앱 → 마이 계정 입력)                                                       |
-| `feature/profile/sources`   | feature | `main/`(Contract · ViewModel · Screen · Presentation · 프리뷰), `settings/` · `appearance/`(S2), `di/ProfileFeatureModule` |
+| `feature/profile/sources`   | feature | `main/`(Contract · ViewModel · Screen · Presentation · 프리뷰), `settings/` · `appearance/`(S2), `account/`(S3), `di/ProfileFeatureModule` |
 | `feature/featureassembly`   | feature | `profileFeatureModule` 등록                                                               |
 | `feature/web`               | feature | `LegalDocumentUrls`를 `interface`로 옮기고 https · host 검증(S2)                          |
 | `app`                       | app     | `AppearanceModeSettings` 등록(`StoredAppearanceModeSettings`, S2)                         |
 
 ## 영향 범위
 
-앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`(`FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`)과 `domain/auth`(`AuthProfile`)는 읽기만 한다.
+앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`(`FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`)은 읽기만 하고, `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다.
