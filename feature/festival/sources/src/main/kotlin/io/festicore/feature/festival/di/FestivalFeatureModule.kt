@@ -2,6 +2,9 @@ package io.festicore.feature.festival.di
 
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalListViewModel
+import io.festicore.feature.festival.flag.FlagCoordinator
+import io.festicore.feature.festival.flag.FlagViewModel
+import io.festicore.feature.festival.flagdetail.FlagDetailViewModel
 import io.festicore.feature.festival.inbox.NotificationInboxViewModel
 import io.festicore.feature.festival.liveboard.LiveBoardViewModel
 import io.festicore.feature.festival.zonemap.ZoneMapViewModel
@@ -13,6 +16,18 @@ val festivalFeatureModule = module {
     viewModelOf(::FestivalCoordinator)
     viewModelOf(::FestivalListViewModel)
     viewModelOf(::NotificationInboxViewModel)
+    viewModelOf(::FlagCoordinator)
+    // 선택 축제는 부모가 onFestivalChanged로 알린다(iOS `festivalChanged`).
+    viewModel { FlagViewModel(liveBoardUseCase = get(), flagUseCase = get()) }
+    // 인자: 깃발 ID, 처음 표시 문맥(FlagDetailContext). 이후 문맥은 부모가 onContextChanged로 알린다(iOS `contextChanged`).
+    viewModel { params ->
+        FlagDetailViewModel(
+            flagId = params[0],
+            context = params[1],
+            detailUseCase = get(),
+            flagUseCase = get(),
+        )
+    }
     // 인자: 축제 ID, 목록이 가진 카탈로그(iOS가 목록 상태를 복사해 push하는 것과 같은 자리).
     viewModel { params ->
         LiveBoardViewModel(

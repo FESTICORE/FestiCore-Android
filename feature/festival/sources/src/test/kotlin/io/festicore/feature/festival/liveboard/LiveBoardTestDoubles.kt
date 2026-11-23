@@ -2,6 +2,8 @@ package io.festicore.feature.festival.liveboard
 
 import io.festicore.domain.festival.FestivalBoardSelection
 import io.festicore.domain.festival.FestivalBoardSelectionUseCase
+import io.festicore.domain.festival.FestivalFlagFollowResult
+import io.festicore.domain.festival.FestivalFlagUseCase
 import io.festicore.domain.festival.FestivalLiveBoardPreferenceUseCase
 import io.festicore.domain.festival.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.FestivalLiveBoardUseCase
@@ -212,5 +214,20 @@ internal class FakeNotificationBadgeUseCase(var refreshResult: UserNotificationB
     override fun clear() {
         clearCount += 1
         badge.value = UserNotificationBadge()
+    }
+}
+
+/** 깃발 팔로우 가짜 구현. 기본은 요청한 값대로 팔로워 1을 돌려준다. 부른 순서를 [calls]에 남긴다. */
+internal class FakeFlagUseCase(
+    var setFollowing: suspend (
+        Boolean,
+        String,
+    ) -> FestivalFlagFollowResult = { following, id -> FestivalFlagFollowResult(id, following, 1) },
+) : FestivalFlagUseCase {
+    val calls = mutableListOf<Pair<Boolean, String>>()
+
+    override suspend fun setFollowing(following: Boolean, flagId: String): FestivalFlagFollowResult {
+        calls += following to flagId
+        return setFollowing.invoke(following, flagId)
     }
 }
