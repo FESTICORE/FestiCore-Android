@@ -11,4 +11,5 @@ dependencies {
     api(libs.lib("navigation3-runtime"))
     api(libs.lib("kotlinx-serialization-core"))
     api(project(":feature:web:interface"))
+    api(project(":domain:auth:interface"))
 }

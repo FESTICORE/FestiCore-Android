@@ -61,7 +61,11 @@ fun LaunchLoginScreen(
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
             is LaunchLoginSideEffect.Finished -> onResult(sideEffect.result)
+
             is LaunchLoginSideEffect.SignUpRequired -> onSignUpRequired(sideEffect.route)
+
+            // 첫 진입 화면은 문구를 화면 상태로 보인다.
+            is LaunchLoginSideEffect.SignInFailed -> Unit
         }
     }
 

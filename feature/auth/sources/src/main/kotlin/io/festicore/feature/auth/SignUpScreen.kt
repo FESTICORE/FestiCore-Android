@@ -27,6 +27,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.auth.entity.AuthNicknameRule
+import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.feature.web.LegalDocumentUrls
 import io.festicore.feature.web.WebPage
 import io.festicore.ui.designkit.component.button.FCPrimaryButton
@@ -58,7 +59,7 @@ private val ConsentBorderWidth = 1.dp
 @Composable
 fun SignUpScreen(
     route: AuthRoute.SignUp,
-    onCompleted: () -> Unit,
+    onCompleted: (AuthProfile?) -> Unit,
     onClosed: () -> Unit,
     onLegalDocumentRequested: (WebPage) -> Unit,
     handlesSystemBack: Boolean = true,
@@ -73,7 +74,7 @@ fun SignUpScreen(
 
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
-            SignUpSideEffect.Completed -> onCompleted()
+            is SignUpSideEffect.Completed -> onCompleted(sideEffect.profile)
 
             SignUpSideEffect.Closed, SignUpSideEffect.SessionLost -> onClosed()
 

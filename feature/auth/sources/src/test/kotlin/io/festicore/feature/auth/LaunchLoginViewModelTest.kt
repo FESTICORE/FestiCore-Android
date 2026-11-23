@@ -21,7 +21,9 @@ class LaunchLoginViewModelTest {
         viewModel().test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+            )
         }
     }
 
@@ -83,7 +85,9 @@ class LaunchLoginViewModelTest {
         viewModel(repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+            )
         }
         assertEquals(listOf<String?>("s1"), repository.fetchSessionIds)
     }
@@ -160,6 +164,7 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectState(LaunchLoginState(attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.SignInFailed(showsMessage = false))
         }
     }
 
@@ -169,6 +174,7 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectState(LaunchLoginState(attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.SignInFailed(showsMessage = false))
         }
     }
 
@@ -178,6 +184,7 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectState(LaunchLoginState(errorMessage = "로그인 정보를 저장하지 못했어요. 다시 시도해 주세요.", attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.SignInFailed(showsMessage = true))
         }
     }
 
@@ -189,11 +196,14 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectState(LaunchLoginState(errorMessage = "로그인에 실패했습니다. 다시 시도해 주세요.", attemptId = 1))
+            expectSideEffect(LaunchLoginSideEffect.SignInFailed(showsMessage = true))
 
             fail = false
             containerHost.onSignInTapped()
             expectState(LaunchLoginState(isSigningIn = true, attemptId = 2))
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+            )
         }
     }
 
@@ -216,7 +226,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             containerHost.onSkipTapped()
             pending.complete(loginResult())
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+            )
         }
         assertEquals(1, useCase.callCount)
     }

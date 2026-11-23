@@ -75,6 +75,20 @@ iOS 대응: `Account/{Reducer/AccountSettingsFeature.swift,Reducer/NicknameEditF
 8. 계정 입력(`onAccountChanged`)은 `profile` · `isLoading` · `message`를 그대로 바꾼다. 세션을 잃었을 때 계정 화면을 닫는 것은 설정 홈 `SessionLost` → Coordinator(T1)다.
 9. 이동 · 요청은 SideEffect → Screen 콜백: `BackRequested` · `LogoutRequested` · `WithdrawRequested` · `RefreshRequested` · `NicknameUpdated(AuthUser)`. 로그아웃 · 탈퇴 실행(기기 연결 해제 · 세션 정리 · 결과 문구 · 화면 정리)은 앱 `AccountCoordinator`(A1), 설정 홈을 거쳐 앱으로 넘기는 연결은 T1이다.
 
+## 계정 상태 공급 · 로그아웃 · 탈퇴 실행 (A1)
+
+iOS 대응: `Projects/App/Sources/Navigation/Account/AccountCoordinator.swift`, `Shared/AccountDeviceSync.swift`, `Session/SessionCoordinator.swift`(`handleSessionExpired`), 테스트 `AppCoordinatorTests` 계정 사례. 설계 "로그아웃 · 탈퇴 실행" · 쟁점 M2 · M3 · M12 · M13. 앱(`app/navigation`)에 있고 마이 탭 연결은 T1이다.
+
+1. `AppCoordinator.account: StateFlow<AccountState>`가 계정 상태를 공급한다. 루트 화면 상태(`AppCoordinatorState`)와 따로 둔다.
+   - 세션 확인(스플래시 · 온보딩 뒤) → `hasSession`. 프로필 재확인 중 `isLoading`, 성공이면 `profile`, 오프라인 · 서버 오류면 값 유지. 401 · 세션 만료 · 로그인 직후 401이면 비운다.
+   - 로그인 · 가입 완료는 결과의 프로필로 채운다(확인 실패면 같은 사용자의 이전 프로필만 남긴다). 다시 읽지 않는다.
+   - `onNicknameUpdated(user)`: 지금 계정과 같은 사용자일 때만 사용자 값을 바꾼다. `onProfileRefreshRequested()`: 홈이면 프로필을 다시 읽는다.
+2. `onLogoutRequested()` · `onWithdrawRequested()`(확인 팝업 뒤): 세션이 있고 처리 중이 아닐 때만 세대를 올리고 문구를 비우고 `isLoading = true`. `AccountCoordinator`가 기기 연결 해제(실패해도 계속) → `signOut()` · `withdraw()` 순서로 부른다.
+3. 결과: 성공이면 현재 사용자 · 계정 상태를 비우고 가입 정보 덮개가 떠 있으면 닫는다(로그인 시트는 그대로). 작업 중 로그인을 잃었으면(탈퇴 401 · 세션이 지워짐) 같이 비우고, 탈퇴면 "로그인이 만료되어 회원 탈퇴 결과를 확인할 수 없어요. 다시 로그인해 계정 상태를 확인해 주세요.". 그 외 실패면 기기 연결을 복원하고 계정을 두며 "로그아웃에 실패했습니다. 다시 시도해 주세요." / "회원 탈퇴에 실패했습니다. 다시 시도해 주세요.".
+4. 세션 만료(현재 세션 또는 세션 없음)는 진행 중 작업을 취소하고 세대를 올려 늦은 결과를 버린다. 탈퇴 중이었으면 결과 불명 문구를 둔다. 작업 중에는 프로필 재확인을 하지 않는다.
+5. 계정 화면 닫기(설정 홈째 마이로)는 마이 화면이 `AccountState`의 세션 잃음으로 정한다(S1 · T1).
+6. 기기 연결 해제 · 복원은 P0 전까지 아무 일도 하지 않는다(M3). Live Activity 종료 · 분석 초기화는 해당 모듈이 생기면 잇는다.
+
 ## 공지 (S4)
 
 iOS 대응: `Notice/{Reducer/NoticeListFeature.swift,Reducer/NoticeDetailFeature.swift,View/NoticeListView.swift,View/NoticeDetailView.swift}`, 테스트 `NoticeFeatureTests`. 설계 화면 8.
@@ -142,6 +156,8 @@ iOS 대응: `PackDetail/{Reducer/PackDetailFeature.swift,View/PackDetailView.swi
 | `ui/sharedui`               | ui      | 외부 링크 열기 `openExternalUrl`(Custom Tabs, festival 목록 · 라이브 보드도 함께 씀, S5)   |
 | `app`                       | app     | 매니페스트 `<queries>` 지도 앱 패키지 2개(S5)                                             |
 | `app`                       | app     | `AppearanceModeSettings` 등록(`StoredAppearanceModeSettings`, S2)                         |
+| `app`                       | app     | `AccountCoordinator`, `AppCoordinator` 계정 상태 · 로그아웃 · 탈퇴 · Google 바로 로그인(A1) |
+| `feature/auth`              | feature | `LaunchLoginResult.Completed.profile` · `SignInFailed` 알림 · `LoginSheet(startsSignIn)`(A1) |
 
 ## 영향 범위
 

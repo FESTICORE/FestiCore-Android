@@ -74,8 +74,10 @@ fun LaunchLoginFlow(
                     entry<AuthRoute.SignUp> { route ->
                         SignUpScreen(
                             route = route,
-                            onCompleted = {
-                                coordinator.onFinished(LaunchLoginResult.Completed(userId = route.userId, sessionId = route.sessionId))
+                            onCompleted = { profile ->
+                                coordinator.onFinished(
+                                    LaunchLoginResult.Completed(userId = route.userId, sessionId = route.sessionId, profile = profile),
+                                )
                             },
                             onClosed = coordinator::onSignUpClosed,
                             onLegalDocumentRequested = coordinator::onLegalDocumentRequested,

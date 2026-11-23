@@ -97,7 +97,7 @@ class SignUpViewModelTest {
             expectState(consented)
             containerHost.onSubmitTapped()
             expectState(submitting)
-            expectSideEffect(SignUpSideEffect.Completed)
+            expectSideEffect(SignUpSideEffect.Completed(eligibleProfile))
         }
         assertEquals(listOf(listOf("페스티", TERMS_V1, "u1", "s1")), repository.signUpCalls)
     }
@@ -123,7 +123,7 @@ class SignUpViewModelTest {
             expectState(consented)
             containerHost.onSubmitTapped()
             expectState(submitting)
-            expectSideEffect(SignUpSideEffect.Completed)
+            expectSideEffect(SignUpSideEffect.Completed(profile = null))
         }
         assertEquals(1, repository.fetchCount)
     }
