@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))
+    implementation(project(":feature:profile:sources"))
     implementation(platform(libs.lib("koin-bom")))
     implementation(libs.lib("koin-core"))
 }
