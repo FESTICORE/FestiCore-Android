@@ -29,7 +29,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 
 /**
  * 라이브 탭 루트(iOS `FestivalCoordinatorView`). [onHidesTabBarChanged]로 탭 바를 숨길지, [onFlagTabRequested]로 깃발 탭 전환을,
- * [onLoginRequested]로 로그인 시트 요청(문맥이 `null`이면 탭 기본 문맥)을 알린다.
+ * [onLoginRequested]로 로그인 시트 요청(문맥이 `null`이면 탭 기본 문맥)을, [onPackDirectionsRequested]로 보드 "가는 길"(마이 팩 상세)을 알린다.
  * 보드는 깃발 탭이 따를 값([FlagBoard])을 Coordinator에 알린다. 보드가 화면에 있는 동안만 갱신한다.
  * 상위(메인 탭)는 그 값으로 탭 바를 숨긴다(iOS `MainTabCoordinator.shouldHideTabBar`: 스택이 목록뿐이거나 보드에 시트 · 알림창이 떠 있음).
  * Coordinator와 목록 ViewModel은 이 흐름을 그린 범위(메인 탭 항목)에 둔다. 탭을 바꿔 흐름이 화면에서 빠져도 목록 상태가 남는다.
@@ -43,6 +43,7 @@ fun FestivalFlow(
     modifier: Modifier = Modifier,
     onFlagTabRequested: () -> Unit = {},
     onLoginRequested: (FestivalLoginContext?) -> Unit = {},
+    onPackDirectionsRequested: (festivalId: String, title: String) -> Unit = { _, _ -> },
     coordinator: FestivalCoordinator = koinViewModel(),
     listViewModel: FestivalListViewModel = koinViewModel(),
 ) {
@@ -51,6 +52,7 @@ fun FestivalFlow(
         when (sideEffect) {
             FestivalCoordinatorSideEffect.FlagTabRequested -> onFlagTabRequested()
             is FestivalCoordinatorSideEffect.LoginRequested -> onLoginRequested(sideEffect.context)
+            is FestivalCoordinatorSideEffect.PackDirectionsRequested -> onPackDirectionsRequested(sideEffect.festivalId, sideEffect.title)
         }
     }
     LaunchedEffect(state.hidesTabBar) { onHidesTabBarChanged(state.hidesTabBar) }

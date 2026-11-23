@@ -95,6 +95,8 @@ fun AuthFlow(coordinator: AuthCoordinator = koinViewModel(), onFinished: () -> U
 - iOS `AppCoordinator`처럼 `app`의 루트 Coordinator가 기능 흐름(스플래시 → 온보딩 → `AuthFlow` → 메인 탭)을 전환한다.
 - 기능 밖으로 나가는 이동은 항상 부모 Coordinator가 정한다.
 - 메인 탭 선택은 `app` `MainTabCoordinator`(iOS 같은 이름, `selectedTab`)가 가진다. `MainTabScreen`은 선택을 인자로 받는 껍데기다.
+- 탭 흐름 Coordinator(깃발 `FlagCoordinator` · 마이 `ProfileCoordinator`)는 탭 밖(`AppFlow` 메인 탭 범위)에서 소유해 탭을 바꿔도 스택을 유지한다. 탭 바 숨김은 흐름이 콜백으로 알린다(라이브 `onHidesTabBarChanged(Boolean)`, 마이 `(hides, reservesSpace)` — 팝업으로만 숨기면 보이지 않는 탭 바로 자리를 남긴다).
+- 한 탭 흐름이 다른 탭 화면을 열 때는 `MainTabCoordinator`가 탭을 고르고 요청 값(`liveRequest` · `flagRequest` · `packDirectionsRequest`)을 두며, 그 흐름이 받아 처리한 뒤 비운다(예: 라이브 보드 "가는 길" → 마이 팩 상세).
 
 ## 딥링크
 
@@ -107,7 +109,7 @@ iOS 4단 그대로 둔다(규칙: `core/utility/.spec/deeplink.md`).
 
 ## 화면 전환 애니메이션
 
-iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트한다(`app/.../navigation/LaunchTransitions.kt`, `feature/auth/sources/.../AuthTransitions.kt`).
+iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트한다(`app/.../navigation/LaunchTransitions.kt`, `feature/auth/sources/.../AuthTransitions.kt`, `feature/profile/sources/.../ProfileTransitions.kt`). 탭 안 스택(라이브 · 깃발 · 마이)은 iOS 시스템 push라 같은 값(350ms `FastOutSlowInEasing`, 오른쪽에서 들어오고 아래 화면 1/3 이동)을 쓴다.
 
 - 곡선: SwiftUI `easeInOut` → Compose `EaseInOut`(`CubicBezierEasing(0.42, 0, 0.58, 1)`), `spring(response:dampingFraction:)` → `spring(dampingRatio = dampingFraction, stiffness = (2π / response)²)`(질량 1 근사, `blendDuration`은 대응 없음). `move(edge:)` → `slideIn/OutHorizontally { ±it }`, `opacity` → `fadeIn/fadeOut`.
 - SwiftUI는 들어오는 화면의 등장 전환과 나가는 화면의 퇴장 전환을 따로 쓴다. 루트 `transitionSpec`도 엔트리 `metadata`로 두 화면을 알아 각각 고른다.

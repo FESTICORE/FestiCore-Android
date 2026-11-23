@@ -5,7 +5,7 @@ modules: [feature/profile, feature/web, domain/festival, domain/auth, domain/not
 
 # 마이 탭 Spec
 
-> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3) · 공지 목록 · 상세(S4) · 팩 상세(S5)가 있다.
+> 마이 탭 루트(마이 화면)와 그 아래 화면들의 동작. 지금은 마이 화면(S1) · 설정 홈 · 화면 모드(S2) · 계정 · 닉네임 변경(S3) · 공지 목록 · 상세(S4) · 팩 상세(S5)가 있고, 마이 탭 연결(T1)로 앱에 보인다.
 
 iOS 대응: `Projects/Feature/Profile/Sources/Main/{Reducer/ProfileFeature.swift,View/ProfileView.swift}`, `Interface/Sources/ProfileDelegate.swift`, 테스트 `Tests/Sources/ProfileFeatureTests.swift`.
 설계: `.claude/docs/specs/2026-11-23-my-tab-android-design.md`(화면 1 · 쟁점 M1 · M7 · M12 · M13 · PR S1).
@@ -126,6 +126,20 @@ iOS 대응: `PackDetail/{Reducer/PackDetailFeature.swift,View/PackDetailView.swi
 12. 와이파이 자동 받기 토글은 바로 화면에 반영하고 저장한다(실패는 알리지 않음).
 13. 이동은 SideEffect → Screen 콜백: `BackRequested` · `PackChanged` · `PackDeleted`. 마이 목록 다시 읽기(`onPackChanged` · `onPackDeleted`) · 상세 닫기 · 경로 연결과 라이브 보드 "가는 길" 진입은 T1이다.
 
+## 마이 탭 연결 (T1)
+
+iOS 대응: `Projects/App/Sources/Navigation/Profile/{ProfileCoordinator,ProfileRouting,ProfileScreen}.swift`, `MainTab/MainTabCoordinator{,+Scope}.swift`(마이 부분), 테스트 `Projects/App/Tests/Sources/ProfileRoutingTests.swift` 12건.
+
+1. 경로는 `ProfileRoute`(`feature/profile/interface`): `Profile` · `PackDetail(festivalId, title)` · `Settings` · `Account` · `Appearance` · `NoticeList` · `NoticeDetail(id, title)` · `LegalDocument(WebPage)`. `ProfileCoordinator`가 스택을 갖고 `ProfileFlow`(`NavDisplay`)가 그린다.
+2. 스택 모양은 iOS `profileRoutes`와 같다: 마이 위 목적지 하나(팩 상세 | 설정 홈), 설정 홈 위 목적지 하나(계정 | 화면 모드 | 문서 | 공지 목록), 공지 상세는 공지 목록이 맨 위일 때만 쌓는다. 새 목적지를 열면 그 자리를 바꾼다.
+3. 마이: 팩 행 → 팩 상세, 설정 버튼 → 설정 홈, 로그인 요청 → 앱 로그인 시트(마이 탭 기본 문맥 `LoginContext.Profile`), Google 버튼 → 앱 바로 로그인, "페스티벌 둘러보기" → 라이브 탭 축제 목록(축제 목록 딥링크와 같음).
+4. 팩 상세: 뒤로 → pop, `PackChanged` → 마이 목록만 다시 읽기, `PackDeleted` → 상세를 닫고 마이 목록 다시 읽기. 라이브 탭 목록은 라이브 탭을 고를 때마다 다시 읽으므로 따로 알리지 않는다(iOS `reloadCachedPacks`).
+5. 설정 홈 · 계정 · 공지 · 문서의 뒤로와 문서 닫기(`onBackToRoot`)는 한 단계 pop이다. 계정 화면의 로그아웃 · 탈퇴 · 다시 확인 · 닉네임 변경은 앱(`AppCoordinator`)으로 바로 올린다.
+6. 세션을 잃으면(계정 입력에서 `hasSession`이 true → false, 또는 마이 · 설정 홈의 `SessionLost`) 계정 화면이 열려 있을 때만 설정 홈째 닫고 마이로 돌아온다. 처음 받은 계정 값은 기준으로만 둔다. 확인한 계정이 다른 계정(또는 비로그인)으로 바뀌면 마이 위 화면을 모두 닫는다(iOS `reconcileAccountDisplayData`).
+7. 라이브 보드 "가는 길": `FestivalCoordinator`가 `PackDirectionsRequested`를 올리고 `MainTabCoordinator`가 마이 탭을 고른 뒤 마이 흐름이 그 축제 팩 상세를 연다(받은 팩 목록과 상관없이, 열린 설정 스택은 바꾼다).
+8. 탭 바: 마이 루트 · 팩 상세는 보이고, 설정 홈과 그 아래는 숨기고 자리도 비운다. 팩 삭제 확인 팝업이 떠 있으면 숨기되 자리는 남긴다(보이지 않는 탭 바, iOS `shouldReserveTabBarSpace`). 로그인 시트가 떠 있으면 기존처럼 숨긴다.
+9. 전환은 iOS 시스템 push와 같은 오른쪽 슬라이드다(`ProfileTransitions`, 라이브 탭과 같은 350ms). 탭을 바꿔도 스택과 받은 팩 목록이 남고(`ProfileCoordinator` · 마이 ViewModel을 탭 밖 범위에 둔다), 마이 화면이 다시 보일 때마다 팩을 다시 읽는다(iOS `onAppear`).
+
 ## 엣지 케이스
 
 - 진행 중 읽기를 취소하는 iOS `cancelInFlight`는 두지 않는다. `Loading` 중 `onAppear`는 무시하고, 팩 상세 결과로 다시 읽는 경우만 겹칠 수 있다(마지막 응답이 남는다).
@@ -158,7 +172,10 @@ iOS 대응: `PackDetail/{Reducer/PackDetailFeature.swift,View/PackDetailView.swi
 | `app`                       | app     | `AppearanceModeSettings` 등록(`StoredAppearanceModeSettings`, S2)                         |
 | `app`                       | app     | `AccountCoordinator`, `AppCoordinator` 계정 상태 · 로그아웃 · 탈퇴 · Google 바로 로그인(A1) |
 | `feature/auth`              | feature | `LaunchLoginResult.Completed.profile` · `SignInFailed` 알림 · `LoginSheet(startsSignIn)`(A1) |
+| `feature/profile`           | feature | `ProfileRoute`(interface) · `ProfileCoordinator` · `ProfileFlow` · `ProfileTransitions`, 팩 상세 팝업 알림(T1) |
+| `feature/festival/sources`  | feature | 보드 "가는 길" 경계를 `PackDirectionsRequested`로 올림(T1)                                |
+| `app`                       | app     | `MainTabScreen` 마이 자리 · 탭 바 규칙, `MainTabCoordinator` 가는 길 · 축제 목록 요청, `AppFlow` 마이 흐름 연결(T1) |
 
 ## 영향 범위
 
-앱에는 아직 보이지 않는다(T1에서 마이 탭에 연결). `domain/festival`은 마이가 `FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`를 읽고 팩 상세가 `FestivalPackDetailUseCase`로 팩 업데이트 · 삭제 · 준비물 · 자동 받기 설정을 쓴다(테스트는 가짜 구현, 서버 쓰기 없음). `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다. `domain/notice`(`NoticeUseCase`)는 읽기만 한다.
+T1부터 마이 탭에 보인다. `domain/festival`은 마이가 `FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase.packChanges`를 읽고 팩 상세가 `FestivalPackDetailUseCase`로 팩 업데이트 · 삭제 · 준비물 · 자동 받기 설정을 쓴다(테스트는 가짜 구현, 서버 쓰기 없음). `domain/auth`는 `AuthProfile`을 읽고 계정 화면이 `AuthRepository.updateNickname`으로 닉네임만 바꾼다. `domain/notice`(`NoticeUseCase`)는 읽기만 한다.

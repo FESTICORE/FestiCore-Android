@@ -14,7 +14,7 @@ data class FestivalCoordinatorState(
     val selectedFestivalId: String? = null,
     /** 맨 위 라이브 보드에 시트 · 다이얼로그가 떠 있다. */
     val isLiveBoardPresentingModal: Boolean = false,
-    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(기수 · 가는 길). 존 지도 · 알림함 · 크루 · 크루 만들기는 화면을 쌓고 로그인 · 깃발 찾기는 상위에 알린다. */
+    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(기수). 존 지도 · 알림함 · 크루 · 크루 만들기는 화면을 쌓고 로그인 · 깃발 찾기 · 가는 길은 상위에 알린다. */
     val lastBoundary: LiveBoardBoundary? = null,
     /** 맨 위 보드가 바꿀 수 있는 축제 ID(보드 카탈로그). 알림이 연 축제가 여기 없으면 알림함에 팝업을 띄운다(iOS `board.catalog`). */
     val liveBoardFestivalIds: Set<String> = emptySet(),
@@ -53,6 +53,12 @@ sealed interface FestivalCoordinatorSideEffect {
 
     /** 로그인 시트를 요청한다(iOS `delegate(.loginRequested)` 등). [context]가 `null`이면 상위가 탭 기본 문맥을 쓴다. */
     data class LoginRequested(val context: FestivalLoginContext?) : FestivalCoordinatorSideEffect
+
+    /** 귀가 "가는 길". 마이 탭으로 바꿔 그 축제의 팩 상세를 연다(iOS `delegate(.packDirectionsRequested)`, 설계 "화면 전환"). */
+    data class PackDirectionsRequested(
+        val festivalId: String,
+        val title: String,
+    ) : FestivalCoordinatorSideEffect
 }
 
 /**
@@ -102,7 +108,8 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
     /**
      * 보드의 경계 이동. 존 지도 · 알림함은 쌓고(iOS `zoneMapRequested` · `notificationInboxRequested`),
      * 로그인 경계는 문맥을 담아 상위에 로그인을 요청하고(iOS `loginRequested` · `crewLoginRequested` · `followLoginRequested`),
-     * "깃발 찾기"는 깃발 탭을 요청한다(iOS `flagDirectoryRequested`). 대상 화면이 아직 없는 나머지는 받아 두기만 한다.
+     * "깃발 찾기"는 깃발 탭을(iOS `flagDirectoryRequested`), "가는 길"은 마이 팩 상세를 요청한다(iOS `packDirectionsRequested`).
+     * 대상 화면이 아직 없는 기수는 받아 두기만 한다.
      */
     fun onLiveBoardBoundary(boundary: LiveBoardBoundary) = intent {
         when (boundary) {
@@ -136,7 +143,10 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
 
             LiveBoardBoundary.FlagDirectory -> postSideEffect(FestivalCoordinatorSideEffect.FlagTabRequested)
 
-            is LiveBoardBoundary.Bearer, is LiveBoardBoundary.PackDirections -> reduce { state.copy(lastBoundary = boundary) }
+            is LiveBoardBoundary.PackDirections ->
+                postSideEffect(FestivalCoordinatorSideEffect.PackDirectionsRequested(boundary.festivalId, boundary.title))
+
+            is LiveBoardBoundary.Bearer -> reduce { state.copy(lastBoundary = boundary) }
         }
     }
 
