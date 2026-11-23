@@ -10,6 +10,7 @@ import io.festicore.domain.auth.entity.AuthUser
 import io.festicore.domain.auth.sources.CurrentUserStore
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
+import io.festicore.feature.auth.LoginContext
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.service.auth.expiry.SessionExpiry
 import kotlinx.coroutines.CompletableDeferred
@@ -890,6 +891,10 @@ class AppCoordinatorTest {
         val recheckSignUp =
             AuthRoute.SignUp(userId = "u1", nickname = "roy", currentTermsVersion = "2026-11", sessionId = "s1", isReconsent = true)
 
+        /** 로그인 시트로 로그인한 신규 계정(약관 미동의)의 가입 정보. */
+        val newAccountSignUp =
+            AuthRoute.SignUp(userId = "u1", nickname = null, currentTermsVersion = "2026-11", sessionId = "s1")
+
         /** 세션 s1에서 사용자 u1로 로그인(또는 가입)을 마쳤다. */
         val completed = LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")
     }
@@ -939,5 +944,139 @@ class AppCoordinatorTest {
             expectSideEffect(AppCoordinatorSideEffect.OpenDeeplink(FestiCoreDeeplink.Festival("fst_b")))
             cancelAndIgnoreRemainingItems()
         }
+    }
+
+    // 로그인 시트(iOS `AuthCoordinator.loginRequested` · `dismissFlow` · `acceptLogin`, `AppCoordinatorTests` 로그인 시트 흐름)
+
+    /** 비로그인 홈에서 시작한다. 시트 결과만 보므로 생성 시 구독(만료 · 딥링크)은 돌리지 않는다. */
+    private fun signedOutHome(
+        auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
+        users: CurrentUserStore = CurrentUserStore(),
+    ) = coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth, users = users)
+
+    @Test
+    fun `로그인 시트 - 홈에서 요청하면 문맥으로 시트를 열고 떠 있으면 문맥만 바꾼다`() = runTest {
+        signedOutHome().test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Crew)
+            expectState { copy(loginSheet = LoginContext.Crew, loginSheetId = 1) }
+
+            containerHost.onLoginRequested(LoginContext.CrewJoin("우리 크루"))
+            expectState { copy(loginSheet = LoginContext.CrewJoin("우리 크루")) }
+        }
+    }
+
+    @Test
+    fun `로그인 시트 - 덮개가 있거나 홈 전이면 열지 않는다`() = runTest {
+        signedOutHome().test(this, home.copy(launchLogin = true)) {
+            containerHost.onLoginRequested(LoginContext.Follow)
+        }
+        signedOutHome().test(this, AppCoordinatorState()) {
+            containerHost.onLoginRequested(LoginContext.Follow)
+        }
+    }
+
+    @Test
+    fun `로그인 시트 - 닫으면 세션 재확인 없이 시트만 닫고 다시 열면 새 시트로 시작한다`() = runTest {
+        val auth = FakeAuthRepository()
+        signedOutHome(auth = auth).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Report)
+            expectState { copy(loginSheet = LoginContext.Report, loginSheetId = 1) }
+
+            containerHost.onLoginSheetDismissed()
+            expectState { copy(loginSheet = null) }
+
+            containerHost.onLoginRequested(LoginContext.Report)
+            expectState { copy(loginSheet = LoginContext.Report, loginSheetId = 2) }
+        }
+        assertEquals(0, auth.fetchCount)
+        assertEquals(0, auth.clearCount)
+    }
+
+    @Test
+    fun `로그인 시트 - 로그인 완료면 현재 세션의 사용자를 두고 시트를 닫는다`() = runTest {
+        val users = CurrentUserStore()
+        signedOutHome(auth = FakeAuthRepository(), users = users).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Follow)
+            expectState { copy(loginSheet = LoginContext.Follow, loginSheetId = 1) }
+
+            containerHost.onLoginSheetFinished(completed)
+            expectState { copy(loginSheet = null) }
+        }
+        assertEquals("u1", users.currentUserId.value)
+    }
+
+    @Test
+    fun `로그인 시트 - 다른 세션의 완료는 사용자를 두지 않고 시트만 닫는다`() = runTest {
+        val users = CurrentUserStore()
+        signedOutHome(auth = FakeAuthRepository().apply { sessionId = "s2" }, users = users).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Flag)
+            expectState { copy(loginSheet = LoginContext.Flag, loginSheetId = 1) }
+
+            containerHost.onLoginSheetFinished(completed)
+            expectState { copy(loginSheet = null) }
+        }
+        assertEquals(null, users.currentUserId.value)
+    }
+
+    @Test
+    fun `로그인 시트 - 계정 확인 401이면 사용자를 비우고 시트를 닫으며 첫 진입 덮개는 띄우지 않는다`() = runTest {
+        val users = CurrentUserStore().apply { update("u-old") }
+        for (expired in listOf(false, true)) {
+            signedOutHome(users = users).test(this, home) {
+                containerHost.onLoginRequested(LoginContext.Crew)
+                expectState { copy(loginSheet = LoginContext.Crew, loginSheetId = 1) }
+
+                containerHost.onLoginSheetFinished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = expired))
+                expectState { copy(loginSheet = null) }
+            }
+            assertEquals(null, users.currentUserId.value)
+        }
+    }
+
+    @Test
+    fun `로그인 시트 - 신규 계정이면 시트를 닫고 가입 정보 덮개로 이어진다`() = runTest {
+        val users = CurrentUserStore()
+        signedOutHome(auth = FakeAuthRepository(), users = users).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Crew)
+            expectState { copy(loginSheet = LoginContext.Crew, loginSheetId = 1) }
+
+            containerHost.onLoginSheetSignUpRequired(newAccountSignUp)
+            expectState { copy(loginSheet = null, signUp = newAccountSignUp) }
+
+            // 가입을 마치면 가입 덮개를 닫는다.
+            containerHost.onLaunchLoginFinished(completed)
+            expectState { copy(signUp = null) }
+        }
+        assertEquals("u1", users.currentUserId.value)
+    }
+
+    @Test
+    fun `로그인 시트 - 가입 정보를 뒤로 닫으면 세션을 지우지 않고 덮개만 닫는다`() = runTest {
+        val auth = FakeAuthRepository()
+        signedOutHome(auth = auth).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Follow)
+            expectState { copy(loginSheet = LoginContext.Follow, loginSheetId = 1) }
+
+            containerHost.onLoginSheetSignUpRequired(newAccountSignUp)
+            expectState { copy(loginSheet = null, signUp = newAccountSignUp) }
+
+            containerHost.onLaunchLoginFinished(LaunchLoginResult.SignUpCancelled)
+            expectState { copy(signUp = null) }
+        }
+        assertEquals("s1", auth.sessionId)
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `로그인 시트 - 그 사이 세션이 바뀐 가입 요청은 가입 덮개를 띄우지 않고 시트만 닫는다`() = runTest {
+        val users = CurrentUserStore()
+        signedOutHome(auth = FakeAuthRepository().apply { sessionId = "s2" }, users = users).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Crew)
+            expectState { copy(loginSheet = LoginContext.Crew, loginSheetId = 1) }
+
+            containerHost.onLoginSheetSignUpRequired(newAccountSignUp)
+            expectState { copy(loginSheet = null) }
+        }
+        assertEquals(null, users.currentUserId.value)
     }
 }

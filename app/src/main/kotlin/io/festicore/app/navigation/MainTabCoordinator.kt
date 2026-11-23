@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
+import io.festicore.feature.auth.LoginContext
 import io.festicore.ui.designkit.component.navigation.FCTabBarTab
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -19,7 +20,17 @@ sealed interface LiveTabRequest {
 data class MainTabCoordinatorState(
     val selectedTab: FCTabBarTab = FCTabBarTab.Live,
     val liveRequest: LiveTabRequest? = null,
-)
+) {
+    /**
+     * 로그인 시트 문맥. 요청에 문맥이 없으면 고른 탭으로 정한다(iOS `MainTabAuthInputs.swift:48-58`).
+     * 마이 = 프로필, 깃발 = 깃발, 라이브 · 타임테이블 = 축제 저장.
+     */
+    fun loginContext(requested: LoginContext?): LoginContext = requested ?: when (selectedTab) {
+        FCTabBarTab.My -> LoginContext.Profile
+        FCTabBarTab.Flag -> LoginContext.Flag
+        FCTabBarTab.Live, FCTabBarTab.Timetable -> LoginContext.Bookmark
+    }
+}
 
 /**
  * 메인 탭 선택과 딥링크 탭 분기(iOS `MainTabCoordinator` `select` · `handleDeeplink`, 설계 P7).

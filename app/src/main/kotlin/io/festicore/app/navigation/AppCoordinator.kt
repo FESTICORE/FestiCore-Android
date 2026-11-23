@@ -11,6 +11,7 @@ import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
+import io.festicore.feature.auth.LoginContext
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.service.auth.expiry.SessionExpiry
 import java.util.concurrent.atomic.AtomicBoolean
@@ -28,6 +29,8 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
  * [signUp]은 로그인 상태 프로필 재확인에서 가입 조건을 채우지 못했을 때 Home 위에 띄우는 가입 정보 덮개다.
  * [coverEpoch]는 덮개 세대다. 오르면 덮개 종류가 같아도 덮개 흐름을 시작 화면부터 새로 만든다(로그인 직후 · 첫 진입 가입 중 세션 만료).
  * [coverTop]은 덮개 흐름이 알린 맨 위 화면이다. 첫 진입 덮개 안에서 가입 화면이 보이는지 판단한다.
+ * [loginSheet]는 메인 탭 위 로그인 시트의 문맥이다(iOS `presentation == .login`). 덮개가 아니라 딥링크 처리에는 영향이 없다.
+ * [loginSheetId]는 시트를 새로 열 때마다 오른다. 시트가 매번 새 로그인 상태로 시작하게 한다.
  */
 data class AppCoordinatorState(
     val routes: List<NavKey> = listOf(AppRoute.Splash),
@@ -35,6 +38,8 @@ data class AppCoordinatorState(
     val signUp: AuthRoute.SignUp? = null,
     val coverEpoch: Int = 0,
     val coverTop: AuthRoute? = null,
+    val loginSheet: LoginContext? = null,
+    val loginSheetId: Int = 0,
 ) {
     /** Home 위 덮개의 시작 화면. 없으면 덮개를 그리지 않는다. */
     val authCover: AuthRoute?
@@ -125,6 +130,53 @@ class AppCoordinator(
 
             is LaunchLoginResult.SessionLost -> onLaunchSessionLost(result)
         }
+    }
+
+    /**
+     * 로그인이 필요한 동작을 눌렀다(iOS `AuthCoordinator.loginRequested`). 홈이고 덮개가 없을 때만 시트를 연다.
+     * 이미 떠 있으면 문맥만 바꾸고 진행 중인 로그인 상태는 그대로 둔다.
+     */
+    fun onLoginRequested(context: LoginContext) = intent {
+        if (state.routes.lastOrNull() != AppRoute.Home || state.authCover != null) return@intent
+        val id = if (state.loginSheet == null) state.loginSheetId + 1 else state.loginSheetId
+        reduce { state.copy(loginSheet = context, loginSheetId = id) }
+    }
+
+    /** 시트를 "나중에 할게요" · 딤 탭 · 끌기 · 뒤로 닫았다(iOS `dismissFlow`). 세션은 건드리지 않고 재확인도 하지 않는다. */
+    fun onLoginSheetDismissed() = intent { reduce { state.copy(loginSheet = null) } }
+
+    /**
+     * 시트 로그인이 끝났다(iOS `acceptLogin`). 완료면 그 세션이 현재 세션일 때만 현재 사용자로 두고 시트를 닫는다.
+     * 계정 확인 401이면 다른 세션의 결과가 아닐 때 현재 사용자를 비우고 시트를 닫는다. 시트 흐름은 첫 진입 덮개를 띄우지 않는다.
+     */
+    fun onLoginSheetFinished(result: LaunchLoginResult) = intent {
+        when (result) {
+            is LaunchLoginResult.Completed -> {
+                if (currentSessionId() == result.sessionId) updateCurrentUserId(result.userId)
+            }
+
+            is LaunchLoginResult.SessionLost -> {
+                val current = currentSessionId()
+                if (current != null && current != result.sessionId) return@intent
+                updateCurrentUserId(null)
+            }
+
+            LaunchLoginResult.Skipped, LaunchLoginResult.SignUpCancelled -> Unit
+        }
+        reduce { state.copy(loginSheet = null) }
+    }
+
+    /**
+     * 시트 로그인 계정이 가입 조건을 채우지 못했다(신규 계정 등). 시트를 닫고 재확인과 같은 가입 정보 덮개를 띄운다(iOS `presentation = .onboarding`).
+     * iOS `acceptLogin`과 같이 확인한 사용자를 둔다. 그 사이 세션이 바뀌었거나 다른 덮개가 떴으면 시트만 닫는다.
+     */
+    fun onLoginSheetSignUpRequired(route: AuthRoute.SignUp) = intent {
+        if (currentSessionId() != route.sessionId || state.authCover != null) {
+            reduce { state.copy(loginSheet = null) }
+            return@intent
+        }
+        updateCurrentUserId(route.userId)
+        reduce { state.copy(loginSheet = null, signUp = route) }
     }
 
     /** 덮개 흐름의 맨 위 화면이 바뀌었다. 덮개가 없으면(이미 닫힘) 무시한다. */
