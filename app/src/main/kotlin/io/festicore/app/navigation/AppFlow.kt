@@ -200,6 +200,8 @@ private fun HomeWithCovers(
             onResult = coordinator::onLoginSheetFinished,
             onSignUpRequired = coordinator::onLoginSheetSignUpRequired,
             onDismiss = coordinator::onLoginSheetDismissed,
+            startsSignIn = state.directLogin,
+            onSignInFailed = coordinator::onDirectLoginFailed,
         )
         AnimatedVisibility(
             visible = state.launchLogin,

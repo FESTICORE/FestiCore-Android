@@ -94,7 +94,11 @@ class LaunchLoginViewModel(
         if (!(state.isSigningIn && state.attemptId == attemptId)) return@subIntent
         if (profile == null || profile.isEligible) {
             val userId = profile?.user?.id ?: login.user.id
-            postSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = userId, sessionId = login.sessionId)))
+            postSideEffect(
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = userId, sessionId = login.sessionId, profile = profile),
+                ),
+            )
             return@subIntent
         }
         // 가입 정보는 이 화면 위에 쌓여 뒤로 오면 이 화면이 그대로 드러난다. iOS `LoginFeature`처럼 진행 표시를 먼저 끈다.
@@ -112,7 +116,9 @@ class LaunchLoginViewModel(
 
     private suspend fun onSignInFailed(attemptId: Int, error: Exception) = subIntent {
         if (!(state.isSigningIn && state.attemptId == attemptId)) return@subIntent
-        reduce { state.copy(isSigningIn = false, errorMessage = error.signInMessage()) }
+        val message = error.signInMessage()
+        reduce { state.copy(isSigningIn = false, errorMessage = message) }
+        postSideEffect(LaunchLoginSideEffect.SignInFailed(showsMessage = message != null))
     }
 
     companion object {

@@ -39,6 +39,12 @@ iOS 대응: `Projects/Feature/Auth/Sources/Login/View/LoginModalView.swift`(화�
    - 계정 확인 401: 다른 세션의 결과가 아니면 현재 사용자를 비우고 시트를 닫는다. 첫 진입 로그인 덮개는 띄우지 않는다(iOS 시트 흐름은 `isLaunchFlow = false`).
    - 실패: 시트를 유지하고 문구 "로그인에 실패했습니다. 다시 시도해 주세요."(저장 실패는 "로그인 정보를 저장하지 못했어요. 다시 시도해 주세요."). 사용자 취소 · 중복 요청은 문구 없음.
 8. 시트를 열 때마다 새 로그인 상태로 시작한다(이전 시트의 오류 문구를 남기지 않는다).
+9. 마이 로그인 카드의 Google 바로 로그인(설계 쟁점 M12, iOS `startDirectLogin` · `signInFailed` `AuC:161-172 · 298-309`): 홈이고 덮개 · 시트 · 진행 중인 바로 로그인이 없을 때만 새 로그인 상태(`loginSheetId` + 1)로 시트를 띄우지 않고 로그인을 시작한다(`AppCoordinatorState.directLogin`, `LoginSheet(startsSignIn = true)`).
+   - 취소 · 중복 요청: 아무 화면 없이 끝낸다.
+   - 그 외 실패(문구 있음): 같은 로그인 상태로 시트(`Profile`)를 띄워 실패 문구를 보인다.
+   - 완료 · 신규 계정 · 401은 시트 로그인과 같다(규칙 7). 바로 로그인 중 다른 로그인 요청이 오면 진행 중인 로그인 상태를 그 문맥의 시트로 보인다.
+   - 실패는 `LaunchLoginSideEffect.SignInFailed(showsMessage)`로 알린다. 첫 진입 화면은 이 알림을 쓰지 않는다.
+10. 로그인 · 가입 완료 결과(`LaunchLoginResult.Completed`)는 확인한 프로필(`profile`, 확인 실패면 null)을 싣는다. 앱은 다시 읽지 않고 마이 탭 계정 상태(`AccountState`)를 채운다.
 
 ## 엣지 케이스
 

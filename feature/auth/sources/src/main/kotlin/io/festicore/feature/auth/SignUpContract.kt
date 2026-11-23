@@ -1,6 +1,7 @@
 package io.festicore.feature.auth
 
 import io.festicore.domain.auth.entity.AuthNicknameRule
+import io.festicore.domain.auth.entity.AuthProfile
 /**
  * iOS `SignUpFeature.State` + 부모 흐름 값(`AuthFlowState`의 제출 중 · 문구 · 약관 재변경).
  *
@@ -67,7 +68,7 @@ data class SignUpState(
 /** iOS `SignUpDelegate` + 가입 결과(`SessionCoordinator.handleProfileUpdated`). */
 sealed interface SignUpSideEffect {
     /** 가입을 마쳐 메인 탭으로 간다. */
-    data object Completed : SignUpSideEffect
+    data class Completed(val profile: AuthProfile?) : SignUpSideEffect
 
     /** 뒤로 나왔다. 세션은 유지한다. */
     data object Closed : SignUpSideEffect

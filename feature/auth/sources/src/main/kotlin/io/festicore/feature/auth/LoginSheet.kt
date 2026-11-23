@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +50,8 @@ private val IconSize = 24.dp
  * 시트를 열 때마다 새 로그인 상태로 시작하도록 [presentationId]마다 ViewModel을 따로 만든다.
  * "나중에 할게요" · 딤 탭 · 끌기 · 뒤로는 시트가 내려간 뒤 [onDismiss]를 부른다. 로그인 중에는 닫히지 않는다(닫으면 흐름이 취소된다).
  * 로그인 결과는 [onResult](완료 · 세션 잃음), 신규 · 조건 미달 계정은 [onSignUpRequired]로 알린다.
+ * [startsSignIn]이면 시트를 띄우지 않은 채 이 로그인 상태로 바로 로그인을 시작하고(마이 Google 바로 로그인, 설계 쟁점 M12),
+ * 실패는 [onSignInFailed]로 알린다. 상위가 같은 [presentationId]로 [context]를 주면 실패 문구가 시트에 그대로 보인다.
  */
 @Composable
 fun LoginSheet(
@@ -57,6 +60,8 @@ fun LoginSheet(
     onResult: (LaunchLoginResult) -> Unit,
     onSignUpRequired: (AuthRoute.SignUp) -> Unit,
     onDismiss: () -> Unit,
+    startsSignIn: Boolean = false,
+    onSignInFailed: (showsMessage: Boolean) -> Unit = {},
 ) {
     val viewModel: LaunchLoginViewModel = koinViewModel(key = "loginSheet-$presentationId")
     val state by viewModel.collectAsState()
@@ -65,8 +70,11 @@ fun LoginSheet(
         when (sideEffect) {
             is LaunchLoginSideEffect.Finished -> onResult(sideEffect.result)
             is LaunchLoginSideEffect.SignUpRequired -> onSignUpRequired(sideEffect.route)
+            is LaunchLoginSideEffect.SignInFailed -> onSignInFailed(sideEffect.showsMessage)
         }
     }
+    // 진행 중인 로그인이 있으면 ViewModel이 다시 누르기를 무시한다(화면 회전 등으로 다시 실행돼도 한 번만 시작한다).
+    LaunchedEffect(presentationId, startsSignIn) { if (startsSignIn) viewModel.onSignInTapped() }
 
     FCSheet(item = context, onDismissRequest = onDismiss, isDismissible = !state.isSigningIn) { shown ->
         val dismiss = LocalFCSheetDismiss.current

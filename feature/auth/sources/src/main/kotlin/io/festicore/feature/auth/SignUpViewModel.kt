@@ -141,7 +141,7 @@ class SignUpViewModel(
 
             result.exceptionOrNull() is AuthDomainError.NotAuthenticated -> postSideEffect(SignUpSideEffect.SessionLost)
 
-            else -> postSideEffect(SignUpSideEffect.Completed)
+            else -> postSideEffect(SignUpSideEffect.Completed(profile))
         }
     }
 
@@ -161,7 +161,7 @@ class SignUpViewModel(
         val profile = result.getOrNull()
         if (profile != null) {
             if (profile.isEligible) {
-                postSideEffect(SignUpSideEffect.Completed)
+                postSideEffect(SignUpSideEffect.Completed(profile))
             } else {
                 reduce {
                     state
