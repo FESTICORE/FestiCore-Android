@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -19,16 +21,24 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginFlow
 import io.festicore.feature.auth.LoginSheet
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalFlow
+import io.festicore.feature.festival.flag.FlagCoordinator
+import io.festicore.feature.festival.flag.FlagFlow
+import io.festicore.feature.festival.flag.FlagViewModel
+import io.festicore.feature.festival.flag.flagDetailContext
+import io.festicore.feature.festival.flag.flagTabInput
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
+import kotlinx.coroutines.flow.MutableStateFlow
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
@@ -92,16 +102,38 @@ private fun rootScreen(screen: RootScreen): Map<String, Any> = mapOf(LaunchTrans
  * 메인 탭과 그 위 덮개(iOS `MainTabView`의 overlay).
  * - 첫 진입 덮개(N4 · N5): 덮는 동안 메인 탭은 화면 오른쪽 밖에 두고, 걷히면 메인 탭이 오른쪽에서 들어오고 덮개는 왼쪽으로 나간다(0.35초).
  * - 재확인 가입 덮개(N8): 오른쪽에서 들어오고 오른쪽으로 나간다(0.3초). 메인 탭은 제자리.
- * 루트가 꺼낸 딥링크는 [MainTabCoordinator]가 탭을 고르고, 라이브 경로는 라이브 흐름([FestivalCoordinator])에 넘긴다.
+ * 루트가 꺼낸 딥링크는 [MainTabCoordinator]가 탭을 고르고, 라이브 경로(축제 · 크루 초대)는 라이브 흐름([FestivalCoordinator])에,
+ * 깃발 경로는 깃발 흐름([FlagCoordinator])에 넘긴다.
  * 로그인 시트(iOS `LoginModalView`)는 메인 탭 위에 띄운다. 로그인 결과 · 가입 이어짐은 [AppCoordinator]가 정한다.
+ * 라이브 · 깃발 흐름의 로그인 요청은 메인 탭이 문맥을 정해(문맥이 없으면 탭 기본) 시트로 올린다(iOS `MTCSc`). 시트가 떠 있으면 탭 바를 숨긴다.
+ * 깃발 흐름 Coordinator와 목록은 탭 밖(이 범위)에 두어 다른 탭에 다녀와도 깃발 스택을 유지한다(설계 "탭 바 규칙").
+ * 깃발 탭은 라이브 스택의 보드([FestivalCoordinator]의 `flagBoard`)와 현재 사용자로 목록 입력 · 상세 문맥을 맞춘다(iOS `MTCSy` `syncFlag`).
  */
 @Composable
 private fun HomeWithCovers(
     state: AppCoordinatorState,
     coordinator: AppCoordinator,
     mainTab: MainTabCoordinator = koinViewModel(),
+    festivalCoordinator: FestivalCoordinator = koinViewModel(),
+    flagCoordinator: FlagCoordinator = koinViewModel(),
+    flagViewModel: FlagViewModel = koinViewModel(),
+    currentUserProvider: CurrentUserProvider = koinInject(),
 ) {
     val mainTabState by mainTab.collectAsState()
+    val festivalState by festivalCoordinator.collectAsState()
+    val flagState by flagViewModel.collectAsState()
+    val accountId by currentUserProvider.currentUserId.collectAsState()
+    val flagBoard = festivalState.flagBoard
+    val flagDetailContext = remember { MutableStateFlow(flagBoard.flagDetailContext(flagState.snapshot, accountId)) }
+    LaunchedEffect(flagBoard, flagState.snapshot, accountId) {
+        flagDetailContext.value = flagBoard.flagDetailContext(flagState.snapshot, accountId)
+    }
+    val flagRequest = mainTabState.flagRequest
+    LaunchedEffect(flagRequest) {
+        if (flagRequest == null) return@LaunchedEffect
+        flagCoordinator.openDetail(flagRequest)
+        mainTab.onFlagRequestConsumed()
+    }
     coordinator.collectSideEffect { sideEffect ->
         when (sideEffect) {
             is AppCoordinatorSideEffect.OpenDeeplink -> mainTab.open(sideEffect.deeplink)
@@ -127,21 +159,37 @@ private fun HomeWithCovers(
                 selection = mainTabState.selectedTab,
                 onSelectionChange = mainTab::onTabSelected,
                 onFlagTabRequested = mainTab::onFlagTabRequested,
+                isLoginSheetPresented = state.loginSheet != null,
                 liveContent = { onHidesTabBarChanged, onFlagTabRequested ->
-                    val festivalCoordinator: FestivalCoordinator = koinViewModel()
                     val liveRequest = mainTabState.liveRequest
                     LaunchedEffect(liveRequest) {
                         when (liveRequest) {
                             null -> return@LaunchedEffect
                             LiveTabRequest.FestivalList -> festivalCoordinator.onDeeplinkFestivalListOpened()
                             is LiveTabRequest.Festival -> festivalCoordinator.onDeeplinkFestivalOpened(liveRequest.festivalId)
+                            is LiveTabRequest.CrewInvite -> festivalCoordinator.onCrewInviteOpened(liveRequest.code)
                         }
                         mainTab.onLiveRequestConsumed()
                     }
                     FestivalFlow(
                         onHidesTabBarChanged = onHidesTabBarChanged,
                         onFlagTabRequested = onFlagTabRequested,
+                        onLoginRequested = { context ->
+                            coordinator.onLoginRequested(mainTabState.liveLoginContext(context))
+                        },
                         coordinator = festivalCoordinator,
+                    )
+                },
+                flagContent = {
+                    FlagFlow(
+                        input = flagBoard.flagTabInput(accountId),
+                        detailContext = flagDetailContext,
+                        onLoginRequested = { context ->
+                            coordinator.onLoginRequested(mainTabState.flagLoginContext(context))
+                        },
+                        onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
+                        coordinator = flagCoordinator,
+                        flagViewModel = flagViewModel,
                     )
                 },
             )

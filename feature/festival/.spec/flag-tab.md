@@ -93,7 +93,9 @@ iOS `FestivalFlagDetailFeature` · `FestivalFlagDetailView`. `FlagDetailViewMode
 - 상세에서 바꾼 팔로우는 목록 카드에 반영한다. 기준 수는 목록 스냅샷 `directoryFlags`의 같은 깃발 팔로워 수다.
 - 계정이 바뀌면 목록에 알리고 스택은 그대로 둔다. 열린 상세는 새 문맥(`FlagDetailContext`)으로 다시 불러온다.
 - 탭 바는 목록 · 상세 모두 보인다(숨김 콜백 없음). 같은 탭을 다시 눌러도 루트로 pop하지 않는다.
-- 로그인 · 약관 요청은 `FlagFlow` 콜백으로 올리기만 한다. 탭 연결 · 문맥 동기화 · 깃발 딥링크 해석은 T1에서 `app`에 넣는다.
+- 로그인 · 약관 요청은 `FlagFlow` 콜백으로 올린다. 메인 탭이 문맥을 정해(목록 = 깃발 탭 기본, 상세 = 팔로우 · 신고) 로그인 시트를 열고, 약관 요청은 프로필 재확인으로 넘긴다.
+- 목록 입력 · 상세 문맥은 라이브 스택에서 뒤에서부터 찾은 보드(`FestivalCoordinatorState.flagBoard`)와 현재 사용자로 만든다. 보드가 없으면 축제 · 존 이름을 비운다. 깃발 링크는 깃발 탭을 고르고 상세를 연다.
+- 로그인 시트가 떠 있는 동안 탭 바를 숨긴다.
 
 ## 엣지 케이스
 
@@ -117,7 +119,7 @@ iOS `FestivalFlagDetailFeature` · `FestivalFlagDetailView`. `FlagDetailViewMode
 
 | 모듈  | 계층   | 영향 이유                             |
 | ----- | ------ | ------------------------------------- |
-| `app` | 진입점 | 깃발 탭 연결은 다음 단계(T1)에서 한다 |
+| `app` | 진입점 | 깃발 탭 자리 · 깃발 링크 · 로그인 시트 · 문맥 동기화 |
 
 ## 미해결 질문
 

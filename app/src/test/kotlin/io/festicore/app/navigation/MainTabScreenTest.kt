@@ -84,18 +84,50 @@ class MainTabScreenTest {
         tab("깃발").assertIsSelected()
         tab("라이브").assertIsNotSelected()
     }
+
+    /** iOS `FlagRoutingTests` `cardTapOpensDetailWithContext` · `backAndSwipeCloseDetail`: 깃발 탭은 목록 · 상세 모두 탭 바를 보인다. */
+    @Test
+    fun `깃발 탭은 깃발 흐름을 그리고 라이브 스택과 상관없이 탭 바를 보인다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(
+                initial = FCTabBarTab.Flag,
+                liveContent = { onHidesTabBarChanged, _ ->
+                    LaunchedEffect(Unit) { onHidesTabBarChanged(true) }
+                    Text("라이브 목록")
+                },
+            )
+        }
+
+        composeRule.onNodeWithText("깃발 흐름").assertExists()
+        tab("깃발").assertIsSelected()
+    }
+
+    /** iOS `MTC:93`: 로그인 시트가 떠 있는 동안은 어느 탭이든 탭 바를 숨긴다. */
+    @Test
+    fun `로그인 시트가 떠 있으면 탭 바를 숨긴다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.Flag, isLoginSheetPresented = true, liveContent = { _, _ -> })
+        }
+
+        composeRule.onNodeWithText("깃발 흐름").assertExists()
+        composeRule.onAllNodesWithText("타임테이블").assertCountEquals(0)
+    }
 }
 
 /** 앱에서는 `MainTabCoordinator`가 탭 선택을 가진다. 여기서는 같은 일을 하는 저장 상태로 감싼다. */
 @Composable
 private fun HoistedMainTabScreen(
     liveContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit, onFlagTabRequested: () -> Unit) -> Unit,
+    initial: FCTabBarTab = FCTabBarTab.Live,
+    isLoginSheetPresented: Boolean = false,
 ) {
-    var selection by rememberSaveable { mutableStateOf(FCTabBarTab.Live) }
+    var selection by rememberSaveable { mutableStateOf(initial) }
     MainTabScreen(
         selection = selection,
         onSelectionChange = { selection = it },
         onFlagTabRequested = { selection = FCTabBarTab.Flag },
         liveContent = liveContent,
+        flagContent = { Text("깃발 흐름") },
+        isLoginSheetPresented = isLoginSheetPresented,
     )
 }

@@ -5,6 +5,8 @@ import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.feature.auth.LoginContext
+import io.festicore.feature.festival.FestivalLoginContext
+import io.festicore.feature.festival.FlagLoginContext
 import io.festicore.ui.designkit.component.navigation.FCTabBarTab
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -14,12 +16,19 @@ sealed interface LiveTabRequest {
     data object FestivalList : LiveTabRequest
 
     data class Festival(val festivalId: String) : LiveTabRequest
+
+    /** 크루 초대 링크(iOS `openCrewInvite(code)`). */
+    data class CrewInvite(val code: String) : LiveTabRequest
 }
 
-/** [selectedTab]은 메인 탭에서 고른 탭, [liveRequest]는 라이브 흐름이 아직 받지 않은 딥링크 열기다. */
+/**
+ * [selectedTab]은 메인 탭에서 고른 탭, [liveRequest]는 라이브 흐름이 아직 받지 않은 딥링크 열기다.
+ * [flagRequest]는 깃발 흐름이 아직 받지 않은 깃발 링크의 깃발 ID다(iOS `showDetail(flagID:)`).
+ */
 data class MainTabCoordinatorState(
     val selectedTab: FCTabBarTab = FCTabBarTab.Live,
     val liveRequest: LiveTabRequest? = null,
+    val flagRequest: String? = null,
 ) {
     /**
      * 로그인 시트 문맥. 요청에 문맥이 없으면 고른 탭으로 정한다(iOS `MainTabAuthInputs.swift:48-58`).
@@ -30,12 +39,31 @@ data class MainTabCoordinatorState(
         FCTabBarTab.Flag -> LoginContext.Flag
         FCTabBarTab.Live, FCTabBarTab.Timetable -> LoginContext.Bookmark
     }
+
+    /** 깃발 탭 요청(iOS `MTCSc:185-192`). 목록은 문맥 없이(깃발 탭 기본), 상세는 팔로우 · 신고 문맥이다. */
+    fun flagLoginContext(requested: FlagLoginContext?): LoginContext = loginContext(
+        when (requested) {
+            null -> null
+            FlagLoginContext.Follow -> LoginContext.Follow
+            FlagLoginContext.Report -> LoginContext.Report
+        },
+    )
+
+    /** 라이브 탭 요청(iOS `MTCSc:83-106`). 보드 알림 아이콘은 문맥 없이, 크루 · 참여 · 팔로우는 그 문맥이다. 참여 문맥은 크루 이름을 그대로 넘긴다. */
+    fun liveLoginContext(requested: FestivalLoginContext?): LoginContext = loginContext(
+        when (requested) {
+            null -> null
+            FestivalLoginContext.Crew -> LoginContext.Crew
+            is FestivalLoginContext.CrewJoin -> LoginContext.CrewJoin(requested.crewName)
+            FestivalLoginContext.Follow -> LoginContext.Follow
+        },
+    )
 }
 
 /**
  * 메인 탭 선택과 딥링크 탭 분기(iOS `MainTabCoordinator` `select` · `handleDeeplink`, 설계 P7).
- * 축제 목록 · 축제 경로는 라이브 탭에서 연다. 공연(`Set`)은 타임테이블 탭이 연결되는 C1에서, 깃발 · 크루 초대는 해당 기능을 옮길 때 붙인다.
- * 그때까지는 꺼낸 뒤 디버그 로그만 남긴다.
+ * 축제 목록 · 축제 · 크루 초대 경로는 라이브 탭에서, 깃발 경로는 깃발 탭에서 연다(iOS `MTC:379-394`).
+ * 공연(`Set`)은 타임테이블 탭이 연결되는 C1에서 붙인다. 그때까지는 꺼낸 뒤 디버그 로그만 남긴다.
  */
 class MainTabCoordinator :
     ViewModel(),
@@ -58,11 +86,16 @@ class MainTabCoordinator :
             // 라우팅 보류: C1에서 축제 열기 → 타임테이블 탭 → 공연 상세로 잇는다(iOS `MainTabCoordinator.swift:371-377`).
             is FestiCoreDeeplink.Set -> FestiCoreLogger.debug("공연 딥링크는 타임테이블 연결(C1) 전이라 열지 않음", LogCategory.NAVIGATION)
 
-            is FestiCoreDeeplink.Flag -> FestiCoreLogger.debug("깃발 딥링크는 깃발 탭 이식 전이라 열지 않음", LogCategory.NAVIGATION)
+            is FestiCoreDeeplink.Flag ->
+                reduce { state.copy(selectedTab = FCTabBarTab.Flag, flagRequest = deeplink.id) }
 
-            is FestiCoreDeeplink.CrewInvite -> FestiCoreLogger.debug("크루 초대 딥링크는 크루 이식 전이라 열지 않음", LogCategory.NAVIGATION)
+            is FestiCoreDeeplink.CrewInvite ->
+                reduce { state.copy(selectedTab = FCTabBarTab.Live, liveRequest = LiveTabRequest.CrewInvite(deeplink.code)) }
         }
     }
+
+    /** 깃발 흐름이 [MainTabCoordinatorState.flagRequest]를 받았다. */
+    fun onFlagRequestConsumed() = intent { reduce { state.copy(flagRequest = null) } }
 
     /** 라이브 흐름이 [MainTabCoordinatorState.liveRequest]를 받았다. */
     fun onLiveRequestConsumed() = intent { reduce { state.copy(liveRequest = null) } }

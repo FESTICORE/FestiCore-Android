@@ -191,6 +191,14 @@ class AppCoordinator(
     }
 
     /**
+     * 깃발 팔로우 · 신고가 약관 재동의(403 `TERMS_REQUIRED`)를 알렸다(iOS `session.retryProfile`, 설계 쟁점 F6).
+     * 홈이면 프로필을 다시 확인한다. 약관이 필요하면 재확인 결과로 가입 정보 덮개가 뜬다.
+     */
+    fun onTermsAcceptanceRequested() = intent {
+        if (state.routes.lastOrNull() == AppRoute.Home) recheckProfile()
+    }
+
+    /**
      * 로그인 직후 계정 확인 401(iOS `SessionCoordinator.swift:196-223,341-351`). 그 사이 다른 로그인이 세션을 저장했으면 오래된 결과라 버린다.
      * 이 세션의 만료 이벤트가 있었으면 첫 진입 흐름이라 launchLogin을 유지하고 덮개 세대를 올려 LaunchLogin부터 새로(문구 없이) 만든다.
      * 만료 이벤트가 없으면(세션은 로그인 화면이 조건 삭제했다) 덮개를 닫아 비로그인 Home으로 간다. 재확인은 하지 않는다.

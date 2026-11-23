@@ -2,13 +2,15 @@ package io.festicore.app.navigation
 
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.feature.auth.LoginContext
+import io.festicore.feature.festival.FestivalLoginContext
+import io.festicore.feature.festival.FlagLoginContext
 import io.festicore.ui.designkit.component.navigation.FCTabBarTab
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
-/** iOS `DeeplinkRoutingTests` 중 Android에 있는 경로(축제 목록 · 축제)와 아직 열지 않는 경로. */
+/** iOS `DeeplinkRoutingTests` · `FlagRoutingTests` 중 Android에 있는 경로(축제 목록 · 축제 · 깃발 · 크루 초대)와 아직 열지 않는 경로. */
 class MainTabCoordinatorTest {
     private val flagTab = MainTabCoordinatorState(selectedTab = FCTabBarTab.Flag)
 
@@ -32,12 +34,34 @@ class MainTabCoordinatorTest {
     }
 
     @Test
-    fun `공연 · 깃발 · 크루 초대 딥링크는 대상 화면이 생길 때까지 탭을 바꾸지 않는다`() = runTest {
+    fun `공연 딥링크는 타임테이블 연결 전까지 탭을 바꾸지 않는다`() = runTest {
         MainTabCoordinator().test(this, flagTab) {
             containerHost.open(FestiCoreDeeplink.Set(festivalId = "fst_a", setId = "set_1"))
-            containerHost.open(FestiCoreDeeplink.Flag("flg_1"))
-            containerHost.open(FestiCoreDeeplink.CrewInvite("K7P2QX"))
             expectNoItems()
+        }
+    }
+
+    /** iOS `flagDeeplinkOpensDetail`: 깃발 링크는 깃발 탭을 고르고 깃발 흐름에 상세 열기를 넘긴다. */
+    @Test
+    fun flagDeeplinkOpensDetail() = runTest {
+        MainTabCoordinator().test(this) {
+            containerHost.open(FestiCoreDeeplink.Flag("flg_9"))
+            expectState { copy(selectedTab = FCTabBarTab.Flag, flagRequest = "flg_9") }
+
+            containerHost.onFlagRequestConsumed()
+            expectState { copy(flagRequest = null) }
+        }
+    }
+
+    /** iOS `MTC:379-384`: 크루 초대 링크는 라이브 탭을 고르고 라이브 흐름에 참여 확인 열기를 넘긴다. */
+    @Test
+    fun `크루 초대 딥링크는 라이브 탭으로 바꾸고 라이브 흐름에 초대 코드를 넘긴다`() = runTest {
+        MainTabCoordinator().test(this, flagTab) {
+            containerHost.open(FestiCoreDeeplink.CrewInvite("K7P2QX"))
+            expectState { copy(selectedTab = FCTabBarTab.Live, liveRequest = LiveTabRequest.CrewInvite("K7P2QX")) }
+
+            containerHost.onLiveRequestConsumed()
+            expectState { copy(liveRequest = null) }
         }
     }
 
@@ -63,5 +87,24 @@ class MainTabCoordinatorTest {
             assertEquals(context, state.loginContext(null))
             assertEquals(LoginContext.Report, state.loginContext(LoginContext.Report))
         }
+    }
+
+    /** iOS `detailRequestsReachAppSheets`: 깃발 목록은 깃발 탭 기본, 상세 팔로우 · 신고는 그 문맥으로 시트를 연다. */
+    @Test
+    fun detailRequestsReachAppSheets() {
+        assertEquals(LoginContext.Flag, flagTab.flagLoginContext(null))
+        assertEquals(LoginContext.Follow, flagTab.flagLoginContext(FlagLoginContext.Follow))
+        assertEquals(LoginContext.Report, flagTab.flagLoginContext(FlagLoginContext.Report))
+    }
+
+    /** iOS `MTCSc:83-106` · `crewJoinLoginRequestUsesJoinContext`: 라이브 흐름 요청은 문맥을 잃지 않고 바꾸며, 문맥이 없으면 라이브 탭 기본(축제 저장)이다. */
+    @Test
+    fun `라이브 흐름 로그인 요청은 크루 · 참여 · 팔로우 문맥을 그대로 옮긴다`() {
+        val liveTab = MainTabCoordinatorState(selectedTab = FCTabBarTab.Live)
+        assertEquals(LoginContext.Bookmark, liveTab.liveLoginContext(null))
+        assertEquals(LoginContext.Crew, liveTab.liveLoginContext(FestivalLoginContext.Crew))
+        assertEquals(LoginContext.CrewJoin("주말 크루"), liveTab.liveLoginContext(FestivalLoginContext.CrewJoin("주말 크루")))
+        assertEquals(LoginContext.CrewJoin(null), liveTab.liveLoginContext(FestivalLoginContext.CrewJoin(null)))
+        assertEquals(LoginContext.Follow, liveTab.liveLoginContext(FestivalLoginContext.Follow))
     }
 }

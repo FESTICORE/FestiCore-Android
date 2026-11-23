@@ -965,6 +965,22 @@ class AppCoordinatorTest {
         }
     }
 
+    /** iOS `FlagRoutingTests.detailRequestsReachAppSheets`의 약관 요청 → `session.retryProfile`. 홈 전이면 재확인하지 않는다. */
+    @Test
+    fun `깃발 약관 재동의 요청은 홈에서 프로필을 다시 확인해 가입 정보 덮개를 띄운다`() = runTest {
+        val auth = FakeAuthRepository(profile = { notEligible })
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this, AppCoordinatorState()) {
+            containerHost.onTermsAcceptanceRequested()
+        }
+        assertEquals(0, auth.fetchCount)
+
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = true, auth = auth).test(this, home) {
+            containerHost.onTermsAcceptanceRequested()
+            expectState { copy(signUp = recheckSignUp) }
+        }
+        assertEquals(1, auth.fetchCount)
+    }
+
     @Test
     fun `로그인 시트 - 덮개가 있거나 홈 전이면 열지 않는다`() = runTest {
         signedOutHome().test(this, home.copy(launchLogin = true)) {

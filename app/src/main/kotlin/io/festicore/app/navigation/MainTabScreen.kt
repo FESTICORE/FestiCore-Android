@@ -28,7 +28,9 @@ import io.festicore.ui.designkit.typography.textStyle
 /**
  * iOS `MainTabView` 껍데기. 선택한 탭([selection])은 `MainTabCoordinator`가 가지고(설계 P7), 탭마다 화면 상태(스크롤 위치 등)를 따로 보존한다.
  * 라이브 탭은 [liveContent](라이브 흐름)를 그린다. 라이브 흐름이 숨기라고 알리면(스택이 목록뿐 · 보드에 시트나 알림창) 탭 바를 숨기고 자리도 비운다
- * (iOS `MainTabCoordinator.shouldHideTabBar` · `shouldReserveTabBarSpace`). 표시 · 숨김은 애니메이션 없이 바로 바꾼다. 다른 탭 내용은 이후 단계에서 옮긴다.
+ * (iOS `MainTabCoordinator.shouldHideTabBar` · `shouldReserveTabBarSpace`). 표시 · 숨김은 애니메이션 없이 바로 바꾼다.
+ * 깃발 탭은 [flagContent](깃발 흐름)를 그리고 목록 · 상세 모두 탭 바를 보인다(iOS `MTC:109-111`). 다른 탭 내용은 이후 단계에서 옮긴다.
+ * 로그인 시트가 떠 있으면([isLoginSheetPresented]) 어느 탭이든 탭 바를 숨긴다(iOS `MTC:93`).
  * 라이브 흐름이 깃발 탭을 요청하면(존 지도 "깃발을 팔로우하면…", iOS `flagTabRequested`) [onFlagTabRequested]로 알린다.
  */
 @Composable
@@ -37,7 +39,9 @@ fun MainTabScreen(
     onSelectionChange: (FCTabBarTab) -> Unit,
     onFlagTabRequested: () -> Unit,
     liveContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit, onFlagTabRequested: () -> Unit) -> Unit,
+    flagContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    isLoginSheetPresented: Boolean = false,
 ) {
     var hidesLiveTabBar by rememberSaveable { mutableStateOf(true) }
     val tabStates = rememberSaveableStateHolder()
@@ -46,11 +50,12 @@ fun MainTabScreen(
             tabStates.SaveableStateProvider(selection.name) {
                 when (selection) {
                     FCTabBarTab.Live -> liveContent({ hidesLiveTabBar = it }, onFlagTabRequested)
+                    FCTabBarTab.Flag -> flagContent()
                     else -> TabRoot(tab = selection)
                 }
             }
         }
-        if (!(selection == FCTabBarTab.Live && hidesLiveTabBar)) {
+        if (!isLoginSheetPresented && !(selection == FCTabBarTab.Live && hidesLiveTabBar)) {
             FCTabBar(selection = selection, onSelectionChange = onSelectionChange)
         }
     }
