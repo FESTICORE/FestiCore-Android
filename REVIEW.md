@@ -18,6 +18,7 @@
 
 - 모듈 의존 방향(`.claude/docs/architecture.md`)과 기능 모듈 이름이 iOS와 같은가
 - feature가 다른 feature · domain의 `sources`를 의존하지 않는가
+- 평가 장치(`verify` · `.claude/scripts/check-*` · 훅 · `.githooks` · 워크플로)를 약하게 하는 변경(단계 삭제 · 조건 완화 · 실패를 성공으로)이 기능 PR에 섞이지 않았는가, 테스트를 끄면서 이유 이슈를 적었는가(`.claude/docs/harness.md` 자기개선 루프)
 - 화면 전환이 기능별 Coordinator + Navigation 3로만 이뤄지는가
 - 보안 값 · 설정값 · DB 접근이 `core/datastore` · `core/database`에서만 일어나는가
 - 옮긴 화면의 동작(상태 · 문구 · 오류 처리)이 iOS 대응 파일과 같은가

@@ -29,6 +29,10 @@ jobs:
       - name: 모듈 경계 (check-boundaries)
         run: .claude/scripts/check-boundaries
 
+      # 이슈 참조 없이 테스트를 끈 곳(보상 해킹)을 로컬 verify 밖에서도 막는다
+      - name: 테스트 무결성 (check-test-integrity)
+        run: python3 .claude/scripts/check-test-integrity
+
       - name: Kotlin (ktlint)
         run: gradle/format --check
 
