@@ -270,4 +270,6 @@ internal class FakePackUseCase(
     }
 
     override suspend fun syncPack(festivalId: String): PackSyncResult = error("사용하지 않음")
+
+    override suspend fun deleteExpiredPacks(): List<String> = error("사용하지 않음")
 }

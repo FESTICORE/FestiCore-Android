@@ -93,6 +93,9 @@ class AppCoordinatorTest {
         }
     }
 
+    /** 만료 팩 정리를 부른 횟수. */
+    private var packCleanupCount = 0
+
     private fun coordinator(
         store: FirstInstallOnboardingStore,
         loggedIn: Boolean,
@@ -109,6 +112,7 @@ class AppCoordinatorTest {
         users::update,
         deeplinks?.received ?: emptyFlow(),
         { deeplinks?.consume() },
+        { packCleanupCount++ },
     )
 
     /** 대기 딥링크 하나와 새 딥링크 신호(앱의 `AppDeeplinkBridge` 대신). */
@@ -298,6 +302,7 @@ class AppCoordinatorTest {
             {},
             emptyFlow(),
             { null },
+            {},
         ).test(this) {
             runOnCreate()
             containerHost.onSplashAppeared()
@@ -375,6 +380,20 @@ class AppCoordinatorTest {
         assertEquals(2, auth.fetchCount)
         assertEquals(0, auth.clearCount)
         assertEquals("s1", auth.sessionId)
+    }
+
+    @Test
+    fun `홈에서만 포그라운드마다 만료 팩을 지운다`() = runTest {
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false).test(this) {
+            runOnCreate()
+            containerHost.onForegrounded()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            containerHost.onForegrounded()
+        }
+        // 스플래시 중 포그라운드는 지우지 않는다.
+        assertEquals(1, packCleanupCount)
     }
 
     @Test
