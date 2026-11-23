@@ -3,6 +3,7 @@ package io.festicore.feature.festival
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
 import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.feature.festival.flag.FlagBoard
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -13,13 +14,19 @@ data class FestivalCoordinatorState(
     val selectedFestivalId: String? = null,
     /** 맨 위 라이브 보드에 시트 · 다이얼로그가 떠 있다. */
     val isLiveBoardPresentingModal: Boolean = false,
-    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(로그인 등). 존 지도 · 알림함 · 크루 · 크루 만들기는 화면을 쌓는다. */
+    /** 보드가 마지막으로 알린, 아직 대상 화면이 없는 경계 이동(기수 · 가는 길). 존 지도 · 알림함 · 크루 · 크루 만들기는 화면을 쌓고 로그인 · 깃발 찾기는 상위에 알린다. */
     val lastBoundary: LiveBoardBoundary? = null,
     /** 맨 위 보드가 바꿀 수 있는 축제 ID(보드 카탈로그). 알림이 연 축제가 여기 없으면 알림함에 팝업을 띄운다(iOS `board.catalog`). */
     val liveBoardFestivalIds: Set<String> = emptySet(),
     /** 알림함에서 연 축제. 보드가 받아 그 축제로 바꾼 뒤 비운다(설계 E8). */
     val pendingBoardFestivalId: String? = null,
+    /** 보드가 마지막으로 알린 깃발 탭 기준 값. 보드가 스택에 없으면 쓰지 않는다([flagBoard]). */
+    val liveBoard: FlagBoard? = null,
 ) {
+    /** 깃발 탭이 따르는 보드(iOS `flagBoard`). 존 지도 · 알림함 · 크루가 위에 있어도 그 아래 보드를 기준으로 한다. 보드가 없으면 `null`. */
+    val flagBoard: FlagBoard?
+        get() = liveBoard?.takeIf { routes.any { it is FestivalRoute.LiveBoard } }
+
     /**
      * 탭 바를 숨길지(iOS `MainTabCoordinator.shouldHideTabBar`의 라이브 탭 부분). 스택이 목록뿐이면 숨기고,
      * 맨 위 보드에 바꾸기 시트나 알림창이 떠 있거나 알림함 · 크루 · 크루 만들기 · 참여 확인이 맨 위면 숨긴다(설계 D9 · "탭 바 표시"). 존 지도는 탭 바를 보인다.
@@ -41,6 +48,9 @@ data class FestivalCoordinatorState(
 sealed interface FestivalCoordinatorSideEffect {
     /** 깃발 탭으로 바꾼다(iOS `delegate(.flagTabRequested)`, 설계 E6). */
     data object FlagTabRequested : FestivalCoordinatorSideEffect
+
+    /** 로그인 시트를 요청한다(iOS `delegate(.loginRequested)` 등). [context]가 `null`이면 상위가 탭 기본 문맥을 쓴다. */
+    data class LoginRequested(val context: FestivalLoginContext?) : FestivalCoordinatorSideEffect
 }
 
 /**
@@ -85,7 +95,11 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
         reduce { state.copy(isLiveBoardPresentingModal = isPresenting) }
     }
 
-    /** 보드의 경계 이동. 존 지도 · 알림함은 쌓고(iOS `zoneMapRequested` · `notificationInboxRequested`), 대상 화면이 아직 없는 나머지는 받아 두기만 한다. */
+    /**
+     * 보드의 경계 이동. 존 지도 · 알림함은 쌓고(iOS `zoneMapRequested` · `notificationInboxRequested`),
+     * 로그인 경계는 문맥을 담아 상위에 로그인을 요청하고(iOS `loginRequested` · `crewLoginRequested` · `followLoginRequested`),
+     * "깃발 찾기"는 깃발 탭을 요청한다(iOS `flagDirectoryRequested`). 대상 화면이 아직 없는 나머지는 받아 두기만 한다.
+     */
     fun onLiveBoardBoundary(boundary: LiveBoardBoundary) = intent {
         when (boundary) {
             is LiveBoardBoundary.ZoneMap -> {
@@ -107,7 +121,18 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
 
             is LiveBoardBoundary.Crew -> pushCrew(boundary.festivalId, boundary.crewId)
 
-            else -> reduce { state.copy(lastBoundary = boundary) }
+            LiveBoardBoundary.Login -> postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(null))
+
+            LiveBoardBoundary.CrewLogin -> postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Crew))
+
+            is LiveBoardBoundary.CrewJoinLogin ->
+                postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.CrewJoin(boundary.crewName)))
+
+            LiveBoardBoundary.FollowLogin -> postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Follow))
+
+            LiveBoardBoundary.FlagDirectory -> postSideEffect(FestivalCoordinatorSideEffect.FlagTabRequested)
+
+            is LiveBoardBoundary.Bearer, is LiveBoardBoundary.PackDirections -> reduce { state.copy(lastBoundary = boundary) }
         }
     }
 
@@ -120,14 +145,10 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
         pushCrew(festivalId, crewId)
     }
 
-    /** 만들기 중 세션이 끊겼다(iOS `crewCreate(.delegate(.loginRequested))`). 화면을 닫고 크루 로그인 경계를 남긴다(로그인 시트는 L1). */
+    /** 만들기 중 세션이 끊겼다(iOS `crewCreate(.delegate(.loginRequested))`). 화면을 닫고 크루 문맥으로 로그인을 요청한다(iOS `crewLoginRequested`). */
     fun onCrewCreateLoginRequested() = intent {
-        reduce {
-            state.copy(
-                routes = state.routes.filterNot { it is FestivalRoute.CrewCreate },
-                lastBoundary = LiveBoardBoundary.CrewLogin,
-            )
-        }
+        reduce { state.copy(routes = state.routes.filterNot { it is FestivalRoute.CrewCreate }) }
+        postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Crew))
     }
 
     /** 해산했거나 크루에서 빠졌다(iOS `crewClosed`). 크루 화면을 뺀다. 보드는 다시 보일 때 크루 카드를 새로 받는다. */
@@ -137,7 +158,7 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
 
     /**
      * 초대 코드로 참여 확인을 연다(iOS `openCrewInvite(code)`). 기존 참여 확인 · 크루 화면을 빼고 쌓는다.
-     * 초대 딥링크 · 탭 선택은 T1에서 이 함수로 잇는다.
+     * 초대 딥링크는 메인 탭이 라이브 탭을 고른 뒤 이 함수로 넘긴다(iOS `MTC:379-384`).
      */
     fun onCrewInviteOpened(code: String) = intent {
         val routes = state.routes.filterNot { it is FestivalRoute.CrewJoin || it is FestivalRoute.Crew }
@@ -149,10 +170,10 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
 
     /**
      * 참여 확인에서 로그인이 필요하다(iOS `crewJoin(.delegate(.loginRequested))` → `crewJoinLoginRequested(crewName:)`).
-     * 화면은 그대로 두고 참여 문맥(크루 이름)을 담은 경계를 남긴다(로그인 시트는 L1). 로그인 뒤 자동 참여하지 않는다.
+     * 화면은 그대로 두고 참여 문맥(크루 이름)으로 로그인을 요청한다. 로그인 뒤 자동 참여하지 않는다.
      */
     fun onCrewJoinLoginRequested(crewName: String?) = intent {
-        reduce { state.copy(lastBoundary = LiveBoardBoundary.CrewJoinLogin(crewName)) }
+        postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.CrewJoin(crewName)))
     }
 
     /**
@@ -174,6 +195,11 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
     fun onZoneMapFlagDirectoryRequested() = intent {
         reduce { state.copy(routes = state.routes.dropLast(1).ifEmpty { state.routes }) }
         postSideEffect(FestivalCoordinatorSideEffect.FlagTabRequested)
+    }
+
+    /** 보드의 깃발 탭 기준 값이 바뀌었다(iOS 깃발 탭 동기화가 읽는 `flagBoard`). */
+    fun onLiveBoardChanged(board: FlagBoard) = intent {
+        if (state.liveBoard != board) reduce { state.copy(liveBoard = board) }
     }
 
     /** 보드가 바꿀 수 있는 축제 목록이 바뀌었다(알림 열기 판단용). */

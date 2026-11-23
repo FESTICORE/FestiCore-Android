@@ -1,5 +1,7 @@
 package io.festicore.feature.festival
 import io.festicore.feature.festival.festivallist.FakeCurrentUserProvider
+import io.festicore.feature.festival.flag.FlagBoard
+import io.festicore.feature.festival.flagdetail.FlagDetailContext
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -48,10 +50,50 @@ class FestivalCoordinatorTest {
     }
 
     @Test
-    fun `존 지도 · 알림함 밖의 보드 경계 이동은 받아 두기만 한다`() = runTest {
+    fun `대상 화면이 없는 기수 · 가는 길 경계는 받아 두기만 한다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
+            val directions = LiveBoardBoundary.PackDirections("fst_1", "축제")
+            containerHost.onLiveBoardBoundary(directions)
+            expectState { copy(lastBoundary = directions) }
+        }
+    }
+
+    @Test
+    fun `보드 로그인 경계는 문맥을 담아 로그인을 요청한다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.Login)
+            expectSideEffect(FestivalCoordinatorSideEffect.LoginRequested(null))
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.CrewLogin)
+            expectSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Crew))
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.FollowLogin)
+            expectSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Follow))
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.CrewJoinLogin("주말 크루"))
+            expectSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.CrewJoin("주말 크루")))
+        }
+    }
+
+    @Test
+    fun `보드 팔로우 안내의 깃발 찾기는 깃발 탭을 요청한다`() = runTest {
         FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
             containerHost.onLiveBoardBoundary(LiveBoardBoundary.FlagDirectory)
-            expectState { copy(lastBoundary = LiveBoardBoundary.FlagDirectory) }
+            expectSideEffect(FestivalCoordinatorSideEffect.FlagTabRequested)
+        }
+    }
+
+    @Test
+    fun `깃발 탭은 스택에 보드가 있을 때만 보드가 알린 값을 따른다`() = runTest {
+        val flagBoard = FlagBoard("fst_1", FlagDetailContext(accountId = "user-a"))
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
+            containerHost.onLiveBoardChanged(flagBoard)
+            val reported = awaitState()
+            assertEquals(flagBoard, reported.flagBoard)
+            // 같은 값이면 상태를 바꾸지 않는다.
+            containerHost.onLiveBoardChanged(flagBoard)
+            // 존 지도가 위에 있어도 그 아래 보드를 따른다.
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.ZoneMap("fst_1", "zon_a"))
+            assertEquals(flagBoard, awaitState().flagBoard)
+            containerHost.onDeeplinkFestivalListOpened()
+            assertEquals(null, awaitState().flagBoard)
         }
     }
 
@@ -252,10 +294,11 @@ class FestivalCoordinatorTest {
     }
 
     @Test
-    fun `만들기 화면에서 세션이 끊기면 화면을 닫고 크루 로그인 경계를 남긴다`() = runTest {
+    fun loginRequestClosesCreateScreen() = runTest {
         FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewCreate)) {
             containerHost.onCrewCreateLoginRequested()
-            expectState { copy(routes = listOf(FestivalRoute.List, board), lastBoundary = LiveBoardBoundary.CrewLogin) }
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+            expectSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Crew))
         }
     }
 
@@ -278,8 +321,8 @@ class FestivalCoordinatorTest {
     fun crewJoinLoginRequestUsesJoinContext() = runTest {
         FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewJoin)) {
             containerHost.onCrewJoinLoginRequested(null)
-            // 화면은 그대로 두고 참여 문맥 경계를 남긴다(일반 크루 로그인과 구별된다).
-            expectState { copy(lastBoundary = LiveBoardBoundary.CrewJoinLogin(crewName = null)) }
+            // 화면은 그대로 두고 참여 문맥으로 로그인을 요청한다(일반 크루 로그인과 구별된다).
+            expectSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.CrewJoin(crewName = null)))
         }
     }
 

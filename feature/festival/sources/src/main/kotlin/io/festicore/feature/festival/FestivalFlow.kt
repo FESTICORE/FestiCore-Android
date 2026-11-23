@@ -15,16 +15,22 @@ import io.festicore.feature.festival.crewjoin.CrewJoinScreen
 import io.festicore.feature.festival.festivallist.FestivalListScreen
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.festivallist.ListForegroundEffect
+import io.festicore.feature.festival.flag.FlagBoard
 import io.festicore.feature.festival.liveboard.LiveBoardScreen
+import io.festicore.feature.festival.liveboard.LiveBoardViewModel
 import io.festicore.feature.festival.notificationinbox.NotificationInboxScreen
 import io.festicore.feature.festival.zonemap.ZoneMapScreen
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
 /**
- * 라이브 탭 루트(iOS `FestivalCoordinatorView`). [onHidesTabBarChanged]로 탭 바를 숨길지, [onFlagTabRequested]로 깃발 탭 전환을 알린다.
+ * 라이브 탭 루트(iOS `FestivalCoordinatorView`). [onHidesTabBarChanged]로 탭 바를 숨길지, [onFlagTabRequested]로 깃발 탭 전환을,
+ * [onLoginRequested]로 로그인 시트 요청(문맥이 `null`이면 탭 기본 문맥)을 알린다.
+ * 보드는 깃발 탭이 따를 값([FlagBoard])을 Coordinator에 알린다. 보드가 화면에 있는 동안만 갱신한다.
  * 상위(메인 탭)는 그 값으로 탭 바를 숨긴다(iOS `MainTabCoordinator.shouldHideTabBar`: 스택이 목록뿐이거나 보드에 시트 · 알림창이 떠 있음).
  * Coordinator와 목록 ViewModel은 이 흐름을 그린 범위(메인 탭 항목)에 둔다. 탭을 바꿔 흐름이 화면에서 빠져도 목록 상태가 남는다.
  * 보드 ViewModel은 스택 항목 범위라 pop하면 정리된다.
@@ -36,6 +42,7 @@ fun FestivalFlow(
     onHidesTabBarChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onFlagTabRequested: () -> Unit = {},
+    onLoginRequested: (FestivalLoginContext?) -> Unit = {},
     coordinator: FestivalCoordinator = koinViewModel(),
     listViewModel: FestivalListViewModel = koinViewModel(),
 ) {
@@ -43,6 +50,7 @@ fun FestivalFlow(
     coordinator.collectSideEffect { sideEffect ->
         when (sideEffect) {
             FestivalCoordinatorSideEffect.FlagTabRequested -> onFlagTabRequested()
+            is FestivalCoordinatorSideEffect.LoginRequested -> onLoginRequested(sideEffect.context)
         }
     }
     LaunchedEffect(state.hidesTabBar) { onHidesTabBarChanged(state.hidesTabBar) }
@@ -73,11 +81,18 @@ fun FestivalFlow(
                     FestivalListScreen(viewModel = listViewModel, onFestivalSelected = coordinator::onFestivalSelected)
                 }
                 entry<FestivalRoute.LiveBoard> { key ->
+                    val boardViewModel: LiveBoardViewModel =
+                        koinViewModel {
+                            parametersOf(key.festivalId, listViewModel.container.stateFlow.value.catalog)
+                        }
+                    LaunchedEffect(boardViewModel) {
+                        boardViewModel.container.stateFlow
+                            .map(FlagBoard::of)
+                            .distinctUntilChanged()
+                            .collect { coordinator.onLiveBoardChanged(it) }
+                    }
                     LiveBoardScreen(
-                        viewModel =
-                            koinViewModel {
-                                parametersOf(key.festivalId, listViewModel.container.stateFlow.value.catalog)
-                            },
+                        viewModel = boardViewModel,
                         foregroundLifecycleOwner = flowLifecycleOwner,
                         onBack = coordinator::goBack,
                         onBoundary = coordinator::onLiveBoardBoundary,

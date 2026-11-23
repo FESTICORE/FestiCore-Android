@@ -20,7 +20,7 @@ iOS 대응: `Projects/Core/FestiCoreUtility/Sources/Deeplink/FestiCoreDeeplink.s
 6. 브리지(`AppDeeplinkBridge`, app): `MainActivity.onCreate`(저장 상태 복원이 아닐 때) · `onNewIntent`의 `ACTION_VIEW` data를 해석해 받은 순서대로 대기에 넣고 신호를 보낸다. 딥링크가 아닌 URL은 버린다.
 7. 라우팅(`AppCoordinator`): 신호를 받거나 홈에 들어오거나 덮개(첫 진입 로그인 · 가입)가 닫히면, 루트가 `[Home]`이고 덮개가 없을 때만 대기 값을 꺼내 `OpenDeeplink`로 보낸다. 조건이 안 맞으면 대기 값을 남긴다.
 8. 탭 분기(`MainTabCoordinator.open`): `FestivalList` · `Festival`은 라이브 탭을 고르고 라이브 흐름에 넘긴다. `FestivalCoordinator`는 목록이면 `[List]`, 축제면 `[List, LiveBoard(id)]`로 바꾼다(같은 보드가 이미 열려 있으면 대기 축제로 넘겨 보드가 바꾼다).
-9. `Set`은 파싱 · 대기까지만 한다. 라우팅은 C1(타임테이블 탭 연결)에서 붙인다. `Flag` · `CrewInvite`는 해당 기능이 없어 꺼낸 뒤 디버그 로그만 남긴다.
+9. `Set`은 파싱 · 대기까지만 한다. 라우팅은 C1(타임테이블 탭 연결)에서 붙인다. `Flag`는 깃발 탭을 고르고 상세를 연다. `CrewInvite`는 라이브 탭을 고르고 참여 확인을 연다(`MainTabCoordinator`, iOS `MTC:379-394`).
 
 ## iOS와 다른 점
 

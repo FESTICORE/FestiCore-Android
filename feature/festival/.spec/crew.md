@@ -20,9 +20,9 @@ iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature
 - 보드 "크루 만들기" · "같이 귀가"(로그인 상태) → `CrewCreate(festivalId)`를 쌓는다. 이미 있으면 다시 쌓지 않는다.
 - 보드 크루 카드 → `Crew(festivalId, crewId)`를 쌓는다. 이미 크루 화면이 있으면 무시한다.
 - 만들기 "크루 보기" → 만들기 화면을 빼고 크루 화면을 쌓는다(크루에서 뒤로 가면 보드).
-- 만들기 닫기 · 크루 뒤로 → pop. 만들기 중 세션이 끊김(401) → 만들기 화면을 빼고 `CrewLogin` 경계(로그인 시트 L1 자리)를 남긴다.
+- 만들기 닫기 · 크루 뒤로 → pop. 만들기 중 세션이 끊김(401) → 만들기 화면을 빼고 크루 문맥으로 로그인 시트를 요청한다.
 - 크루 해산 · 크루에서 빠짐(`CrewClosed`) → 크루 화면을 뺀다.
-- 초대 코드(`onCrewInviteOpened(code)`) → 기존 참여 확인 · 크루 화면을 빼고 `CrewJoin(code)`를 쌓는다. 참여 확인 닫기 → pop. 참여 성공 → 참여 확인을 빼고 `Crew(festivalId, crewId)`를 쌓는다. 로그인 필요 → 화면을 두고 `CrewJoinLogin(crewName)` 경계를 남긴다.
+- 초대 코드(`onCrewInviteOpened(code)`) → 기존 참여 확인 · 크루 화면을 빼고 `CrewJoin(code)`를 쌓는다. 참여 확인 닫기 → pop. 참여 성공 → 참여 확인을 빼고 `Crew(festivalId, crewId)`를 쌓는다. 로그인 필요 → 화면을 두고 참여 문맥(`CrewJoin(crewName)`)으로 로그인 시트를 요청한다.
 - 크루 · 만들기 · 참여 확인이 맨 위면 탭 바를 숨긴다. 참여 확인은 계정이 바뀌어도 닫지 않는다(로그인 상태만 바꾼다). 계정이 바뀌면 크루 · 만들기 화면을 뺀다.
 - 만든 뒤 · 크루가 닫힌 뒤 보드 크루 카드는 보드가 다시 보일 때(`onAppear` → 조회) 새로 받는다. iOS는 아래 화면 보드에 즉시 `retryLiveBoard`를 보내지만 Android 보드는 가려진 동안 조회를 멈추므로 돌아올 때 받는 것과 같다.
 
@@ -73,6 +73,6 @@ iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature
 
 ## 경계
 
-- 로그인 필요 지점(만들기 401)은 `LiveBoardBoundary.CrewLogin`, 참여 확인은 `LiveBoardBoundary.CrewJoinLogin(crewName)`으로 남긴다. 로그인 시트는 L1, 탭 연결은 T1.
+- 로그인 필요 지점(만들기 401)은 `FestivalLoginContext.Crew`, 참여 확인은 `FestivalLoginContext.CrewJoin(crewName)`으로 상위에 요청하고, 메인 탭이 `LoginContext.Crew` · `LoginContext.CrewJoin(crewName)`으로 바꿔 시트를 연다.
 - 약관 재동의는 화면 문구만 보인다(설계 "비로그인 · 기기 · 권한").
-- 초대 딥링크(`CrewInvite(code)`) · 라이브 탭 선택은 T1에서 `FestivalCoordinator.onCrewInviteOpened`로 잇는다.
+- 초대 딥링크(`CrewInvite(code)`)는 라이브 탭을 고른 뒤 `FestivalCoordinator.onCrewInviteOpened`로 넘긴다.

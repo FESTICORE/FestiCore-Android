@@ -50,7 +50,7 @@ iOS 대응: `Projects/Feature/Auth/Sources/Login/View/LoginModalView.swift`(화�
 
 - `LoginContext`는 `feature/auth/interface`에 둔다. 다른 기능의 로그인 요청(깃발 `FlagLoginContext` · 라이브 보드 `Login*` 경계)을 이 문맥으로 바꾸는 일은 app이 한다.
 - 시트 표시 상태는 app `AppCoordinator`가 갖는다(가입 덮개 · 현재 사용자를 같은 자리에서 다루기 때문). iOS는 `MainTabCoordinator.authFlow`가 갖는다.
-- 시트가 떠 있는 동안 탭 바 숨김(iOS `MTC:93`), 라이브 보드 · 깃발 탭 경계를 시트로 잇는 일은 탭 연결(T1)에서 한다.
+- 시트가 떠 있는 동안 탭 바를 숨긴다(iOS `MTC:93`). 라이브 보드 · 크루 · 깃발 탭의 로그인 요청은 메인 탭이 `LoginContext`로 바꿔 시트를 연다(문맥이 없으면 탭 기본).
 
 ## 작업 모듈
 
