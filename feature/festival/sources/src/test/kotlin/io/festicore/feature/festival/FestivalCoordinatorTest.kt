@@ -97,6 +97,21 @@ class FestivalCoordinatorTest {
         }
     }
 
+    @Test
+    fun `다른 축제 보드로 바뀌면 새 보드가 알리기 전까지 깃발 탭은 이전 보드를 따르지 않는다`() = runTest {
+        val flagBoard = FlagBoard("fst_1", FlagDetailContext(accountId = "user-a"))
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
+            containerHost.onLiveBoardChanged(flagBoard)
+            assertEquals(flagBoard, awaitState().flagBoard)
+            containerHost.onDeeplinkFestivalOpened("fst_2")
+            assertEquals(null, awaitState().flagBoard)
+            containerHost.onLiveBoardChanged(flagBoard)
+            awaitState()
+            containerHost.onFestivalSelected("fst_3")
+            assertEquals(null, awaitState().flagBoard)
+        }
+    }
+
     private val zoneMap = FestivalRoute.ZoneMap("fst_1", "zon_a")
     private val onBoard = FestivalCoordinatorState(routes = listOf(FestivalRoute.List, board))
 

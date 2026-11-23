@@ -86,6 +86,8 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
             state.copy(
                 selectedFestivalId = festivalId,
                 routes = if (state.routes.lastOrNull() == route) state.routes else state.routes + route,
+                // 새 보드가 값을 알리기 전에 깃발 탭이 이전 축제 보드를 따르지 않게 한다.
+                liveBoard = state.liveBoard?.takeIf { it.festivalId == festivalId },
             )
         }
     }
@@ -243,6 +245,7 @@ class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) 
                 selectedFestivalId = festivalId,
                 isLiveBoardPresentingModal = false,
                 pendingBoardFestivalId = if (state.routes == routes) festivalId else null,
+                liveBoard = state.liveBoard?.takeIf { it.festivalId == festivalId },
             )
         }
     }
