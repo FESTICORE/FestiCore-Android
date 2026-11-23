@@ -508,7 +508,8 @@ private fun Header(
                         val widest = nameLayout[0]?.let { layout ->
                             (0 until layout.lineCount).maxOf { line ->
                                 val endsWithBreakSpace =
-                                    line < layout.lineCount - 1 && festival.name[layout.getLineEnd(line) - 1].isWhitespace()
+                                    line < layout.lineCount - 1 &&
+                                        festival.name.getOrNull(layout.getLineEnd(line) - 1)?.isWhitespace() == true
                                 layout.getLineRight(line) + if (endsWithBreakSpace) spaceWidth else 0
                             }
                         }
