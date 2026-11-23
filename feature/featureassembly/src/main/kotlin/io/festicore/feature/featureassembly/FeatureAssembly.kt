@@ -3,6 +3,7 @@ package io.festicore.feature.featureassembly
 import io.festicore.feature.auth.di.authFeatureModule
 import io.festicore.feature.festival.di.festivalFeatureModule
 import io.festicore.feature.onboarding.di.onboardingFeatureModule
+import io.festicore.feature.profile.di.profileFeatureModule
 import io.festicore.feature.web.di.webFeatureModule
 import org.koin.core.module.Module
 
@@ -12,4 +13,5 @@ fun featureModules(legalBaseUrl: String): List<Module> = listOf(
     authFeatureModule(legalBaseUrl = legalBaseUrl),
     webFeatureModule,
     festivalFeatureModule,
+    profileFeatureModule,
 )
