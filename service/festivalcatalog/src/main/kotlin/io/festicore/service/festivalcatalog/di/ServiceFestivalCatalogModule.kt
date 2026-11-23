@@ -4,6 +4,9 @@ import io.festicore.service.auth.AuthSession
 import io.festicore.service.device.DeviceInstallationService
 import io.festicore.service.festivalcatalog.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.FestivalCatalogService
+import io.festicore.service.festivalcatalog.FestivalCrewService
+import io.festicore.service.festivalcatalog.FestivalFlagDetailService
+import io.festicore.service.festivalcatalog.FestivalFlagFollowService
 import io.festicore.service.festivalcatalog.FestivalImageUrlResolver
 import io.festicore.service.festivalcatalog.FestivalLiveBoardService
 import io.festicore.service.festivalcatalog.FestivalOfficialNewsService
@@ -28,6 +31,9 @@ fun serviceFestivalCatalogModule(baseUrl: String): Module = module {
     }
     single { FestivalOfficialNewsService(get()) }
     single { FestivalScheduleService(api = get(), currentSessionId = get<AuthSession>()::currentSessionId) }
+    single { FestivalFlagFollowService(api = get(), currentSessionId = get<AuthSession>()::currentSessionId) }
+    single { FestivalFlagDetailService(api = get(), currentSessionId = get<AuthSession>()::currentSessionId) }
+    single { FestivalCrewService(api = get(), currentSessionId = get<AuthSession>()::currentSessionId) }
 }
 
 private const val CACHE_PATH = "festicore/festival-catalog.json"

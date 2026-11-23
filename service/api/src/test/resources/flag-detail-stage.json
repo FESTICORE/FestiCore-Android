@@ -1,0 +1,29 @@
+{
+  "code": "SUCCESS",
+  "data": {
+    "id": "flg_3c6c2661ba",
+    "name": "호락호락",
+    "thumbUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+    "photoUrl": "/api/v1/festivals/images/af4fbd92-204d-4737-9a91-5112b8230dde.webp",
+    "tags": [
+      "slam"
+    ],
+    "bio": null,
+    "followerCount": 1,
+    "planVisible": true,
+    "plan": [],
+    "homeZoneId": "zon_rivet_front_left",
+    "status": {
+      "flagId": "flg_3c6c2661ba",
+      "status": "active",
+      "zoneId": "zon_rivet_front_left",
+      "activity": "slam",
+      "updatedAt": "2026-11-08T10:41:39.481Z"
+    },
+    "isFollowing": null,
+    "isBearer": null,
+    "isPinned": null,
+    "hidden": false
+  },
+  "message": "성공적으로 처리되었습니다."
+}

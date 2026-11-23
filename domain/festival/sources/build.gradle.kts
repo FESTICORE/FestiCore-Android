@@ -8,6 +8,7 @@ plugins {
 dependencies {
     val libs = catalog
     api(project(":domain:festival:interface"))
+    implementation(project(":domain:auth:interface"))
     implementation(project(":service:festivalcatalog"))
     implementation(project(":service:pack"))
     implementation(project(":core:datastore"))
