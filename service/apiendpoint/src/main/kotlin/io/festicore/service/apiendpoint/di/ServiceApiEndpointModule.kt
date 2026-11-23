@@ -4,6 +4,7 @@ import io.festicore.service.apiendpoint.auth.AuthRequest
 import io.festicore.service.apiendpoint.crew.CrewRequest
 import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.apiendpoint.flag.FlagRequest
+import io.festicore.service.apiendpoint.notice.NoticeRequest
 import io.festicore.service.apiendpoint.usernotification.UserNotificationRequest
 import org.koin.dsl.module
 
@@ -13,5 +14,6 @@ val serviceApiEndpointModule = module {
     single { CrewRequest(get()) }
     single { FestivalRequest(get()) }
     single { FlagRequest(get()) }
+    single { NoticeRequest(get()) }
     single { UserNotificationRequest(get()) }
 }

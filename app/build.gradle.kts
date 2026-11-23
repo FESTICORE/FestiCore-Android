@@ -19,6 +19,7 @@ dependencies {
     implementation(project(":service:serviceassembly"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":domain:festival:sources"))
+    implementation(project(":domain:notice:sources"))
     implementation(project(":domain:usernotification:sources"))
     implementation(project(":ui:designkit"))
     implementation(project(":ui:animation"))
