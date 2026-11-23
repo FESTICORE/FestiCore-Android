@@ -1,8 +1,9 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.service.api.FestivalItemDto
-import io.festicore.service.api.FestivalTicketLinkDto
+import io.festicore.domain.festival.sources.model.dto.FestivalItemDto
+import io.festicore.domain.festival.sources.model.dto.FestivalTicketLinkDto
+import io.festicore.domain.festival.sources.service.FestivalCatalogServiceError
 import java.io.File
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

@@ -2,6 +2,8 @@ package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
+import io.festicore.domain.festival.sources.service.FestivalScheduleServiceError
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
 import io.festicore.service.apiendpoint.festival.FestivalRequest
@@ -28,7 +30,7 @@ class FestivalScheduleServiceTest {
     private var sessionId: String? = "session-1"
 
     private val service =
-        FestivalScheduleService(
+        NetworkFestivalScheduleService(
             api = FestivalRequest(
                 createFestiCoreHttpClient(
                     baseUrl = "https://example.test/",
@@ -65,8 +67,11 @@ class FestivalScheduleServiceTest {
 
     @Test
     fun `clientAt은 소수 3자리를 항상 쓰고 서울 오프셋으로 적는다`() {
-        assertEquals("2026-08-07T10:00:00.000+09:00", FestivalScheduleService.clientAtString(Instant.parse("2026-08-07T01:00:00Z")))
-        assertEquals("2026-11-23T00:01:26.123+09:00", FestivalScheduleService.clientAtString(Instant.parse("2026-11-22T15:01:26.123456Z")))
+        assertEquals("2026-08-07T10:00:00.000+09:00", NetworkFestivalScheduleService.clientAtString(Instant.parse("2026-08-07T01:00:00Z")))
+        assertEquals(
+            "2026-11-23T00:01:26.123+09:00",
+            NetworkFestivalScheduleService.clientAtString(Instant.parse("2026-11-22T15:01:26.123456Z")),
+        )
     }
 
     @Test

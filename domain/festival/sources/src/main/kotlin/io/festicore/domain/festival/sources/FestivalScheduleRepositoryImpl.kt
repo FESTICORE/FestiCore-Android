@@ -2,7 +2,8 @@ package io.festicore.domain.festival.sources
 
 import io.festicore.domain.festival.FestivalSchedule
 import io.festicore.domain.festival.FestivalScheduleRepository
-import io.festicore.service.festivalcatalog.FestivalScheduleService
+import io.festicore.domain.festival.sources.model.mapper.toFestivalScheduleError
+import io.festicore.domain.festival.sources.service.FestivalScheduleService
 import java.time.Instant
 
 internal class FestivalScheduleRepositoryImpl(private val service: FestivalScheduleService) : FestivalScheduleRepository {

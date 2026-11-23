@@ -3,6 +3,10 @@ package io.festicore.domain.usernotification.sources
 import io.festicore.domain.usernotification.UserNotificationError
 import io.festicore.domain.usernotification.UserNotificationPage
 import io.festicore.domain.usernotification.UserNotificationRepository
+import io.festicore.domain.usernotification.sources.model.dto.UserNotificationCountDto
+import io.festicore.domain.usernotification.sources.model.dto.UserNotificationListDto
+import io.festicore.domain.usernotification.sources.model.mapper.toDomain
+import io.festicore.domain.usernotification.sources.model.mapper.toUserNotificationError
 import io.festicore.service.apiendpoint.usernotification.UserNotificationIdsBody
 import io.festicore.service.apiendpoint.usernotification.UserNotificationRequest
 
@@ -17,11 +21,11 @@ internal class UserNotificationRepositoryImpl(
 ) : UserNotificationRepository {
     override suspend fun notifications(before: String?): UserNotificationPage = mapErrors {
         val session = requireSession()
-        api.list(before, session).toDomain(session)
+        api.list<UserNotificationListDto>(before, session).toDomain(session)
     }
 
     override suspend fun unreadCount(): Int = mapErrors {
-        val count = api.unreadCount(requireSession()).unreadCount
+        val count = api.unreadCount<UserNotificationCountDto>(requireSession()).unreadCount
         if (count < 0) throw UserNotificationError.InvalidResponse()
         count
     }

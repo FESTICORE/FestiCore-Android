@@ -40,6 +40,9 @@ import io.festicore.domain.festival.sources.FestivalScheduleSavedEvents
 import io.festicore.domain.festival.sources.FestivalScheduleUseCaseImpl
 import io.festicore.domain.festival.sources.FestivalZoneMapRepositoryImpl
 import io.festicore.domain.festival.sources.FestivalZoneMapUseCaseImpl
+import io.festicore.service.apiendpoint.crew.CrewRequest
+import io.festicore.service.apiendpoint.flag.FlagRequest
+import io.festicore.service.auth.AuthSession
 import org.koin.dsl.module
 
 val domainFestivalModule = module {
@@ -59,13 +62,22 @@ val domainFestivalModule = module {
     single { FestivalScheduleSavedEvents() }
     factory<FestivalScheduleUseCase> { FestivalScheduleUseCaseImpl(get(), get()) }
     single<FestivalBoardSelectionUseCase> { FestivalBoardSelectionStore() }
-    single<FestivalFlagDetailRepository> { FestivalFlagDetailRepositoryImpl(get(), get()) }
+    single<FestivalFlagDetailRepository> {
+        FestivalFlagDetailRepositoryImpl(
+            api = get<FlagRequest>(),
+            catalogService = get(),
+            currentSessionId = get<AuthSession>()::currentSessionId,
+        )
+    }
     factory<FestivalFlagDetailUseCase> { FestivalFlagDetailUseCaseImpl(get()) }
     single<FestivalFlagRepository> { FestivalFlagRepositoryImpl(get()) }
     factory<FestivalFlagUseCase> { FestivalFlagUseCaseImpl(get()) }
     single<FestivalCrewRepository> {
         val currentUser = get<CurrentUserProvider>()
-        FestivalCrewRepositoryImpl(get()) { currentUser.currentUserId.value }
+        FestivalCrewRepositoryImpl(
+            api = get<CrewRequest>(),
+            currentSessionId = get<AuthSession>()::currentSessionId,
+        ) { currentUser.currentUserId.value }
     }
     factory<FestivalCrewUseCase> { FestivalCrewUseCaseImpl(get()) }
 }

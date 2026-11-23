@@ -3,6 +3,7 @@ import io.festicore.buildlogic.lib
 
 plugins {
     id("festicore.android.library")
+    id("festicore.kotlin.serialization")
 }
 
 dependencies {

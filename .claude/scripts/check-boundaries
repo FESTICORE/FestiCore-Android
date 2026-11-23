@@ -30,7 +30,13 @@ RULES = [
      "다른 feature · domain은 interface 모듈만 의존한다. sources는 app이 연결한다"),
     ("service:api는 요청을 보내지 않는다", "service/api/**/*.kt",
      [], r"\bHttpClient\b|\bfestiCore(Request|Exchange)\b|\bimport org\.koin\.",
-     "service/api에는 경로 · 인증 정책 · 응답 DTO만 둔다. Ktor 요청 · Koin 등록은 service/apiendpoint에 둔다"),
+     "service/api에는 경로 · 인증 정책 · 인증 응답 DTO만 둔다. Ktor 요청 · Koin 등록은 service/apiendpoint에 둔다"),
+    ("service:apiendpoint는 domain 응답 DTO를 모른다", "service/apiendpoint/**/*.kt",
+     [], r"\bimport io\.festicore\.domain\.",
+     "요청만 만든다. 응답은 호출하는 쪽(service 구현 · Repository)이 domain/*/sources/model/dto 타입으로 디코딩한다"),
+    ("domain sources는 service 구현 모듈을 의존하지 않는다", "domain/**/build.gradle.kts",
+     [], r"^\s*(api|implementation|compileOnly)\(.*(:service:festivalcatalog\b|projects\.service\.festivalcatalog\b)",
+     "서비스 계약은 domain에 두고 service/festivalcatalog가 구현한다(iOS와 같은 방향). 실제 구현을 붙이는 테스트만 testImplementation 허용"),
 ]
 
 

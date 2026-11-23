@@ -4,9 +4,11 @@ import io.festicore.domain.festival.FestivalLiveBoardRepository
 import io.festicore.domain.festival.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.FestivalOfficialNews
 import io.festicore.domain.festival.FestivalPackDocument
-import io.festicore.service.festivalcatalog.FestivalCatalogService
-import io.festicore.service.festivalcatalog.FestivalLiveBoardService
-import io.festicore.service.festivalcatalog.FestivalOfficialNewsService
+import io.festicore.domain.festival.sources.model.mapper.mapLiveBoardErrors
+import io.festicore.domain.festival.sources.model.mapper.toDomain
+import io.festicore.domain.festival.sources.service.FestivalCatalogService
+import io.festicore.domain.festival.sources.service.FestivalLiveBoardService
+import io.festicore.domain.festival.sources.service.FestivalOfficialNewsService
 
 /** DTO를 엔티티로 바꾸고 오류를 [io.festicore.domain.festival.FestivalLiveBoardError]로 바꾼다. */
 internal class FestivalLiveBoardRepositoryImpl(

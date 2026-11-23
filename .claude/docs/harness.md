@@ -11,38 +11,38 @@
 
 ## 구성
 
-| 종류 | 위치 | 역할 | 언제 읽히나 |
-|------|------|------|-------------|
-| 프로젝트 규칙 | `CLAUDE.md` | 개요 · Hard 규칙 · 문서 색인 | 세션 시작 시 항상 |
-| Codex 진입점 | `AGENTS.md` | CLAUDE.md와 .claude/docs를 읽으라는 안내 | Codex 세션 시작 시 |
-| 리뷰 기준 | `REVIEW.md` | 심각도 · 제외 · 항상 확인 | 리뷰 시 |
-| 상세 문서 | `.claude/docs/*.md` | 영역별 규칙과 예시 | 작업에 맞는 문서를 골라 읽음 |
-| 설계 | `.claude/docs/specs/*.md` | 구현 전 합의한 설계 | 해당 작업 시 |
-| 경로별 규칙 | `.claude/rules/*.md` | `paths`에 맞는 파일을 다룰 때만 적용 | 자동 (Claude) · 직접 (Codex) |
-| 훅 | `.claude/hooks/*` + `.claude/settings.json` · `.githooks/pre-commit` | 규칙을 실행으로 강제 · 사용 기록 | 도구 실행 전후 · 커밋 직전 · 응답 종료 시 |
-| 스크립트 | `.claude/scripts/verify` · `check-boundaries` · `harness-report` | 검증 실행 · 모듈 경계 · 사용 리포트 | 직접 실행 |
-| 로컬 상태 | `.claude/state/` (git 제외) | 검증 기록 · 사용 기록 · 검증 로그 | 훅 · 스크립트가 읽고 씀 |
+| 종류          | 위치                                                                 | 역할                                     | 언제 읽히나                               |
+| ------------- | -------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------- |
+| 프로젝트 규칙 | `CLAUDE.md`                                                          | 개요 · Hard 규칙 · 문서 색인             | 세션 시작 시 항상                         |
+| Codex 진입점  | `AGENTS.md`                                                          | CLAUDE.md와 .claude/docs를 읽으라는 안내 | Codex 세션 시작 시                        |
+| 리뷰 기준     | `REVIEW.md`                                                          | 심각도 · 제외 · 항상 확인                | 리뷰 시                                   |
+| 상세 문서     | `.claude/docs/*.md`                                                  | 영역별 규칙과 예시                       | 작업에 맞는 문서를 골라 읽음              |
+| 설계          | `.claude/docs/specs/*.md`                                            | 구현 전 합의한 설계                      | 해당 작업 시                              |
+| 경로별 규칙   | `.claude/rules/*.md`                                                 | `paths`에 맞는 파일을 다룰 때만 적용     | 자동 (Claude) · 직접 (Codex)              |
+| 훅            | `.claude/hooks/*` + `.claude/settings.json` · `.githooks/pre-commit` | 규칙을 실행으로 강제 · 사용 기록         | 도구 실행 전후 · 커밋 직전 · 응답 종료 시 |
+| 스크립트      | `.claude/scripts/verify` · `check-boundaries` · `harness-report`     | 검증 실행 · 모듈 경계 · 사용 리포트      | 직접 실행                                 |
+| 로컬 상태     | `.claude/state/` (git 제외)                                          | 검증 기록 · 사용 기록 · 검증 로그        | 훅 · 스크립트가 읽고 씀                   |
 
 ## 경로별 규칙
 
-| 파일 | 적용 경로 |
-|------|-----------|
-| `.claude/rules/app.md` | `app/**` |
-| `.claude/rules/feature.md` | `feature/**` |
-| `.claude/rules/domain.md` | `domain/**` |
+| 파일                            | 적용 경로                                 |
+| ------------------------------- | ----------------------------------------- |
+| `.claude/rules/app.md`          | `app/**`                                  |
+| `.claude/rules/feature.md`      | `feature/**`                              |
+| `.claude/rules/domain.md`       | `domain/**`                               |
 | `.claude/rules/service-core.md` | `service/**`, `core/**`, `build-logic/**` |
-| `.claude/rules/ui.md` | `ui/**` |
+| `.claude/rules/ui.md`           | `ui/**`                                   |
 
 파일 맨 위 frontmatter의 `paths`로 적용 범위를 정한다. 본문은 Hard / Soft 순서로 쓰고 상세 문서 경로를 적는다.
 
 ## 훅
 
-| 이벤트 | 스크립트 | 검사 내용 |
-|--------|----------|-----------|
-| `PreToolUse` (Bash) | `check-git-rules.sh` → `check_git_rules.py` | 보호 브랜치(`main` · `develop`) 커밋 · 푸시 금지, 브랜치 이름, 커밋 제목(한국어 · 끝에 ` #이슈`), `.DS_Store` 금지, 커밋 · PR 본문 AI 표시(작성자 무관 `Co-Authored-By` 트레일러 · Claude · ChatGPT/Codex · Gemini 세션 링크) 금지, 훅 건너뛰기 · `core.hooksPath` 변경 금지, **검증 안 된 코드 커밋 금지** |
-| `PostToolUse` (Read · Skill) | `usage_log.py` | 하네스 문서 · 규칙 · 스킬 · `.spec` 사용을 `.claude/state/usage.jsonl`에 기록 |
-| git `pre-commit` | `.githooks/pre-commit` → `pre_commit_gate.py` | 커밋될 index(`commit -a`의 임시 index 포함)의 코드가 verify 통과 시점과 다르면 커밋 금지 |
-| `Stop` | `stop_guard.py` | 검증 안 된 코드 변경이 있으면 응답 종료를 한 번 막고 verify를 안내 |
+| 이벤트                       | 스크립트                                      | 검사 내용                                                                                                                                                                                                                                                                                                   |
+| ---------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PreToolUse` (Bash)          | `check-git-rules.sh` → `check_git_rules.py`   | 보호 브랜치(`main` · `develop`) 커밋 · 푸시 금지, 브랜치 이름, 커밋 제목(한국어 · 끝에 ` #이슈`), `.DS_Store` 금지, 커밋 · PR 본문 AI 표시(작성자 무관 `Co-Authored-By` 트레일러 · Claude · ChatGPT/Codex · Gemini 세션 링크) 금지, 훅 건너뛰기 · `core.hooksPath` 변경 금지, **검증 안 된 코드 커밋 금지** |
+| `PostToolUse` (Read · Skill) | `usage_log.py`                                | 하네스 문서 · 규칙 · 스킬 · `.spec` 사용을 `.claude/state/usage.jsonl`에 기록                                                                                                                                                                                                                               |
+| git `pre-commit`             | `.githooks/pre-commit` → `pre_commit_gate.py` | 커밋될 index(`commit -a`의 임시 index 포함)의 코드가 verify 통과 시점과 다르면 커밋 금지                                                                                                                                                                                                                    |
+| `Stop`                       | `stop_guard.py`                               | 검증 안 된 코드 변경이 있으면 응답 종료를 한 번 막고 verify를 안내                                                                                                                                                                                                                                          |
 
 공용 판정(코드 변경 · 지문 · 검증 기록)은 `harness_state.py` 하나에 둔다. 코드 경로는 `CODE_DIRS` · `CODE_FILES`다. Gradle 모듈 폴더와 함께 하네스 훅 · 스크립트 · 워크플로(`.claude/hooks` · `.claude/scripts` · `.githooks` · `.github/workflows` · `.claude/settings.json`)도 코드로 본다. `*.md`만 바뀌면 검증하지 않는다.
 
@@ -72,12 +72,12 @@ python3 -m unittest discover -s .claude/hooks/tests
 .claude/scripts/verify --all    # 모든 단계
 ```
 
-| 바뀐 경로 | 단계 | 명령 |
-|-----------|------|------|
-| `.claude/hooks` · `.claude/scripts` · `.githooks` · `.claude/settings.json` | hooks-test | `python3 -m unittest discover -s .claude/hooks/tests` |
-| 코드 변경이 있으면 항상 | boundaries | `.claude/scripts/check-boundaries` |
-| `*.kt` · `*.kts` · `gradle/format` · `.editorconfig` · `.mise.toml` | format-kotlin | `gradle/format --check` (ktlint) |
-| `app` · `feature` · `domain` · `service` · `core` · `ui` · Gradle 공용 | android | `./gradlew testDebugUnitTest testStageDebugUnitTest :app:assembleStageDebug` |
+| 바뀐 경로                                                                   | 단계          | 명령                                                                         |
+| --------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `.claude/hooks` · `.claude/scripts` · `.githooks` · `.claude/settings.json` | hooks-test    | `python3 -m unittest discover -s .claude/hooks/tests`                        |
+| 코드 변경이 있으면 항상                                                     | boundaries    | `.claude/scripts/check-boundaries`                                           |
+| `*.kt` · `*.kts` · `gradle/format` · `.editorconfig` · `.mise.toml`         | format-kotlin | `gradle/format --check` (ktlint)                                             |
+| `app` · `feature` · `domain` · `service` · `core` · `ui` · Gradle 공용      | android       | `./gradlew testDebugUnitTest testStageDebugUnitTest :app:assembleStageDebug` |
 
 - `gradle/format` · `gradlew`가 아직 없으면 해당 단계는 건너뛰고 그 사실을 출력한다(Gradle 골격 전).
 - 통과하면 작업 트리 코드 내용의 지문과 파일별 blob 목록을 `.claude/state/verify.json`에 남긴다. 커밋을 나눠도 각 파일 내용이 검증한 그대로면 다시 돌리지 않는다.
@@ -86,20 +86,22 @@ python3 -m unittest discover -s .claude/hooks/tests
 
 모듈 경계 규칙(`check-boundaries`):
 
-| 규칙 | 허용 위치 |
-|------|-----------|
-| Keystore · `EncryptedSharedPreferences` | `core/datastore` |
-| `SharedPreferences` · DataStore | `core/datastore` |
-| Room | `core/database` |
-| feature `build.gradle.kts`에서 `*.sources` 의존 | 없음 (app만) |
-| `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`) |
+| 규칙                                                                             | 허용 위치                                             |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Keystore · `EncryptedSharedPreferences`                                          | `core/datastore`                                      |
+| `SharedPreferences` · DataStore                                                  | `core/datastore`                                      |
+| Room                                                                             | `core/database`                                       |
+| feature `build.gradle.kts`에서 `*.sources` 의존                                  | 없음 (app만)                                          |
+| `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`)                          |
+| `service/apiendpoint`에서 `io.festicore.domain.*` import (응답 DTO)              | 없음 (호출하는 쪽이 디코딩)                           |
+| domain `build.gradle.kts`에서 `:service:festivalcatalog` main 의존(`testImplementation` 허용) | 없음 (`service/festivalcatalog`가 domain 계약을 구현) |
 
 재시도 한도:
 
-| 단계 | 최대 | 넘으면 |
-|------|------|--------|
+| 단계                               | 최대          | 넘으면                                                                 |
+| ---------------------------------- | ------------- | ---------------------------------------------------------------------- |
 | 빌드 · 테스트 (verify의 같은 단계) | 연속 2번 실패 | 멈추고 시도한 내용 · 실패 원인을 사용자에게 보고, 승인 후 세 번째 시도 |
-| 리뷰 (Codex 교차 검토) | 3번 | 남은 지적을 PR 본문에 적고 사용자에게 판단을 맡긴다 |
+| 리뷰 (Codex 교차 검토)             | 3번           | 남은 지적을 PR 본문에 적고 사용자에게 판단을 맡긴다                    |
 
 ## 관측과 정리 (Observability)
 
@@ -129,11 +131,11 @@ python3 -m unittest discover -s .claude/hooks/tests
 
 리뷰 기준은 루트 `REVIEW.md` 하나다. iOS 저장소와 같은 레인을 쓴다.
 
-| 레인 | 실행 | 비고 |
-|------|------|------|
-| Codex PR 리뷰 | `.github/workflows/codex-pr-review.yml` (`openai/codex-action`, `OPENAI_API_KEY`) | PR 댓글 하나를 갱신한다 |
-| Gemini 리뷰 | `.github/workflows/gemini-code-review.yml` (`GEMINI_API_KEY`, `*.kt` · `*.kts` · 워크플로 diff) | 줄 단위 P1 · P2 댓글 |
-| 로컬 교차 검토 | Codex CLI `exec -s read-only` | 계획 · 구현을 다른 쪽이 검토 |
+| 레인           | 실행                                                                                            | 비고                         |
+| -------------- | ----------------------------------------------------------------------------------------------- | ---------------------------- |
+| Codex PR 리뷰  | `.github/workflows/codex-pr-review.yml` (`openai/codex-action`, `OPENAI_API_KEY`)               | PR 댓글 하나를 갱신한다      |
+| Gemini 리뷰    | `.github/workflows/gemini-code-review.yml` (`GEMINI_API_KEY`, `*.kt` · `*.kts` · 워크플로 diff) | 줄 단위 P1 · P2 댓글         |
+| 로컬 교차 검토 | Codex CLI `exec -s read-only`                                                                   | 계획 · 구현을 다른 쪽이 검토 |
 
 - 두 워크플로는 프롬프트 · diff 대상만 빼고 iOS 저장소와 같게 둔다. 키(`OPENAI_API_KEY` · `GEMINI_API_KEY`)는 iOS와 같은 값을 쓴다.
 - 리뷰가 실패하거나 할당량을 넘으면 해당 HEAD의 AI 리뷰를 미완료로 적는다(`.claude/docs/git-workflow.md`).

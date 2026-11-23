@@ -1,6 +1,8 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.domain.festival.sources.service.FestivalFlagServiceError
+import io.festicore.domain.festival.sources.service.isValidFlagId
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
@@ -26,7 +28,7 @@ class FestivalFlagFollowTest {
     private var sessionId: String? = "session-1"
     private val uuid = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
-    private val service = FestivalFlagFollowService(
+    private val service = NetworkFestivalFlagFollowService(
         api = FlagRequest(
             createFestiCoreHttpClient(
                 baseUrl = "https://example.test/",

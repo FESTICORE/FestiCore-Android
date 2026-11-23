@@ -10,8 +10,9 @@ import io.festicore.domain.usernotification.UserNotificationPage
 import io.festicore.domain.usernotification.UserNotificationRepository
 import io.festicore.domain.usernotification.UserNotificationUseCase
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
-import io.festicore.service.api.UserNotificationItemDto
-import io.festicore.service.api.UserNotificationListDto
+import io.festicore.domain.usernotification.sources.model.dto.UserNotificationItemDto
+import io.festicore.domain.usernotification.sources.model.dto.UserNotificationListDto
+import io.festicore.domain.usernotification.sources.model.mapper.toDomain
 import io.festicore.service.apiendpoint.di.serviceApiEndpointModule
 import io.festicore.service.auth.di.serviceAuthModule
 import kotlinx.coroutines.test.runTest

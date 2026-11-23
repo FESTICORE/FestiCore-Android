@@ -6,14 +6,6 @@ import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.NetworkError
 import io.festicore.core.network.festiCoreExchange
 import io.festicore.core.network.festiCoreRequest
-import io.festicore.service.api.FestivalFlagsDto
-import io.festicore.service.api.FestivalListDto
-import io.festicore.service.api.FestivalLiveBoardDto
-import io.festicore.service.api.FestivalOfficialNewsDto
-import io.festicore.service.api.FestivalPackDocumentDto
-import io.festicore.service.api.FestivalPackVersionDto
-import io.festicore.service.api.FestivalPackVersionResponseDto
-import io.festicore.service.api.FestivalScheduleDto
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.api.base.bearerAuthorization
 import io.festicore.service.api.festival.FestivalApi
@@ -29,6 +21,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 
 /**
@@ -36,9 +30,9 @@ import kotlinx.serialization.SerializationException
  * iOS `FestivalListRequest` · `FestivalDetailRequest` · `FestivalLiveRequest` · `FestivalFlagsRequest` ·
  * `FestivalOfficialNewsRequest` · `ScheduleGetRequest` · `SchedulePutRequest` · `FestivalPackRequest.version`. [mySchedule] · [replaceMySchedule] · 로그인 중 [live]만 Bearer 대상이다.
  */
-class FestivalRequest(private val client: HttpClient) {
+class FestivalRequest(@PublishedApi internal val client: HttpClient) {
     /** `GET api/v1/festivals?after=&limit=`. [after]가 null이면 첫 쪽. 커서는 받은 그대로 보낸다(URL 인코딩은 Ktor). */
-    suspend fun list(after: String?, limit: Int): FestivalListDto = client.festiCoreRequest {
+    suspend inline fun <reified T> list(after: String?, limit: Int): T = client.festiCoreRequest {
         method = HttpMethod.Get
         url(FestivalApi.FESTIVALS)
         after?.let { parameter("after", it) }
@@ -46,7 +40,7 @@ class FestivalRequest(private val client: HttpClient) {
     }
 
     /** `GET api/v1/festivals/{id}`. 인증 없음. */
-    suspend fun detail(festivalId: String): FestivalPackDocumentDto = client.festiCoreRequest {
+    suspend inline fun <reified T> detail(festivalId: String): T = client.festiCoreRequest {
         method = HttpMethod.Get
         url(FestivalApi.detail(festivalId))
     }
@@ -56,12 +50,13 @@ class FestivalRequest(private val client: HttpClient) {
      * [etag]가 있으면 `If-None-Match`로 보낸다. 본문 `code == "FESTIVAL_NOT_FOUND"`는 상태 코드보다 먼저 본다.
      * 200 · 304 · 429 · 미공개 밖의 응답은 [NetworkError.Http].
      */
-    suspend fun live(
+    suspend fun <T> live(
         festivalId: String,
         deviceId: String,
         etag: String?,
         expectedSessionId: String?,
-    ): FestivalLiveResponse = unwrapAuth {
+        boardSerializer: KSerializer<T>,
+    ): FestivalLiveResponse<T> = unwrapAuth {
         client.festiCoreExchange(
             block = {
                 method = HttpMethod.Get
@@ -70,7 +65,7 @@ class FestivalRequest(private val client: HttpClient) {
                 etag?.let { header(HttpHeaders.IfNoneMatch, it) }
                 if (expectedSessionId != null) bearerAuthorization(expectedSessionId)
             },
-            handle = { response -> response.toLiveResponse() },
+            handle = { response -> response.toLiveResponse(boardSerializer) },
         )
     }
 
@@ -78,7 +73,7 @@ class FestivalRequest(private val client: HttpClient) {
      * `GET api/v1/festivals/{id}/pack/version`. 인증 없음. 응답에 `message`가 없어(stage 확인) 공통 봉투 대신 `code` · `data`만 읽는다
      * (iOS `FestivalPackVersionResponseDTO`). `code != "SUCCESS"`면 [NetworkError.InvalidResponse], 2xx가 아니면 [NetworkError.Http].
      */
-    suspend fun packVersion(festivalId: String): FestivalPackVersionDto = client.festiCoreExchange(
+    suspend fun <T> packVersion(festivalId: String, dataSerializer: KSerializer<T>): T = client.festiCoreExchange(
         block = {
             method = HttpMethod.Get
             url(FestivalApi.packVersion(festivalId))
@@ -89,26 +84,26 @@ class FestivalRequest(private val client: HttpClient) {
                 val error = text.errorBodyOrNull()
                 throw NetworkError.Http(response.status.value, error?.code, error?.message)
             }
-            val body = FestiCoreJson.decodeFromString(FestivalPackVersionResponseDto.serializer(), text)
+            val body = FestiCoreJson.decodeFromString(PackVersionResponse.serializer(dataSerializer), text)
             if (body.code != SUCCESS) throw NetworkError.InvalidResponse(body.code, body.message.orEmpty())
             body.data ?: throw NetworkError.Decoding(SerializationException("data가 없습니다"))
         },
     )
 
     /** `GET api/v1/festivals/{id}/flags`. 인증 없음. */
-    suspend fun flags(festivalId: String): FestivalFlagsDto = client.festiCoreRequest {
+    suspend inline fun <reified T> flags(festivalId: String): T = client.festiCoreRequest {
         method = HttpMethod.Get
         url(FestivalApi.flags(festivalId))
     }
 
     /** `GET api/v1/festivals/{id}/instagram`. 인증 없음. */
-    suspend fun instagram(festivalId: String): FestivalOfficialNewsDto = client.festiCoreRequest {
+    suspend inline fun <reified T> instagram(festivalId: String): T = client.festiCoreRequest {
         method = HttpMethod.Get
         url(FestivalApi.instagram(festivalId))
     }
 
     /** `GET api/v1/me/schedule/{id}`. Bearer 대상이고, [expectedSessionId]를 넘기면 그 세션일 때만 보낸다. */
-    suspend fun mySchedule(festivalId: String, expectedSessionId: String? = null): FestivalScheduleDto = unwrapAuth {
+    suspend inline fun <reified T> mySchedule(festivalId: String, expectedSessionId: String? = null): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Get
             url(FestivalApi.mySchedule(festivalId))
@@ -120,11 +115,11 @@ class FestivalRequest(private val client: HttpClient) {
      * `PUT api/v1/me/schedule/{id}`. 내 일정 전체를 [body]로 바꾸고 저장된 일정을 돌려준다. Bearer 대상이고 [expectedSessionId] 세션일 때만 보낸다.
      * 409 `STATUS_STALE`(더 최신 일정이 서버에 있음)도 [NetworkError.Http]로 그대로 던진다. iOS `SchedulePutRequest`.
      */
-    suspend fun replaceMySchedule(
+    suspend inline fun <reified T> replaceMySchedule(
         festivalId: String,
         body: FestivalScheduleReplaceBody,
         expectedSessionId: String? = null,
-    ): FestivalScheduleDto = unwrapAuth {
+    ): T = unwrapAuth {
         client.festiCoreRequest {
             method = HttpMethod.Put
             url(FestivalApi.mySchedule(festivalId))
@@ -134,13 +129,13 @@ class FestivalRequest(private val client: HttpClient) {
         }
     }
 
-    private suspend fun HttpResponse.toLiveResponse(): FestivalLiveResponse {
+    private suspend fun <T> HttpResponse.toLiveResponse(boardSerializer: KSerializer<T>): FestivalLiveResponse<T> {
         val text = bodyAsText()
         val error = text.errorBodyOrNull()
         if (error?.code == FESTIVAL_NOT_FOUND) return FestivalLiveResponse.FestivalNotFound
         return when (status.value) {
             200 -> {
-                val body = FestiCoreJson.decodeFromString(BaseResponse.serializer(FestivalLiveBoardDto.serializer()), text)
+                val body = FestiCoreJson.decodeFromString(BaseResponse.serializer(boardSerializer), text)
                 if (body.code != SUCCESS) throw NetworkError.InvalidResponse(body.code, body.message)
                 val data = body.data ?: throw NetworkError.Decoding(SerializationException("data가 없습니다"))
                 FestivalLiveResponse.Loaded(data, headers[HttpHeaders.ETag])
@@ -161,7 +156,7 @@ class FestivalRequest(private val client: HttpClient) {
     }
 
     // 인증 플러그인이 던진 AuthSessionError는 festiCoreRequest가 Unknown으로 감싸므로 풀어서 던진다(AuthApi와 같음).
-    private suspend inline fun <T> unwrapAuth(block: () -> T): T = try {
+    @PublishedApi internal suspend inline fun <T> unwrapAuth(block: () -> T): T = try {
         block()
     } catch (e: NetworkError.Unknown) {
         throw e.cause as? AuthSessionError ?: e
@@ -175,19 +170,27 @@ class FestivalRequest(private val client: HttpClient) {
 }
 
 /** `/live` 응답을 상태 코드 · 헤더로 나눈 결과. iOS `NetworkFestivalLiveBoardService.decodeBoardData`. */
-sealed interface FestivalLiveResponse {
+sealed interface FestivalLiveResponse<out T> {
     /** 200. [etag]는 응답의 `ETag` 헤더. */
-    data class Loaded(
-        val board: FestivalLiveBoardDto,
+    data class Loaded<T>(
+        val board: T,
         val etag: String?,
-    ) : FestivalLiveResponse
+    ) : FestivalLiveResponse<T>
 
     /** 304. 이전 응답을 다시 쓴다. */
-    data object NotModified : FestivalLiveResponse
+    data object NotModified : FestivalLiveResponse<Nothing>
 
     /** 본문 code `FESTIVAL_NOT_FOUND`. 라이브 보드가 아직 공개되지 않았다. */
-    data object FestivalNotFound : FestivalLiveResponse
+    data object FestivalNotFound : FestivalLiveResponse<Nothing>
 
     /** 429. [retryAfter]는 `Retry-After` 헤더 원문(없으면 null). */
-    data class RateLimited(val retryAfter: String?) : FestivalLiveResponse
+    data class RateLimited(val retryAfter: String?) : FestivalLiveResponse<Nothing>
 }
+
+/** `GET api/v1/festivals/{id}/pack/version` 응답 봉투. `message`가 없을 수 있다. iOS `FestivalPackVersionResponseDTO`. */
+@Serializable
+private class PackVersionResponse<T>(
+    val code: String,
+    val message: String? = null,
+    val data: T? = null,
+)

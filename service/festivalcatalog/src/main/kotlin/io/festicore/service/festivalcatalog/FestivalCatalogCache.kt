@@ -1,7 +1,8 @@
 package io.festicore.service.festivalcatalog
 
 import android.util.AtomicFile
-import io.festicore.service.api.FestivalItemDto
+import io.festicore.domain.festival.sources.model.dto.FestivalItemDto
+import io.festicore.domain.festival.sources.service.FestivalCatalogServiceError
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
