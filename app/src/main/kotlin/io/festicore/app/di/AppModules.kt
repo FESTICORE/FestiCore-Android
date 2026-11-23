@@ -2,6 +2,7 @@ package io.festicore.app.di
 
 import io.festicore.app.BuildConfig
 import io.festicore.app.application.MainActivityProvider
+import io.festicore.app.application.StoredAppearanceModeSettings
 import io.festicore.app.deeplink.AppDeeplinkBridge
 import io.festicore.app.navigation.AppCoordinator
 import io.festicore.app.navigation.MainTabCoordinator
@@ -14,6 +15,7 @@ import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.domain.notice.sources.di.domainNoticeModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
 import io.festicore.feature.featureassembly.featureModules
+import io.festicore.feature.profile.appearance.AppearanceModeSettings
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.expiry.SessionExpiryEvents
 import io.festicore.service.serviceassembly.serviceModules
@@ -26,9 +28,10 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
-/** app이 가진 루트 · 메인 탭 Coordinator, 현재 Activity 제공자, 딥링크 브리지만 등록한다. */
+/** app이 가진 루트 · 메인 탭 Coordinator, 현재 Activity 제공자, 딥링크 브리지, 화면 모드 저장소 연결만 등록한다. */
 private val appModule = module {
     single { MainActivityProvider() } bind ActivityProvider::class
+    single<AppearanceModeSettings> { StoredAppearanceModeSettings(get()) }
     single { AppDeeplinkBridge(store = get(), scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     viewModel {
         val session = get<AuthSession>()

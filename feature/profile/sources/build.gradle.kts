@@ -9,6 +9,7 @@ dependencies {
     val libs = catalog
     api(project(":feature:profile:interface"))
     implementation(project(":domain:festival:interface"))
+    implementation(project(":feature:web:interface"))
     implementation(project(":ui:designkit"))
     implementation(project(":ui:sharedui"))
     implementation(libs.lib("compose-foundation"))
