@@ -6,7 +6,7 @@ Gradle 루트는 저장소 루트 하나다. 빌드 스크립트는 모두 Kotli
 
 ```
 settings.gradle.kts        모듈 자동 포함 · 저장소 · build-logic 연결
-gradle.properties          빌드 캐시 · configuration cache · parallel
+gradle.properties          빌드 캐시 · configuration cache · parallel · 의존성 다운로드 재시도
 gradle/libs.versions.toml  버전 카탈로그 (버전 문자열은 여기에만)
 gradle/wrapper/            Gradle wrapper
 gradle/format              ktlint 실행 (고치기 · --check)
