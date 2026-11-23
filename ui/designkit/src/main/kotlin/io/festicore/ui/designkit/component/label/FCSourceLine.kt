@@ -17,7 +17,7 @@ import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val IconSize = 16.dp
 
@@ -56,7 +56,7 @@ fun FCSourceLine(
         BasicText(
             text = source,
             modifier = Modifier.weight(1f),
-            style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+            style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNeutral.color),
         )
     }
 }

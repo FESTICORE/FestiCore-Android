@@ -33,7 +33,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import java.text.Normalizer
 
 private val LeadingSize = 48.dp
@@ -118,13 +118,15 @@ fun FCSearchResultRow(
         ) {
             BasicText(
                 text = highlightedTitle,
-                style = FestiCoreTextStyle.baseCalloutBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                style = FestiCoreTextStyle.baseCalloutBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             BasicText(
                 text = meta,
-                style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelNeutral.color,
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -139,7 +141,7 @@ fun FCSearchResultRow(
                             Modifier
                                 .background(background.color, RoundedCornerShape(FestiCoreRadius.r4))
                                 .padding(vertical = FestiCoreSpacing.paddingP4, horizontal = FestiCoreSpacing.marginM6),
-                        style = FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(color = foreground.color),
+                        style = FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(color = foreground.color),
                         maxLines = 1,
                     )
                 }

@@ -48,6 +48,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -148,7 +149,7 @@ fun AccountSettingsContent(
             state.message?.takeIf { it.isNotEmpty() && !state.isLoading }?.let { message ->
                 Text(
                     text = message,
-                    style = FestiCoreTextStyle.baseSubheadlineRegular.textStyle,
+                    style = FestiCoreTextStyle.baseSubheadlineRegular.textStyleWithoutLineBox,
                     color = FestiCoreSemanticColor.statusNegative.color,
                 )
             }
@@ -209,7 +210,7 @@ private fun MyInfo(
                 Column(verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8)) {
                     Text(
                         text = "계정 정보를 확인할 수 없습니다",
-                        style = FestiCoreTextStyle.baseSubheadlineRegular.textStyle,
+                        style = FestiCoreTextStyle.baseSubheadlineRegular.textStyleWithoutLineBox,
                         color = FestiCoreSemanticColor.labelNeutral.color,
                     )
                     FCButton(
@@ -239,7 +240,7 @@ private fun Withdrawal(isEnabled: Boolean, onWithdrawTapped: () -> Unit) {
         ) {
             Text(
                 text = "계정 삭제",
-                style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+                style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
                 color = FestiCoreSemanticColor.statusNegative.color,
             )
         }
@@ -265,13 +266,13 @@ private fun InfoRow(title: String, value: String) {
     ) {
         Text(
             text = title,
-            style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNormal.color,
             modifier = Modifier.weight(1f),
         )
         Text(
             text = value,
-            style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNeutral.color,
         )
     }

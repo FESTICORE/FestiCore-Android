@@ -25,7 +25,7 @@ import io.festicore.ui.designkit.component.selection.FCToggle
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 56.dp
 private val IconSize = 16.dp
@@ -55,7 +55,9 @@ fun FCListRow(
             if (value != null) {
                 BasicText(
                     text = value,
-                    style = FestiCoreTextStyle.baseBodyRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
+                    style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox.copy(
+                        color = FestiCoreSemanticColor.labelNeutral.color,
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -112,7 +114,7 @@ private fun FCListRowContent(
         BasicText(
             text = label,
             modifier = Modifier.weight(1f),
-            style = FestiCoreTextStyle.baseBodyRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

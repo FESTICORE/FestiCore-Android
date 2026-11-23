@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 40.dp
 private val DotSize = 8.dp
@@ -47,7 +47,7 @@ fun FCStageHeader(
         Box(modifier = Modifier.size(DotSize).background(dotColor.color, CircleShape))
         BasicText(
             text = name,
-            style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

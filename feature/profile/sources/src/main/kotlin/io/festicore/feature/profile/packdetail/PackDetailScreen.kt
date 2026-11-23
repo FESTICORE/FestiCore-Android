@@ -73,6 +73,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import io.festicore.ui.sharedui.externallink.openExternalUrl
 import io.festicore.ui.sharedui.remoteimage.FCRemoteImage
 import org.orbitmvi.orbit.compose.collectAsState
@@ -263,7 +264,11 @@ private fun MessageContent(
         verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP12, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = message, style = FestiCoreTextStyle.baseBodyRegular.textStyle, color = FestiCoreSemanticColor.labelNeutral.color)
+        Text(
+            text = message,
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
+            color = FestiCoreSemanticColor.labelNeutral.color,
+        )
         if (actionTitle != null && onAction != null) {
             FCButton(title = actionTitle, style = FCButtonStyle.Secondary, size = FCButtonSize.Medium, onClick = onAction)
         }
@@ -284,7 +289,7 @@ private fun Directions(
             Text(
                 text = "가는 길 정보가 아직 없어요",
                 modifier = Modifier.fillMaxWidth().heightIn(min = RowMinHeight).wrapContentHeight(Alignment.CenterVertically),
-                style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+                style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
                 color = FestiCoreSemanticColor.labelNeutral.color,
                 textAlign = TextAlign.Center,
             )
@@ -490,14 +495,14 @@ private fun Manage(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.marginM2)) {
                 Text(
                     text = pack.name,
-                    style = FestiCoreTextStyle.baseCalloutMedium.textStyle,
+                    style = FestiCoreTextStyle.baseCalloutMedium.textStyleWithoutLineBox,
                     color = FestiCoreSemanticColor.labelNormal.color,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = PackDetailPresentation.packStatus(pack),
-                    style = FestiCoreTextStyle.baseFootnoteRegular.textStyle,
+                    style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox,
                     color = FestiCoreSemanticColor.labelAssistive.color,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -561,14 +566,14 @@ private fun Manage(
                 .heightIn(min = RowMinHeight)
                 .wrapContentHeight(Alignment.CenterVertically)
                 .padding(horizontal = FestiCoreSpacing.paddingP16),
-        style = FestiCoreTextStyle.baseBodyRegular.textStyle,
+        style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
         color = FestiCoreSemanticColor.statusNegative.color,
     )
     // Figma Pack D·E·F: 자동 삭제 안내는 Caption1/Regular 12pt(설계 쟁점 M8)
     Text(
         text = AUTO_DELETE_NOTICE,
         modifier = Modifier.padding(horizontal = FestiCoreSpacing.paddingP4),
-        style = FestiCoreTextStyle.baseCaption1Regular.textStyle,
+        style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox,
         color = FestiCoreSemanticColor.labelAssistive.color,
     )
 }
@@ -596,11 +601,15 @@ private fun InfoRow(title: String, value: String) {
                 .semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = title, style = FestiCoreTextStyle.baseBodyRegular.textStyle, color = FestiCoreSemanticColor.labelNormal.color)
+        Text(
+            text = title,
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox,
+            color = FestiCoreSemanticColor.labelNormal.color,
+        )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value,
-            style = FestiCoreTextStyle.baseBodyRegular.textStyle.copy(fontFeatureSettings = "tnum"),
+            style = FestiCoreTextStyle.baseBodyRegular.textStyleWithoutLineBox.copy(fontFeatureSettings = "tnum"),
             color = FestiCoreSemanticColor.labelNeutral.color,
         )
     }
@@ -625,14 +634,18 @@ private fun CardTitle(title: String) {
     Text(
         text = title,
         modifier = Modifier.semantics { heading() },
-        style = FestiCoreTextStyle.baseBodyBold.textStyle,
+        style = FestiCoreTextStyle.baseBodyBold.textStyleWithoutLineBox,
         color = FestiCoreSemanticColor.labelNormal.color,
     )
 }
 
 @Composable
 private fun CardBody(text: String) {
-    Text(text = text, style = FestiCoreTextStyle.baseCalloutRegular.textStyle, color = FestiCoreSemanticColor.labelNeutral.color)
+    Text(
+        text = text,
+        style = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox,
+        color = FestiCoreSemanticColor.labelNeutral.color,
+    )
 }
 
 @Composable
@@ -640,7 +653,7 @@ private fun Footnote(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         modifier = modifier.padding(horizontal = FestiCoreSpacing.paddingP4),
-        style = FestiCoreTextStyle.baseFootnoteRegular.textStyle,
+        style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox,
         color = FestiCoreSemanticColor.labelAssistive.color,
     )
 }

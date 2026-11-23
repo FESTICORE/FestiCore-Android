@@ -27,6 +27,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val TimeWidth = 48.dp
 private val SelectSize = 28.dp
@@ -88,7 +89,12 @@ fun FCSetSelectRow(
                         modifier = Modifier.size(OverlapIconSize),
                         colorFilter = ColorFilter.tint(orange),
                     )
-                    SetSelectText(overlapText, FestiCoreTextStyle.baseCaption1Medium, FestiCoreSemanticColor.accentForegroundOrange)
+                    SetSelectText(
+                        overlapText,
+                        FestiCoreTextStyle.baseCaption1Medium,
+                        FestiCoreSemanticColor.accentForegroundOrange,
+                        hasLineBox = false,
+                    )
                 }
             }
         }
@@ -118,11 +124,13 @@ private fun SetSelectText(
     textStyle: FestiCoreTextStyle,
     color: FestiCoreSemanticColor,
     isMonospacedDigit: Boolean = false,
+    // iOS는 겹침 문구만 festiCoreLineBox 없이 festiCoreFont만 쓴다.
+    hasLineBox: Boolean = true,
 ) {
     BasicText(
         text = text,
         style =
-            textStyle.textStyle.copy(
+            (if (hasLineBox) textStyle.textStyle else textStyle.textStyleWithoutLineBox).copy(
                 color = color.color,
                 fontFeatureSettings = if (isMonospacedDigit) TABULAR_NUMBERS else null,
             ),

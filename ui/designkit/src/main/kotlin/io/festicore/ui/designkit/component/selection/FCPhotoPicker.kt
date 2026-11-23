@@ -37,6 +37,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val PhotoSize = 88.dp
 private val IconSize = 24.dp
@@ -151,7 +152,7 @@ private fun PhotoPickerPhoto(state: FCPhotoPickerState) {
                     BasicText(
                         text = "$percent%",
                         style =
-                            FestiCoreTextStyle.baseSubheadlineBold.textStyle.copy(
+                            FestiCoreTextStyle.baseSubheadlineBold.textStyleWithoutLineBox.copy(
                                 color = FestiCoreSemanticColor.staticalphaWhite80.color,
                                 fontFeatureSettings = TABULAR_NUMBERS,
                             ),

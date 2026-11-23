@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 44.dp
 private val BarWidth = 28.dp
@@ -76,7 +76,9 @@ fun FCStepHeader(
             BasicText(
                 text = laterTitle,
                 modifier = Modifier.clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onLater),
-                style = FestiCoreTextStyle.baseFootnoteMedium.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseFootnoteMedium.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
             )
         }
     }

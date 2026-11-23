@@ -59,7 +59,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import kotlin.math.abs
 import kotlin.math.ceil
 
@@ -276,7 +276,9 @@ private fun HourLines(metrics: BoardMetrics) {
             BasicText(
                 text = TimetableDay.clock(hour * 60),
                 modifier = Modifier.padding(start = FestiCoreSpacing.paddingP12).offset(y = -HourLabelHalfHeight),
-                style = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                ),
             )
         }
     }
@@ -335,7 +337,9 @@ private fun OverlapBand(overlap: TimetableOverlap, metrics: BoardMetrics) {
         BasicText(
             text = "${overlap.minutes}분\n겹침",
             modifier = Modifier.padding(start = FestiCoreSpacing.paddingP12),
-            style = FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(color = FestiCoreSemanticColor.accentPointOrange.color),
+            style = FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(
+                color = FestiCoreSemanticColor.accentPointOrange.color,
+            ),
         )
     }
 }

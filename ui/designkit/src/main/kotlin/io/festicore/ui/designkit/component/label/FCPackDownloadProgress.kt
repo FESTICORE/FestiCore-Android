@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 6.dp
 private const val PROGRESS_ANIMATION_MILLIS = 300
@@ -77,7 +77,7 @@ fun FCPackDownloadProgress(
         }
         BasicText(
             text = text,
-            style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+            style = FestiCoreTextStyle.baseFootnoteBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.labelNormal.color),
         )
     }
 }

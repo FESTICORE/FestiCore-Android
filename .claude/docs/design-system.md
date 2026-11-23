@@ -9,7 +9,7 @@
 | `src/main/kotlin/.../tokens/` | `FestiCoreSemanticColor` · `FestiCoreSpacing` · `FestiCoreRadius` · `FestiCoreState` · `FestiCoreTextStyle` (생성물) | 아니오. 동기화로만 바뀐다 |
 | `tokens.source-sha` | 가져온 DesignSystem 커밋 SHA | 아니오 |
 | `font/FestiCoreFontFamily` | Pretendard(가변, 400 · 500 · 700) · Bagel Fat One | 예 |
-| `typography/FestiCoreTextStyles` | `FestiCoreTextStyle.textStyle` → Compose `TextStyle`(iOS `festiCoreFont` + `festiCoreLineBox`), `textStyleWithoutLineBox`(줄 박스 없음, iOS `festiCoreFont`만) | 예 |
+| `typography/FestiCoreTextStyles` | `FestiCoreTextStyle.textStyle` → Compose `TextStyle`(iOS `festiCoreFont` + `festiCoreLineBox`), `textStyleWithoutLineBox`(줄 박스 없음, iOS `festiCoreFont`만). 서체는 iOS `resolvedFont`처럼 point 계열 Bagel Fat One · 나머지 Pretendard. 한국어 어절 줄바꿈(`WordBreak.Phrase` + `ko-KR`, API 33+) | 예 |
 | `theme/FestiCoreTheme` | Material 색 · 기본 본문 스타일을 토큰으로 맞춘다 | 예 |
 | `res/font` · `licenses/` | iOS와 같은 폰트 파일과 OFL | 폰트 교체 시만 |
 | `res/drawable` | iOS `ImageAssets.xcassets` 아이콘(`ic_*` · `nav_*` · `logo` · `google_logo`) | 아이콘 추가 시만 |
@@ -29,6 +29,7 @@ Text(
 - 화면 코드는 semantic 색만 쓴다. `Color(0x…)` 하드코딩은 `check-boundaries`가 막는다(생성 토큰 폴더 · 테스트만 허용). 새 색은 DesignSystem 토큰에 먼저 추가한다.
 - 생성 토큰 파일은 고치지 않는다. 포맷 검사(ktlint)에서도 뺀다.
 - 앱 루트는 `FestiCoreTheme`으로 감싼다.
+- iOS가 `festiCoreFont`만 쓰는 글자는 `textStyleWithoutLineBox`, `festiCoreLineBox`까지 쓰는 글자는 `textStyle`을 쓴다. 화면을 옮길 때 iOS 같은 글자의 수정자를 확인한다.
 - 가변 폰트 굵기 축은 API 26 이상에서 적용된다(minSdk 26이라 모든 지원 기기에서 적용).
 
 ## 토큰 동기화

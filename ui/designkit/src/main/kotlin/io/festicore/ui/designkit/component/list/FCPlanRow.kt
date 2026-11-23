@@ -22,6 +22,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val IndicatorSize = 16.dp
 private val TimeWidth = 48.dp
@@ -73,7 +74,7 @@ fun FCPlanRow(
                 text = time,
                 modifier = Modifier.width(TimeWidth),
                 style =
-                    FestiCoreTextStyle.baseCalloutBold.textStyle.copy(
+                    FestiCoreTextStyle.baseCalloutBold.textStyleWithoutLineBox.copy(
                         color = FestiCoreSemanticColor.labelNormal.color,
                         fontFeatureSettings = "tnum",
                     ),
@@ -103,7 +104,7 @@ fun FCPlanRow(
                     if (state == FCPlanRowState.Now) {
                         BasicText(
                             text = "· $liveLabel",
-                            style = FestiCoreTextStyle.baseCaption1Bold.textStyle.copy(
+                            style = FestiCoreTextStyle.baseCaption1Bold.textStyleWithoutLineBox.copy(
                                 color = FestiCoreSemanticColor.secondaryNormal.color,
                             ),
                             maxLines = 1,

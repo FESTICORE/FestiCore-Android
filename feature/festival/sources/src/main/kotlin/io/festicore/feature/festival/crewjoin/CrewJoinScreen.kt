@@ -52,6 +52,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import io.festicore.ui.sharedui.remoteimage.FCRemoteImage
 import java.time.Instant
 import org.orbitmvi.orbit.compose.collectAsState
@@ -281,7 +282,7 @@ private fun AvatarCircle(text: String, colors: Pair<FestiCoreSemanticColor, Fest
                 .border(AvatarBorder, FestiCoreSemanticColor.backgroundNormal.color, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, style = FestiCoreTextStyle.baseSubheadlineBold.textStyle, color = colors.second.color)
+        Text(text = text, style = FestiCoreTextStyle.baseSubheadlineBold.textStyleWithoutLineBox, color = colors.second.color)
     }
 }
 
@@ -335,14 +336,14 @@ private fun DetailRow(
         ) {
             Text(
                 text = title,
-                style = FestiCoreTextStyle.baseSubheadlineRegular.textStyle,
+                style = FestiCoreTextStyle.baseSubheadlineRegular.textStyleWithoutLineBox,
                 color = FestiCoreSemanticColor.labelNeutral.color,
             )
             Spacer(Modifier.weight(1f).widthIn(min = FestiCoreSpacing.paddingP8))
             Text(
                 text = value,
                 modifier = Modifier.padding(start = FestiCoreSpacing.paddingP8),
-                style = FestiCoreTextStyle.baseSubheadlineBold.textStyle,
+                style = FestiCoreTextStyle.baseSubheadlineBold.textStyleWithoutLineBox,
                 color = FestiCoreSemanticColor.labelNormal.color,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

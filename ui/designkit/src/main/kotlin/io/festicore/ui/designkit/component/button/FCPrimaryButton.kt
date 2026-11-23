@@ -18,7 +18,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 @Composable
 fun FCPrimaryButton(
@@ -40,7 +40,7 @@ fun FCPrimaryButton(
     ) {
         BasicText(
             text = title,
-            style = FestiCoreTextStyle.baseBodyBold.textStyle.copy(color = FestiCoreSemanticColor.primaryOnPrimary.color),
+            style = FestiCoreTextStyle.baseBodyBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.primaryOnPrimary.color),
         )
     }
 }

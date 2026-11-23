@@ -41,7 +41,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val LargeHeight = 52.dp
 private val MediumHeight = 40.dp
@@ -118,9 +118,10 @@ fun FCButton(
     ) {
         BasicText(
             text = title,
-            style = (if (isLarge) FestiCoreTextStyle.baseCalloutBold else FestiCoreTextStyle.baseSubheadlineBold).textStyle.copy(
-                color = foreground,
-            ),
+            style =
+                (if (isLarge) FestiCoreTextStyle.baseCalloutBold else FestiCoreTextStyle.baseSubheadlineBold)
+                    .textStyleWithoutLineBox
+                    .copy(color = foreground),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

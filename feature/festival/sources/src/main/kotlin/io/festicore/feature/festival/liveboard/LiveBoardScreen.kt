@@ -66,6 +66,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import io.festicore.ui.sharedui.externallink.openExternalUrl
 import java.time.Clock
 import java.time.Instant
@@ -549,7 +550,7 @@ private fun MyScheduleFailedLine(onRetry: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8), verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "내 일정을 불러오지 못했습니다.",
-            style = FestiCoreTextStyle.baseCaption1Regular.textStyle,
+            style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNeutral.color,
             modifier = Modifier.weight(1f),
         )
@@ -562,7 +563,7 @@ private fun MyScheduleFailedLine(onRetry: () -> Unit) {
 private fun RetryText(onClick: () -> Unit) {
     Text(
         text = "다시 시도",
-        style = FestiCoreTextStyle.baseCaption1Bold.textStyle,
+        style = FestiCoreTextStyle.baseCaption1Bold.textStyleWithoutLineBox,
         color = FestiCoreSemanticColor.labelNeutral.color,
         modifier = Modifier.clickable(onClick = onClick),
     )

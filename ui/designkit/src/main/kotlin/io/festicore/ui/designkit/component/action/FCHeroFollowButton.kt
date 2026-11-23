@@ -37,7 +37,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 40.dp
 private val IconSize = 16.dp
@@ -76,7 +76,7 @@ fun FCHeroFollowButton(
         }
         BasicText(
             text = if (isFollowing) followingTitle else followTitle,
-            style = FestiCoreTextStyle.baseSubheadlineBold.textStyle.copy(color = foreground),
+            style = FestiCoreTextStyle.baseSubheadlineBold.textStyleWithoutLineBox.copy(color = foreground),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

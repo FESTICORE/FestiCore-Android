@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Size = 16.dp
 private const val MAX_COUNT = 9
@@ -37,7 +37,7 @@ fun FCBadge(count: Int, modifier: Modifier = Modifier) {
             text = if (count > MAX_COUNT) "$MAX_COUNT+" else "$count",
             // iOS monospacedDigit와 같은 고정폭 숫자
             style =
-                FestiCoreTextStyle.baseCaption2Bold.textStyle.copy(
+                FestiCoreTextStyle.baseCaption2Bold.textStyleWithoutLineBox.copy(
                     color = FestiCoreSemanticColor.staticWhite.color,
                     fontFeatureSettings = "tnum",
                 ),

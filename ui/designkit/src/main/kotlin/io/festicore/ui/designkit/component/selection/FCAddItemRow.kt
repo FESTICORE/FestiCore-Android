@@ -40,7 +40,7 @@ import io.festicore.ui.designkit.component.action.FCButtonSize
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 56.dp
 private val Spacing = 10.dp
@@ -84,7 +84,9 @@ fun FCAddItemRow(
                         .height(InputHeight)
                         .focusRequester(focusRequester)
                         .semantics { contentDescription = "내 항목" },
-                textStyle = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
+                textStyle = FestiCoreTextStyle.baseCalloutRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.labelNormal.color,
+                ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { submit() }),
                 singleLine = true,
@@ -122,7 +124,7 @@ fun FCAddItemRow(
                 )
                 BasicText(
                     text = "내 항목 추가",
-                    style = FestiCoreTextStyle.baseCalloutMedium.textStyle.copy(color = color),
+                    style = FestiCoreTextStyle.baseCalloutMedium.textStyleWithoutLineBox.copy(color = color),
                 )
             }
         }

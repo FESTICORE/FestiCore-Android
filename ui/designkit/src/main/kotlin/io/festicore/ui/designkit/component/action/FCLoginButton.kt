@@ -37,7 +37,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreState
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 
 private val Height = 52.dp
 private val BorderWidth = 1.dp
@@ -76,7 +76,7 @@ fun FCLoginButton(
                 )
                 BasicText(
                     text = "Google로 계속",
-                    style = FestiCoreTextStyle.baseCalloutBold.textStyle.copy(color = FestiCoreSemanticColor.staticInk.color),
+                    style = FestiCoreTextStyle.baseCalloutBold.textStyleWithoutLineBox.copy(color = FestiCoreSemanticColor.staticInk.color),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

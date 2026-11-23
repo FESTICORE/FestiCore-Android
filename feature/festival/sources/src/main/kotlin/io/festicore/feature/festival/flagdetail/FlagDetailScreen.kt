@@ -66,6 +66,7 @@ import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
 import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
 import io.festicore.ui.designkit.typography.textStyle
+import io.festicore.ui.designkit.typography.textStyleWithoutLineBox
 import io.festicore.ui.sharedui.remoteimage.FCRemoteImage
 import io.festicore.ui.sharedui.sheet.FCReportSheet
 import io.festicore.ui.sharedui.toast.FCToastItems
@@ -338,7 +339,7 @@ private fun Retry(onRetryTapped: () -> Unit) {
     ) {
         Text(
             text = "깃발 정보를 불러오지 못했어요",
-            style = FestiCoreTextStyle.baseBodyMedium.textStyle,
+            style = FestiCoreTextStyle.baseBodyMedium.textStyleWithoutLineBox,
             color = FestiCoreSemanticColor.labelNeutral.color,
         )
         FCButton(title = "다시 시도", style = FCButtonStyle.Secondary, size = FCButtonSize.Medium, onClick = onRetryTapped)
