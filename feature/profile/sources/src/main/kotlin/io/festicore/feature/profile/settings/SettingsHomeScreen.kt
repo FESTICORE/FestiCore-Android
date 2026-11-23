@@ -81,7 +81,7 @@ fun SettingsHomeScreen(
     state.alert?.let { alert ->
         FCDialog(
             // FCDialog는 버튼 두 개를 그린다. 둘 다 팝업만 닫는다(iOS 확인 하나).
-            item = FCDialogItem(title = alert.title, message = alert.message, cancelTitle = "닫기", onConfirm = {}),
+            item = FCDialogItem(title = alert.title, message = alert.message, cancelTitle = null, onConfirm = {}),
             onDismiss = viewModel::onAlertDismissed,
         )
     }
