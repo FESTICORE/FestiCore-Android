@@ -46,6 +46,7 @@ import androidx.lifecycle.LifecycleOwner
 import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
 import io.festicore.domain.festival.entity.FestivalOverview
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
+import io.festicore.feature.festival.crewgather.CrewGatherSheet
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButtonStyle
 import io.festicore.ui.designkit.component.card.FCCardAction
@@ -170,6 +171,11 @@ fun LiveBoardScreen(
         onHideFollowGuideConfirmed = viewModel::onHideFollowGuideConfirmed,
         onHomeDirectionsTapped = viewModel::onHomeDirectionsTapped,
         onHomeTogetherTapped = viewModel::onHomeTogetherTapped,
+    )
+    CrewGatherSheet(
+        input = state.crewGather,
+        onDismiss = viewModel::onCrewGatherDismissed,
+        onGathered = viewModel::onCrewGathered,
     )
 }
 

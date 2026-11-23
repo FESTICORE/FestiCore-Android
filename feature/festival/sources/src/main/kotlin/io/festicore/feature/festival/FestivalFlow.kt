@@ -9,6 +9,8 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.festival.common.FestivalTransitions
+import io.festicore.feature.festival.crew.CrewScreen
+import io.festicore.feature.festival.crewcreate.CrewCreateScreen
 import io.festicore.feature.festival.festivallist.FestivalListScreen
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.festivallist.ListForegroundEffect
@@ -90,6 +92,21 @@ fun FestivalFlow(
                         foregroundLifecycleOwner = flowLifecycleOwner,
                         onBack = coordinator::goBack,
                         onFlagDirectoryRequested = coordinator::onZoneMapFlagDirectoryRequested,
+                    )
+                }
+                entry<FestivalRoute.CrewCreate> { key ->
+                    CrewCreateScreen(
+                        viewModel = koinViewModel { parametersOf(key.festivalId) },
+                        onClose = coordinator::onCrewBack,
+                        onOpenCrew = { crewId -> coordinator.onCrewCreateOpenCrew(key.festivalId, crewId) },
+                        onLoginRequested = coordinator::onCrewCreateLoginRequested,
+                    )
+                }
+                entry<FestivalRoute.Crew> { key ->
+                    CrewScreen(
+                        viewModel = koinViewModel { parametersOf(key.festivalId, key.crewId) },
+                        onBack = coordinator::onCrewBack,
+                        onCrewClosed = coordinator::onCrewClosed,
                     )
                 }
                 entry<FestivalRoute.NotificationInbox> {

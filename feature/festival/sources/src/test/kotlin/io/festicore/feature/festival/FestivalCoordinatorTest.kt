@@ -2,6 +2,7 @@ package io.festicore.feature.festival
 import io.festicore.feature.festival.festivallist.FakeCurrentUserProvider
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -199,6 +200,73 @@ class FestivalCoordinatorTest {
 
             containerHost.onDeeplinkFestivalListOpened()
             expectState { copy(routes = listOf(FestivalRoute.List)) }
+        }
+    }
+
+    // MARK: - 크루 (iOS FestivalCrewCreateRoutingTests)
+
+    private val crewCreate = FestivalRoute.CrewCreate("fst_1")
+    private val crew = FestivalRoute.Crew("fst_1", "crew")
+
+    @Test
+    fun `크루 만들기는 만들기 화면을 쌓고 탭 바를 숨기며 뒤로 가면 라이브 보드로 돌아온다`() = runTest {
+        assertFalse(onBoard.hidesTabBar)
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.CrewCreate("fst_1"))
+            val pushed = awaitState()
+            assertEquals(listOf(FestivalRoute.List, board, crewCreate), pushed.routes)
+            assertTrue(pushed.hidesTabBar)
+            // 이미 열려 있으면 다시 쌓지 않는다.
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.CrewCreate("fst_1"))
+            containerHost.onCrewBack()
+            val back = awaitState()
+            assertEquals(listOf(FestivalRoute.List, board), back.routes)
+            assertFalse(back.hidesTabBar)
+        }
+    }
+
+    @Test
+    fun `만든 뒤 크루 보기는 만들기 화면을 크루 화면으로 바꾸고 크루에서 뒤로 가면 라이브 보드다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewCreate)) {
+            containerHost.onCrewCreateOpenCrew("fst_1", "crew")
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+            val opened = awaitState()
+            assertEquals(listOf(FestivalRoute.List, board, crew), opened.routes)
+            assertTrue(opened.hidesTabBar)
+            containerHost.onCrewBack()
+            val back = awaitState()
+            assertEquals(listOf(FestivalRoute.List, board), back.routes)
+            assertFalse(back.hidesTabBar)
+        }
+    }
+
+    @Test
+    fun `보드 크루 카드는 크루 화면을 쌓고 이미 있으면 무시하며 크루가 닫히면 뺀다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard) {
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.Crew("fst_1", "crew"))
+            expectState { copy(routes = listOf(FestivalRoute.List, board, crew)) }
+            containerHost.onLiveBoardBoundary(LiveBoardBoundary.Crew("fst_1", "crew"))
+            containerHost.onCrewClosed()
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+        }
+    }
+
+    @Test
+    fun `만들기 화면에서 세션이 끊기면 화면을 닫고 크루 로그인 경계를 남긴다`() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider()).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewCreate)) {
+            containerHost.onCrewCreateLoginRequested()
+            expectState { copy(routes = listOf(FestivalRoute.List, board), lastBoundary = LiveBoardBoundary.CrewLogin) }
+        }
+    }
+
+    @Test
+    fun `계정이 바뀌면 열린 만들기 · 크루 화면을 닫는다`() = runTest {
+        val currentUser = FakeCurrentUserProvider("user-a")
+        FestivalCoordinator(currentUser).test(this, initialState = onBoard.copy(routes = onBoard.routes + crewCreate)) {
+            val subscription = runOnCreate()
+            currentUser.currentUserId.value = "user-b"
+            expectState { copy(routes = listOf(FestivalRoute.List, board)) }
+            subscription.cancel()
         }
     }
 }

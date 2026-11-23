@@ -19,6 +19,7 @@ import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
 import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.domain.usernotification.entity.UserNotificationBadge
 import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
+import io.festicore.feature.festival.crewgather.CrewGatherInput
 import io.festicore.feature.festival.festivallist.FestivalListPresentation
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
@@ -217,14 +218,35 @@ class LiveBoardViewModel(
         if (state.connection == LiveBoardConnection.Offline || state.connection == LiveBoardConnection.Reconnecting) return@intent
         val now = LiveBoardPresentation.serverNow(state.snapshot?.serverAt, state.clockAnchorAt, clock.instant())
         if (LiveBoardPresentation.phase(state.displayDocument, festival, now) == LiveBoardPresentation.Phase.Ended) return@intent
-        boundary(LiveBoardBoundary.CrewGather(crew.id))
+        val count = state.crewGatherCount + 1
+        reduce {
+            state.copy(
+                crewGatherCount = count,
+                crewGather =
+                    CrewGatherInput(
+                        presentation = count,
+                        crewId = crew.id,
+                        zones = state.displayDocument?.zones.orEmpty(),
+                        availableAt = crew.gatherAvailableAt,
+                        recipientCount = crew.members.count { it.id != state.sessionUserId },
+                    ),
+            )
+        }
+    }
+
+    fun onCrewGatherDismissed() = intent { reduce { state.copy(crewGather = null) } }
+
+    /** 모여를 보냈다(iOS `crewGather(.delegate(.gathered))`). 시트를 닫고 크루 카드를 새로 받는다. */
+    fun onCrewGathered() = intent {
+        reduce { state.copy(crewGather = null) }
+        startLiveBoard()
     }
 
     fun onCreateCrewTapped() = intent { createCrew() }
 
     fun onCrewTapped() = intent {
         val crew = state.snapshot?.crew ?: return@intent
-        if (state.hasSession) boundary(LiveBoardBoundary.Crew(crew.id))
+        if (state.hasSession) boundary(LiveBoardBoundary.Crew(state.festivalId, crew.id))
     }
 
     fun onHomeDirectionsTapped() = intent {
@@ -592,6 +614,7 @@ class LiveBoardViewModel(
                 myScheduleUnavailable = false,
                 notificationUnreadCount = 0,
                 notificationBanner = null,
+                crewGather = null,
             )
         }
         if (state.isVisible) watchLiveBoard()
