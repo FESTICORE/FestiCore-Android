@@ -153,7 +153,7 @@ app · *assembly           → 새 sources 모듈
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | 보안 값 · DataStore · Room은 core:storage만 (3개)         | 허용 `core/storage/**` → `core/storage/sources/**`                                                                                                              | R6a         |
 | service · core 구현(sources)은 조립하는 곳만 의존한다     | 패턴의 `(pack\|device\|auth)\|core:network` → `(pack\|device\|auth\|analytics)\|core:(network\|storage\|location)`. `domain/bearer`는 `:sources`를 보지 않는다  | R6a · b · c |
-| feature는 service · core를 의존하지 않는다                | 예외: `:service:analytics:interface` · `:core:location:interface` · `:core:storage:interface`만 허용(쟁점 F2). 패턴에서 이 세 경로를 뺀다                       | R6b · c     |
+| feature는 service · core를 의존하지 않는다                | 예외: `:service:analytics:interface` · `:core:location:interface` · `:core:storage:interface`만 허용(쟁점 F2). 금지 패턴을 "service · core 의존 중 이 세 interface 경로가 아닌 것"(부정 전방탐색)으로 바꾼다 — 허용 목록(파일 glob)은 그대로 두고 패턴 쪽에서 세 경로만 통과시킨다. 같은 PR에서 위반 주입 검증: 세 interface 의존은 통과, `:core:storage:sources` · `:service:analytics:sources` · `:core:network:interface` 의존은 실패해야 한다 | R6b · c     |
 | (새) 단일 feature 모듈은 app · featureassembly만 의존한다 | `feature/**/build.gradle.kts`(허용 `feature/featureassembly/**`), 금지 `project\(":feature:onboarding"\)`                                                       | R6a         |
 | (새) Firebase 초기화는 service:config만                   | `**/src/**/*.kt`, 허용 `service/config/**`, 금지 `\bFirebaseApp\.initializeApp\b`(푸시 설계의 `FirebaseMessaging`은 막지 않는다)                                | R6a         |
 | (새) Sentry · Mixpanel SDK는 service:analytics:sources만  | `**/src/**/*.kt`, 허용 `service/analytics/sources/**`, 금지 `^\s*import\s+(io\.sentry\|com\.mixpanel)\.`                                                        | R6b         |
@@ -274,3 +274,8 @@ app · *assembly           → 새 sources 모듈
 - `service/analytics/sources`의 Mixpanel 초기화가 `Context`를 요구하므로 Koin 등록과 `Application` 초기화 순서.
 - Android `androidTest`(UI 테스트) 대응 여부 — iOS `App/Tests/UITests` 6개. 이 문서 범위 밖.
 - 이 문서는 Codex 교차 검토를 거치지 않았다.
+
+
+## 검토 반영
+
+- Codex 1라운드 R6-REV-1: feature 예외를 파일 허용 목록이 아니라 금지 패턴에서 세 interface 경로만 통과시키는 방식으로 정하고, 허용 · 거부 사례 주입 검증을 R6b · R6c PR 검증에 넣었다.
