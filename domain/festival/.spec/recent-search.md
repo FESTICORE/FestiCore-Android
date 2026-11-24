@@ -40,7 +40,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/Interface/Sources/RecentSearch/Festi
 | --- | --- | --- |
 | `core/storage` | core | `RecentSearchStore` · `DataStoreRecentSearchStore` · Koin 등록 |
 | `domain/festival/interface` | domain | `FestivalLibraryUseCase`(최근 검색 4개 함수) |
-| `domain/festival/sources` | domain | `FestivalLibraryUseCaseImpl` · Koin 등록 · `core:storage` 의존 |
+| `domain/festival/sources` | domain | `FestivalLibraryUseCaseImpl` · Koin 등록 · `core:storage:interface` 의존 |
 
 ## 영향 범위
 

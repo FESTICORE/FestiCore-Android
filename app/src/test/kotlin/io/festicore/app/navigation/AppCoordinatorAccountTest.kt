@@ -1,6 +1,6 @@
 package io.festicore.app.navigation
 
-import io.festicore.core.storage.FirstInstallOnboardingStore
+import io.festicore.core.storage.onboarding.FirstInstallOnboardingStore
 import io.festicore.domain.auth.auth.AuthRepository
 import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.entity.AuthLoginResult

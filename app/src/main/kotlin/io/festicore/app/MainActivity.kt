@@ -13,7 +13,7 @@ import io.festicore.app.application.MainActivityProvider
 import io.festicore.app.application.applySystemBarStyle
 import io.festicore.app.deeplink.AppDeeplinkBridge
 import io.festicore.app.navigation.AppFlow
-import io.festicore.core.storage.AppearanceModeStore
+import io.festicore.core.storage.shared.AppearanceModeStore
 import io.festicore.ui.designkit.theme.FestiCoreTheme
 import org.koin.android.ext.android.inject
 

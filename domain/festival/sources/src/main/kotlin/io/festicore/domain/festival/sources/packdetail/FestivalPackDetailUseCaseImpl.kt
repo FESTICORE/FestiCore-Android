@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources.packdetail
 
-import io.festicore.core.storage.FestivalPackLocalStore
+import io.festicore.core.storage.shared.FestivalPackLocalStore
 import io.festicore.domain.festival.catalog.FestivalCatalogRepository
 import io.festicore.domain.festival.entity.FestivalCatalogItem
 import io.festicore.domain.festival.entity.FestivalChecklist

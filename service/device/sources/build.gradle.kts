@@ -8,7 +8,7 @@ plugins {
 dependencies {
     val libs = catalog
     api(project(":service:device:interface"))
-    implementation(project(":core:storage"))
+    implementation(project(":core:storage:interface"))
     implementation(libs.lib("kotlinx-coroutines-core"))
 
     implementation(platform(libs.lib("koin-bom")))

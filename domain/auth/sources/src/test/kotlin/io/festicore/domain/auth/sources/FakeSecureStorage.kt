@@ -1,7 +1,7 @@
 package io.festicore.domain.auth.sources
 
-import io.festicore.core.storage.SecureStorage
-import io.festicore.core.storage.SecureStorageException
+import io.festicore.core.storage.secure.SecureStorage
+import io.festicore.core.storage.secure.SecureStorageException
 import java.util.concurrent.ConcurrentHashMap
 
 /** 메모리 [SecureStorage]. [failWrites]면 쓰기에서 [SecureStorageException]을 던진다. */

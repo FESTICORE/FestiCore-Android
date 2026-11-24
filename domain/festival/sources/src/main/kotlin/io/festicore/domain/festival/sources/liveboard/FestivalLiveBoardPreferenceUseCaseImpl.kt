@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources.liveboard
 
-import io.festicore.core.storage.LiveBoardPreferenceStore
+import io.festicore.core.storage.shared.LiveBoardPreferenceStore
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardPreferenceUseCase
 /** iOS `FestivalSelectionStore` · `FestivalGuideVisibilityStore`의 저장을 [LiveBoardPreferenceStore]에 맡긴다. */
 internal class FestivalLiveBoardPreferenceUseCaseImpl(private val store: LiveBoardPreferenceStore) : FestivalLiveBoardPreferenceUseCase {

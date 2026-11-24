@@ -1,7 +1,7 @@
 package io.festicore.app.application
 
-import io.festicore.core.storage.AppearanceMode as StoredAppearanceMode
-import io.festicore.core.storage.AppearanceModeStore
+import io.festicore.core.storage.shared.AppearanceMode as StoredAppearanceMode
+import io.festicore.core.storage.shared.AppearanceModeStore
 import io.festicore.feature.profile.appearance.AppearanceMode
 import io.festicore.feature.profile.appearance.AppearanceModeSettings
 import kotlinx.coroutines.flow.Flow

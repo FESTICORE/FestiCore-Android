@@ -1,6 +1,6 @@
 package io.festicore.service.auth
 
-import io.festicore.core.storage.SecureStorage
+import io.festicore.core.storage.secure.SecureStorage
 import java.util.concurrent.ConcurrentHashMap
 
 /** 메모리 [SecureStorage]. */

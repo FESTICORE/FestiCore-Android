@@ -1,6 +1,6 @@
 package io.festicore.service.device
 
-import io.festicore.core.storage.SecureStorage
+import io.festicore.core.storage.secure.SecureStorage
 import java.util.UUID
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
