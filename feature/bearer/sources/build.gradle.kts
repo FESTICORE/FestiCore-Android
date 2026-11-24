@@ -10,6 +10,7 @@ dependencies {
     api(project(":feature:bearer:interface"))
     implementation(project(":domain:bearer:interface"))
     implementation(project(":ui:designkit"))
+    implementation(project(":ui:sharedui"))
     implementation(libs.lib("compose-foundation"))
     implementation(libs.lib("activity-compose"))
 }
