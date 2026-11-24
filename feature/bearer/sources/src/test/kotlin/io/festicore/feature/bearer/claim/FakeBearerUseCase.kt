@@ -44,6 +44,11 @@ internal class FakeBearerUseCase(
     private val onInviteCoBearer: (suspend (flagId: String) -> BearerInvite)? = null,
     private val onMakeRegisterRequest: ((festivalId: String, change: BearerProfileChange) -> BearerRegisterRequest)? = null,
     private val onRegister: (suspend (request: BearerRegisterRequest) -> BearerClaim)? = null,
+    private val onMakeStatusRequest: ((change: BearerStatusChange) -> BearerStatusRequest)? = null,
+    private val onEnqueueStatus: (suspend (flagId: String, ownerUserId: String, request: BearerStatusRequest) -> Unit)? = null,
+    private val onPendingStatus: (suspend (flagId: String) -> List<BearerStatusRequest>)? = null,
+    private val onStatusEvents: ((flagId: String) -> Flow<BearerOutboxEvent>)? = null,
+    private val onRetryPendingStatus: (suspend () -> Unit)? = null,
 ) : BearerUseCase {
     override suspend fun claim(festivalId: String, code: String): BearerClaim = onClaim(festivalId, code)
 
@@ -68,7 +73,7 @@ internal class FakeBearerUseCase(
     override fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent> =
         (onUploadPhoto ?: unused())(flagId, imageData)
 
-    override fun makeStatusRequest(change: BearerStatusChange): BearerStatusRequest = unused()
+    override fun makeStatusRequest(change: BearerStatusChange): BearerStatusRequest = (onMakeStatusRequest ?: unused())(change)
 
     override suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus = unused()
 
@@ -76,13 +81,13 @@ internal class FakeBearerUseCase(
         flagId: String,
         ownerUserId: String,
         request: BearerStatusRequest,
-    ): Unit = unused()
+    ): Unit = (onEnqueueStatus ?: unused())(flagId, ownerUserId, request)
 
-    override suspend fun pendingStatus(flagId: String): List<BearerStatusRequest> = unused()
+    override suspend fun pendingStatus(flagId: String): List<BearerStatusRequest> = (onPendingStatus ?: unused())(flagId)
 
-    override fun statusEvents(flagId: String): Flow<BearerOutboxEvent> = unused()
+    override fun statusEvents(flagId: String): Flow<BearerOutboxEvent> = (onStatusEvents ?: unused())(flagId)
 
-    override suspend fun retryPendingStatus(): Unit = unused()
+    override suspend fun retryPendingStatus(): Unit = (onRetryPendingStatus ?: unused())()
 
     override suspend fun inviteCoBearer(flagId: String): BearerInvite = (onInviteCoBearer ?: unused())(flagId)
 

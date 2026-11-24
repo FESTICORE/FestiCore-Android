@@ -82,6 +82,8 @@ fun FCBearerCTA(
     state: FCBearerCTAState,
     modifier: Modifier = Modifier,
     copy: FCBearerCTACopy? = null,
+    /** false면 누를 수 없고 접근성에서 사용 중지로 읽힌다(iOS `.disabled`). */
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val isStart = state == FCBearerCTAState.Start
@@ -132,7 +134,7 @@ fun FCBearerCTA(
                     .background(
                         if (isStart) FestiCoreSemanticColor.accentPointLime.color else FestiCoreSemanticColor.inverseBackground.color,
                     )
-                    .clickable(interactionSource = null, indication = null, role = Role.Button, onClick = onClick)
+                    .clickable(enabled = enabled, interactionSource = null, indication = null, role = Role.Button, onClick = onClick)
                     .padding(horizontal = FestiCoreSpacing.paddingP20),
             contentAlignment = Alignment.Center,
         ) {
