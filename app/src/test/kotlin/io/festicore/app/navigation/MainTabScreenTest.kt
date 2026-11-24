@@ -64,7 +64,7 @@ class MainTabScreenTest {
         tab("타임테이블").performClick()
         tab("타임테이블").assertIsSelected()
         tab("라이브").assertIsNotSelected()
-        composeRule.onAllNodesWithText("타임테이블").assertCountEquals(2)
+        composeRule.onNodeWithText("타임테이블 흐름").assertExists()
 
         restoration.emulateSavedInstanceStateRestore()
         tab("타임테이블").assertIsSelected()
@@ -144,6 +144,45 @@ class MainTabScreenTest {
         composeRule.onAllNodesWithText("타임테이블").assertCountEquals(0)
     }
 
+    /** iOS `searchPushHidesTabBarAndBackRestoresIt`: 타임테이블 루트는 탭 바를 보인다. */
+    @Test
+    fun `타임테이블 흐름이 숨기지 않으면 탭 바를 보인다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.Timetable, liveContent = { _, _ -> })
+        }
+
+        composeRule.onNodeWithText("타임테이블 흐름").assertExists()
+        tab("타임테이블").assertIsSelected()
+    }
+
+    /** iOS `MTC:101-104`: 검색 · 변경 목록 · 고르기 · 공연 시트가 있으면 탭 바를 숨긴다(자리 예약 없음). */
+    @Test
+    fun `타임테이블 흐름이 숨기라고 하면 탭 바가 없다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.Timetable, liveContent = { _, _ -> }, timetableContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(true) }
+                Text("공연 검색")
+            })
+        }
+
+        composeRule.onNodeWithText("공연 검색").assertExists()
+        composeRule.onAllNodes(hasText("라이브") and isSelectable()).assertCountEquals(0)
+    }
+
+    /** iOS `schedulePickHidesTabBarUntilDismissed`: 다른 탭으로 가면 타임테이블 숨김과 상관없이 탭 바를 보인다. */
+    @Test
+    fun `타임테이블 숨김은 다른 탭에 영향을 주지 않는다`() {
+        composeRule.setContent {
+            HoistedMainTabScreen(initial = FCTabBarTab.Timetable, liveContent = { _, _ -> }, timetableContent = { onHidesTabBarChanged ->
+                LaunchedEffect(Unit) { onHidesTabBarChanged(true) }
+                Text("내 일정 고르기")
+            }, onSelectionChangedTo = FCTabBarTab.Flag)
+        }
+
+        composeRule.onNodeWithText("깃발 흐름").assertExists()
+        tab("깃발").assertIsSelected()
+    }
+
     /** iOS `MTC:93`: 로그인 시트가 떠 있는 동안은 어느 탭이든 탭 바를 숨긴다. */
     @Test
     fun `로그인 시트가 떠 있으면 탭 바를 숨긴다`() {
@@ -163,8 +202,12 @@ private fun HoistedMainTabScreen(
     initial: FCTabBarTab = FCTabBarTab.Live,
     isLoginSheetPresented: Boolean = false,
     myContent: @Composable (onHidesTabBarChanged: (hides: Boolean, reservesSpace: Boolean) -> Unit) -> Unit = { Text("마이 흐름") },
+    timetableContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit) -> Unit = { Text("타임테이블 흐름") },
+    onSelectionChangedTo: FCTabBarTab? = null,
 ) {
     var selection by rememberSaveable { mutableStateOf(initial) }
+    // 탭 바가 숨겨져 누를 수 없을 때 다른 탭으로 옮기는 상위(딥링크 · 다른 탭 요청)를 흉내 낸다.
+    LaunchedEffect(onSelectionChangedTo) { onSelectionChangedTo?.let { selection = it } }
     MainTabScreen(
         selection = selection,
         onSelectionChange = { selection = it },
@@ -172,6 +215,7 @@ private fun HoistedMainTabScreen(
         liveContent = liveContent,
         flagContent = { Text("깃발 흐름") },
         myContent = myContent,
+        timetableContent = timetableContent,
         isLoginSheetPresented = isLoginSheetPresented,
     )
 }

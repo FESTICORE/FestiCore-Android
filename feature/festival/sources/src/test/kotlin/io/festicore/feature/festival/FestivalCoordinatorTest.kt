@@ -33,6 +33,27 @@ class FestivalCoordinatorTest {
         }
     }
 
+    /** iOS `syncTimetable`: 라이브 스택에 보드가 없으면 타임테이블은 축제 없음이다. */
+    @Test
+    fun `보드가 스택에서 빠지면 보드 공유 선택을 비운다`() = runTest {
+        var cleared = 0
+        FestivalCoordinator(FakeCurrentUserProvider(), clearBoardSelection = { cleared++ })
+            .test(this, initialState = FestivalCoordinatorState(routes = listOf(FestivalRoute.List, board))) {
+                runOnCreate()
+                testScheduler.runCurrent()
+                assertEquals(0, cleared)
+                containerHost.goBack()
+                expectState { copy(routes = listOf(FestivalRoute.List)) }
+                testScheduler.runCurrent()
+                assertEquals(1, cleared)
+                containerHost.onFestivalSelected("fst_1")
+                expectState { copy(selectedFestivalId = "fst_1", routes = listOf(FestivalRoute.List, board)) }
+                testScheduler.runCurrent()
+                assertEquals(1, cleared)
+                cancelAndIgnoreRemainingItems()
+            }
+    }
+
     @Test
     fun `탭 바는 목록뿐이거나 보드에 시트 · 다이얼로그가 떠 있을 때 숨긴다`() = runTest {
         assertTrue(FestivalCoordinatorState().hidesTabBar)

@@ -29,4 +29,9 @@ class TimetableSetListViewModel(
     fun onBackClicked() = intent {
         postSideEffect(TimetableSetListSideEffect.Close)
     }
+
+    /** 같은 축제의 팩이 바뀌었다. 검색어는 두고 날짜만 바꾼다(iOS `MainTabCoordinator+Sync.syncTimetable`이 목록을 다시 만든다). */
+    fun onDaysChanged(days: List<TimetableDay>) = intent {
+        reduce { state.copy(days = days) }
+    }
 }

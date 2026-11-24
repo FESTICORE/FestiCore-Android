@@ -3,13 +3,8 @@ package io.festicore.app.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,11 +16,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import io.festicore.ui.designkit.component.navigation.FCTabBar
 import io.festicore.ui.designkit.component.navigation.FCTabBarTab
-import io.festicore.ui.designkit.component.navigation.title
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
-import io.festicore.ui.designkit.tokens.FestiCoreSpacing
-import io.festicore.ui.designkit.tokens.FestiCoreTextStyle
-import io.festicore.ui.designkit.typography.textStyle
 
 /**
  * iOS `MainTabView` 껍데기. 선택한 탭([selection])은 `MainTabCoordinator`가 가지고(설계 P7), 탭마다 화면 상태(스크롤 위치 등)를 따로 보존한다.
@@ -33,7 +24,9 @@ import io.festicore.ui.designkit.typography.textStyle
  * (iOS `MainTabCoordinator.shouldHideTabBar` · `shouldReserveTabBarSpace`). 표시 · 숨김은 애니메이션 없이 바로 바꾼다.
  * 깃발 탭은 [flagContent](깃발 흐름)를 그리고 목록 · 상세 모두 탭 바를 보인다(iOS `MTC:109-111`).
  * 마이 탭은 [myContent](마이 흐름)를 그린다. 마이 흐름이 숨기라고 알리면 숨기고, 자리를 남기라고 하면(팩 삭제 확인 팝업) 보이지 않는 탭 바로
- * 자리만 남겨 뒤 화면이 움직이지 않게 한다(iOS `MTC:65-72` · `104-108`). 다른 탭 내용은 이후 단계에서 옮긴다.
+ * 자리만 남겨 뒤 화면이 움직이지 않게 한다(iOS `MTC:65-72` · `104-108`).
+ * 타임테이블 탭은 [timetableContent](타임테이블 흐름)를 그린다. 검색 · 변경 목록 · 내 일정 고르기가 쌓였거나 공연 시트가 떠 있으면 숨긴다
+ * (iOS `MTC:101-104`). 자리 예약은 Android에 해당 문제가 없어 두지 않는다(설계 "탭 바 규칙").
  * 로그인 시트가 떠 있으면([isLoginSheetPresented]) 어느 탭이든 탭 바를 숨긴다(iOS `MTC:93`).
  * 라이브 흐름이 깃발 탭을 요청하면(존 지도 "깃발을 팔로우하면…", iOS `flagTabRequested`) [onFlagTabRequested]로 알린다.
  */
@@ -45,11 +38,13 @@ fun MainTabScreen(
     liveContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit, onFlagTabRequested: () -> Unit) -> Unit,
     flagContent: @Composable () -> Unit,
     myContent: @Composable (onHidesTabBarChanged: (hides: Boolean, reservesSpace: Boolean) -> Unit) -> Unit,
+    timetableContent: @Composable (onHidesTabBarChanged: (Boolean) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     isLoginSheetPresented: Boolean = false,
 ) {
     var hidesLiveTabBar by rememberSaveable { mutableStateOf(true) }
     var hidesMyTabBar by rememberSaveable { mutableStateOf(false) }
+    var hidesTimetableTabBar by rememberSaveable { mutableStateOf(false) }
     var reservesMyTabBarSpace by rememberSaveable { mutableStateOf(true) }
     val tabStates = rememberSaveableStateHolder()
     Column(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
@@ -66,14 +61,15 @@ fun MainTabScreen(
                             reservesMyTabBarSpace = reservesSpace
                         }
 
-                    else -> TabRoot(tab = selection)
+                    FCTabBarTab.Timetable -> timetableContent { hidesTimetableTabBar = it }
                 }
             }
         }
         val hidesTabBar =
             isLoginSheetPresented ||
                 (selection == FCTabBarTab.Live && hidesLiveTabBar) ||
-                (selection == FCTabBarTab.My && hidesMyTabBar)
+                (selection == FCTabBarTab.My && hidesMyTabBar) ||
+                (selection == FCTabBarTab.Timetable && hidesTimetableTabBar)
         if (!hidesTabBar) {
             FCTabBar(selection = selection, onSelectionChange = onSelectionChange)
         } else if (selection == FCTabBarTab.My && reservesMyTabBarSpace && !isLoginSheetPresented) {
@@ -85,14 +81,4 @@ fun MainTabScreen(
             )
         }
     }
-}
-
-@Composable
-private fun TabRoot(tab: FCTabBarTab) {
-    Text(
-        text = tab.title,
-        style = FestiCoreTextStyle.baseTitle2Bold.textStyle,
-        color = FestiCoreSemanticColor.labelNormal.color,
-        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(FestiCoreSpacing.marginM16),
-    )
 }

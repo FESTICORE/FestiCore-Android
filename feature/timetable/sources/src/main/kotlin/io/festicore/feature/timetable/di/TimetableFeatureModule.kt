@@ -1,13 +1,15 @@
 package io.festicore.feature.timetable.di
 
+import io.festicore.feature.timetable.TimetableCoordinator
 import io.festicore.feature.timetable.main.TimetableViewModel
 import io.festicore.feature.timetable.schedulepick.SchedulePickViewModel
 import io.festicore.feature.timetable.setlist.TimetableSetListViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
-/** 타임테이블 탭 화면. app Koin 목록 등록은 탭 연결 PR(C1)에서 한다. */
+/** 타임테이블 탭 흐름과 화면. app은 `feature/featureassembly` 목록으로 등록한다. */
 val timetableFeatureModule = module {
+    viewModel { TimetableCoordinator() }
     viewModel {
         TimetableViewModel(
             boardSelectionUseCase = get(),

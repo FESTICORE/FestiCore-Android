@@ -1,5 +1,6 @@
 package io.festicore.feature.festival.di
 
+import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.crew.CrewViewModel
 import io.festicore.feature.festival.crewcreate.CrewCreateViewModel
@@ -17,7 +18,8 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val festivalFeatureModule = module {
-    viewModelOf(::FestivalCoordinator)
+    // 보드가 스택에서 빠지면 보드 공유 선택을 비운다(설계 T1 `clear`).
+    viewModel { FestivalCoordinator(currentUserProvider = get(), clearBoardSelection = get<FestivalBoardSelectionUseCase>()::clear) }
     viewModelOf(::FestivalListViewModel)
     viewModelOf(::NotificationInboxViewModel)
     viewModelOf(::FlagCoordinator)

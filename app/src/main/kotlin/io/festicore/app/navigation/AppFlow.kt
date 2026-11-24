@@ -37,6 +37,9 @@ import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
 import io.festicore.feature.profile.ProfileCoordinator
 import io.festicore.feature.profile.ProfileFlow
+import io.festicore.feature.timetable.TimetableCoordinator
+import io.festicore.feature.timetable.TimetableFlow
+import io.festicore.feature.timetable.main.TimetableViewModel
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -113,6 +116,9 @@ private fun rootScreen(screen: RootScreen): Map<String, Any> = mapOf(LaunchTrans
  * 마이 흐름 Coordinator([ProfileCoordinator])도 탭 밖에 두어 마이 스택을 유지한다. 계정 상태는 [AppCoordinator.account]를 넘기고(쟁점 M13),
  * 로그인 · 계정 작업은 [AppCoordinator]로, 축제 목록은 라이브 탭으로 올린다(iOS `handleProfileScope`).
  * 라이브 보드 "가는 길"은 [MainTabCoordinator]가 마이 탭을 고르고 마이 흐름에 팩 상세를 넘긴다(iOS `packDirectionsRequested`).
+ * 타임테이블 흐름 Coordinator([TimetableCoordinator])와 화면 ViewModel([TimetableViewModel])도 탭 밖에 두어 스택 · 날짜 · 내 일정을 유지한다.
+ * 타임테이블은 보드 공유 상태(설계 T1)로 보드가 보여 주는 축제를 읽고, 저장 알림 · 다시 시도도 그 상태 · 저장 이벤트로 보드와 주고받는다.
+ * 로그인 요청은 없다(비로그인은 이 기기에서만 표시, iOS `TF:112-114`).
  */
 @Composable
 private fun HomeWithCovers(
@@ -123,6 +129,8 @@ private fun HomeWithCovers(
     flagCoordinator: FlagCoordinator = koinViewModel(),
     flagViewModel: FlagViewModel = koinViewModel(),
     profileCoordinator: ProfileCoordinator = koinViewModel(),
+    timetableCoordinator: TimetableCoordinator = koinViewModel(),
+    timetableViewModel: TimetableViewModel = koinViewModel(),
     currentUserProvider: CurrentUserProvider = koinInject(),
 ) {
     val mainTabState by mainTab.collectAsState()
@@ -218,6 +226,13 @@ private fun HomeWithCovers(
                         onNicknameUpdated = coordinator::onNicknameUpdated,
                         legalDocument = { page, onBack -> WebScreen(page = page, onBackToRoot = onBack) },
                         coordinator = profileCoordinator,
+                    )
+                },
+                timetableContent = { onHidesTabBarChanged ->
+                    TimetableFlow(
+                        onHidesTabBarChanged = onHidesTabBarChanged,
+                        coordinator = timetableCoordinator,
+                        timetableViewModel = timetableViewModel,
                     )
                 },
             )

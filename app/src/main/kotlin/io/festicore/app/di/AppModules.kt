@@ -13,6 +13,7 @@ import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.festival.pack.FestivalPackUseCase
 import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.domain.notice.sources.di.domainNoticeModule
+import io.festicore.domain.timetable.sources.di.domainTimetableModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
 import io.festicore.feature.featureassembly.featureModules
 import io.festicore.feature.profile.appearance.AppearanceModeSettings
@@ -59,6 +60,7 @@ val appModules: List<Module> =
             domainFestivalModule,
             domainUserNotificationModule,
             domainNoticeModule,
+            domainTimetableModule,
         ) +
         featureModules(legalBaseUrl = BuildConfig.LEGAL_BASE_URL) +
         appModule
