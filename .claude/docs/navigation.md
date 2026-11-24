@@ -96,6 +96,10 @@ fun AuthFlow(coordinator: AuthCoordinator = koinViewModel(), onFinished: () -> U
 - 기능 밖으로 나가는 이동은 항상 부모 Coordinator가 정한다.
 - 메인 탭 선택은 `app` `MainTabCoordinator`(iOS 같은 이름, `selectedTab`)가 가진다. `MainTabScreen`은 선택을 인자로 받는 껍데기다.
 - 탭 흐름 Coordinator(깃발 `FlagCoordinator` · 마이 `ProfileCoordinator` · 타임테이블 `TimetableCoordinator`, 타임테이블은 화면 `TimetableViewModel`도)는 탭 밖(`AppFlow` 메인 탭 범위)에서 소유해 탭을 바꿔도 스택을 유지한다. 탭 바 숨김은 흐름이 콜백으로 알린다(라이브 · 타임테이블 `onHidesTabBarChanged(Boolean)`, 마이 `(hides, reservesSpace)` — 팝업으로만 숨기면 보이지 않는 탭 바로 자리를 남긴다).
+- 탭 흐름의 스택 항목도 탭 밖에서 만든다(iOS `TabView`처럼 탭을 바꿔도 각 탭 화면 ViewModel · `rememberSaveable` 상태 유지, 이슈 #200). 흐름마다 `remember{기능}FlowEntries(...)`가 `rememberDecoratedNavEntries(state.routes, 데코레이터, entryProvider)`를 부르고, `HomeWithCovers`가 네 탭 모두 항상 부른다. 흐름(`{기능}Flow(entries = …)`)은 고른 탭에서만 `NavDisplay(entries = …)`로 그린다. 공식 문서: `rememberDecoratedNavEntries`는 백스택 하나에 하나씩 두고, NavDisplay 밖에서 데코레이터 상태를 유지하려면 이 API를 쓴다. `NavDisplay(backStack, entryDecorators)`를 탭 안에 두면 탭을 바꿀 때 데코레이터가 composition에서 빠지며 화면 ViewModel을 정리한다.
+  - 스택에서 빠진 항목(계정 변경 정리 등)은 탭이 안 보여도 바로 정리된다. 다시 열면 새로 만든다.
+  - 상태 동기화 효과(계정 · 세션 · 축제 선택 · 존 이름 · 목록 포그라운드)는 `remember{기능}FlowEntries`에, 딥링크 요청 값(`liveRequest` 등)은 `HomeWithCovers`에 두어 숨은 탭에도 바로 닿게 한다. `{기능}Flow`에는 탭이 보일 때 할 일(탭 바 숨김 알림 · 탭 선택 때 다시 읽기 · 화면 SideEffect 받기)만 둔다.
+  - 숨은 탭 화면은 composition에서 빠지므로 `onAppear`/`onDisappear`(폴링 · 시계 멈춤)는 그대로 돈다. 라이브 보드 · 존 지도 포그라운드 관찰(`ForegroundEffect`)은 화면이 빠져도 ViewModel 수명 동안 붙어 있어, 숨은 탭에서 앱이 배경으로 가도 팩 감시 · 폴링이 멈춘다(iOS 숨은 탭도 `scenePhase`를 받음).
 - 한 탭 흐름이 다른 탭 화면을 열 때는 `MainTabCoordinator`가 탭을 고르고 요청 값(`liveRequest` · `flagRequest` · `packDirectionsRequest`)을 두며, 그 흐름이 받아 처리한 뒤 비운다(예: 라이브 보드 "가는 길" → 마이 팩 상세). 라이브 보드 ↔ 타임테이블은 요청 값 대신 domain 공유 상태(`FestivalBoardSelectionUseCase`: 선택 · `requestRetry`)와 저장 이벤트(`FestivalScheduleUseCase.savedSchedules`)로 주고받는다.
 
 ## 딥링크

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModel
 import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
 import io.festicore.domain.festival.entity.FestivalOverview
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
@@ -120,7 +121,7 @@ fun LiveBoardScreen(
         viewModel.onAppear()
         onDispose { viewModel.onDisappear() }
     }
-    ForegroundEffect(foregroundLifecycleOwner, viewModel::onForegroundChanged)
+    ForegroundEffect(foregroundLifecycleOwner, viewModel, viewModel::onForegroundChanged)
 
     val currentOnPresentingModalChanged by rememberUpdatedState(onPresentingModalChanged)
     LaunchedEffect(state.isPresentingModal) { currentOnPresentingModalChanged(state.isPresentingModal) }
@@ -180,27 +181,66 @@ fun LiveBoardScreen(
     )
 }
 
-/** 앱이 배경으로 갔다 돌아올 때만 알린다(iOS `scenePhase`). 처음 붙을 때 받는 시작 알림은 넘긴다. */
+/**
+ * 앱이 배경으로 갔다 돌아올 때만 알린다(iOS `scenePhase`). 처음 붙을 때 받는 시작 알림은 넘긴다.
+ * 탭을 바꿔 화면이 빠져도 [viewModel]이 남아 있는 동안은 계속 본다(iOS `TabView`의 숨은 탭도 `scenePhase`를 받는다).
+ * 그래서 숨은 탭에서 앱이 배경으로 가도 팩 감시 · 폴링이 멈춘다. [viewModel]이 정리되거나 [lifecycleOwner]가 끝나면 관찰을 뗀다.
+ */
 @Composable
-internal fun ForegroundEffect(lifecycleOwner: LifecycleOwner, onForegroundChanged: (Boolean) -> Unit) {
+internal fun ForegroundEffect(
+    lifecycleOwner: LifecycleOwner,
+    viewModel: ViewModel,
+    onForegroundChanged: (Boolean) -> Unit,
+) {
     val current by rememberUpdatedState(onForegroundChanged)
-    DisposableEffect(lifecycleOwner) {
-        var stopped = false
-        val observer =
-            LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_STOP -> {
-                        stopped = true
-                        current(false)
-                    }
+    DisposableEffect(lifecycleOwner, viewModel) {
+        val binding =
+            viewModel.getCloseable<ForegroundBinding>(ForegroundBinding.KEY)
+                ?: ForegroundBinding().also { viewModel.addCloseable(ForegroundBinding.KEY, it) }
+        binding.bind(lifecycleOwner) { current(it) }
+        // 화면에서 빠질 때는 떼지 않는다. ViewModel 수명(정리 · 수명 주기 끝)에 맞춰 뗀다.
+        onDispose {}
+    }
+}
 
-                    Lifecycle.Event.ON_START -> if (stopped) current(true)
-
-                    else -> Unit
+/** [ForegroundEffect]가 ViewModel 수명 동안 붙여 두는 관찰. 수명 주기가 바뀌면(설정 변경) 새 것으로 옮긴다. */
+internal class ForegroundBinding : AutoCloseable {
+    private var owner: LifecycleOwner? = null
+    private var stopped = false
+    private var onForegroundChanged: (Boolean) -> Unit = {}
+    private val observer =
+        LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    stopped = true
+                    onForegroundChanged(false)
                 }
+
+                Lifecycle.Event.ON_START -> if (stopped) onForegroundChanged(true)
+
+                Lifecycle.Event.ON_DESTROY -> unbind()
+
+                else -> Unit
             }
+        }
+
+    fun bind(lifecycleOwner: LifecycleOwner, onForegroundChanged: (Boolean) -> Unit) {
+        this.onForegroundChanged = onForegroundChanged
+        if (owner === lifecycleOwner) return
+        unbind()
+        owner = lifecycleOwner
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    private fun unbind() {
+        owner?.lifecycle?.removeObserver(observer)
+        owner = null
+    }
+
+    override fun close() = unbind()
+
+    companion object {
+        const val KEY = "io.festicore.feature.festival.ForegroundBinding"
     }
 }
 
