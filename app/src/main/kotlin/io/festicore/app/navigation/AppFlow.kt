@@ -27,19 +27,24 @@ import io.festicore.feature.auth.LaunchLoginFlow
 import io.festicore.feature.auth.LoginSheet
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalFlow
+import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.flag.FlagCoordinator
 import io.festicore.feature.festival.flag.FlagFlow
 import io.festicore.feature.festival.flag.FlagViewModel
 import io.festicore.feature.festival.flag.flagDetailContext
 import io.festicore.feature.festival.flag.flagTabInput
+import io.festicore.feature.festival.flag.rememberFlagFlowEntries
+import io.festicore.feature.festival.rememberFestivalFlowEntries
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
 import io.festicore.feature.profile.ProfileCoordinator
 import io.festicore.feature.profile.ProfileFlow
+import io.festicore.feature.profile.rememberProfileFlowEntries
 import io.festicore.feature.timetable.TimetableCoordinator
 import io.festicore.feature.timetable.TimetableFlow
 import io.festicore.feature.timetable.main.TimetableViewModel
+import io.festicore.feature.timetable.rememberTimetableFlowEntries
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -126,6 +131,7 @@ private fun HomeWithCovers(
     coordinator: AppCoordinator,
     mainTab: MainTabCoordinator = koinViewModel(),
     festivalCoordinator: FestivalCoordinator = koinViewModel(),
+    festivalListViewModel: FestivalListViewModel = koinViewModel(),
     flagCoordinator: FlagCoordinator = koinViewModel(),
     flagViewModel: FlagViewModel = koinViewModel(),
     profileCoordinator: ProfileCoordinator = koinViewModel(),
@@ -159,6 +165,31 @@ private fun HomeWithCovers(
             is AppCoordinatorSideEffect.OpenDeeplink -> mainTab.open(sideEffect.deeplink)
         }
     }
+    // 탭마다 스택 항목을 탭 밖에서 만들어 둔다. 고른 탭만 그려도 다른 탭의 화면 ViewModel · 저장 상태가 남고(iOS `TabView`),
+    // 스택에서 빠진 항목(계정 변경 정리 등)은 탭이 안 보여도 바로 정리된다(Navigation 3 `rememberDecoratedNavEntries` 여러 백스택).
+    val festivalEntries = rememberFestivalFlowEntries(coordinator = festivalCoordinator, listViewModel = festivalListViewModel)
+    val flagEntries =
+        rememberFlagFlowEntries(
+            detailContext = flagDetailContext,
+            onLoginRequested = { context -> coordinator.onLoginRequested(mainTabState.flagLoginContext(context)) },
+            onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
+            coordinator = flagCoordinator,
+            flagViewModel = flagViewModel,
+        )
+    val profileEntries =
+        rememberProfileFlowEntries(
+            account = coordinator.account,
+            onLoginRequested = { coordinator.onLoginRequested(mainTabState.loginContext(null)) },
+            onGoogleLoginRequested = coordinator::onGoogleLoginRequested,
+            onFestivalListRequested = mainTab::onFestivalListRequested,
+            onLogoutRequested = coordinator::onLogoutRequested,
+            onWithdrawRequested = coordinator::onWithdrawRequested,
+            onRefreshRequested = coordinator::onProfileRefreshRequested,
+            onNicknameUpdated = coordinator::onNicknameUpdated,
+            legalDocument = { page, onBack -> WebScreen(page = page, onBackToRoot = onBack) },
+            coordinator = profileCoordinator,
+        )
+    val timetableEntries = rememberTimetableFlowEntries(coordinator = timetableCoordinator, timetableViewModel = timetableViewModel)
     val mainTabOffset by animateFloatAsState(
         targetValue = if (state.launchLogin) 1f else 0f,
         animationSpec = LaunchTransitions.coverTween(),
@@ -192,6 +223,7 @@ private fun HomeWithCovers(
                         mainTab.onLiveRequestConsumed()
                     }
                     FestivalFlow(
+                        entries = festivalEntries,
                         onHidesTabBarChanged = onHidesTabBarChanged,
                         onFlagTabRequested = onFlagTabRequested,
                         onLoginRequested = { context ->
@@ -199,37 +231,28 @@ private fun HomeWithCovers(
                         },
                         onPackDirectionsRequested = mainTab::onPackDirectionsRequested,
                         coordinator = festivalCoordinator,
+                        listViewModel = festivalListViewModel,
                     )
                 },
                 flagContent = {
                     FlagFlow(
+                        entries = flagEntries,
                         input = flagBoard.flagTabInput(accountId),
-                        detailContext = flagDetailContext,
-                        onLoginRequested = { context ->
-                            coordinator.onLoginRequested(mainTabState.flagLoginContext(context))
-                        },
-                        onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
                         coordinator = flagCoordinator,
                         flagViewModel = flagViewModel,
                     )
                 },
                 myContent = { onHidesTabBarChanged ->
                     ProfileFlow(
+                        entries = profileEntries,
                         account = coordinator.account,
                         onHidesTabBarChanged = onHidesTabBarChanged,
-                        onLoginRequested = { coordinator.onLoginRequested(mainTabState.loginContext(null)) },
-                        onGoogleLoginRequested = coordinator::onGoogleLoginRequested,
-                        onFestivalListRequested = mainTab::onFestivalListRequested,
-                        onLogoutRequested = coordinator::onLogoutRequested,
-                        onWithdrawRequested = coordinator::onWithdrawRequested,
-                        onRefreshRequested = coordinator::onProfileRefreshRequested,
-                        onNicknameUpdated = coordinator::onNicknameUpdated,
-                        legalDocument = { page, onBack -> WebScreen(page = page, onBackToRoot = onBack) },
                         coordinator = profileCoordinator,
                     )
                 },
                 timetableContent = { onHidesTabBarChanged ->
                     TimetableFlow(
+                        entries = timetableEntries,
                         onHidesTabBarChanged = onHidesTabBarChanged,
                         coordinator = timetableCoordinator,
                         timetableViewModel = timetableViewModel,

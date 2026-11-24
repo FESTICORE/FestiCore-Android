@@ -83,7 +83,7 @@ fun ZoneMapScreen(
         viewModel.onAppear()
         onDispose { viewModel.onDisappear() }
     }
-    ForegroundEffect(foregroundLifecycleOwner, viewModel::onForegroundChanged)
+    ForegroundEffect(foregroundLifecycleOwner, viewModel, viewModel::onForegroundChanged)
 
     val now = remember(state) { clock.instant() }
     ZoneMapContent(

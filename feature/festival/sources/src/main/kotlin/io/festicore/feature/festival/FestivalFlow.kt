@@ -5,7 +5,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.festival.common.FestivalTransitions
@@ -33,12 +36,13 @@ import org.orbitmvi.orbit.compose.collectSideEffect
  * 보드는 깃발 탭이 따를 값([FlagBoard])을 Coordinator에 알린다. 보드가 화면에 있는 동안만 갱신한다.
  * 상위(메인 탭)는 그 값으로 탭 바를 숨긴다(iOS `MainTabCoordinator.shouldHideTabBar`: 스택이 목록뿐이거나 보드에 시트 · 알림창이 떠 있음).
  * Coordinator와 목록 ViewModel은 이 흐름을 그린 범위(메인 탭 항목)에 둔다. 탭을 바꿔 흐름이 화면에서 빠져도 목록 상태가 남는다.
- * 보드 ViewModel은 스택 항목 범위라 pop하면 정리된다.
+ * 보드 ViewModel은 스택 항목 범위라 pop하면 정리된다. 스택 항목([entries])은 탭을 바꿔도 남는 범위에서 [rememberFestivalFlowEntries]로 만들어 받는다.
  * 포그라운드는 스택 바깥 수명 주기로 본다. 스택 항목 수명 주기는 위에 화면이 쌓이면 내려가므로, 목록 위에 보드를 쌓아도
  * 목록에서 시작한 팩 받기가 취소되지 않는다.
  */
 @Composable
 fun FestivalFlow(
+    entries: List<NavEntry<NavKey>>,
     onHidesTabBarChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     onFlagTabRequested: () -> Unit = {},
@@ -58,20 +62,35 @@ fun FestivalFlow(
     LaunchedEffect(state.hidesTabBar) { onHidesTabBarChanged(state.hidesTabBar) }
     // 라이브 탭을 고를 때마다 흐름이 다시 그려진다(iOS `MainTabCoordinator` `.live` → `reloadCachedPacks`).
     LaunchedEffect(Unit) { listViewModel.onReloadCachedPacks() }
-    val flowLifecycleOwner = LocalLifecycleOwner.current
     ListForegroundEffect(
-        lifecycleOwner = flowLifecycleOwner,
+        lifecycleOwner = LocalLifecycleOwner.current,
         onForegroundChanged = listViewModel::onForegroundChanged,
         onBackgrounded = listViewModel::onBackgrounded,
     )
 
     NavDisplay(
-        backStack = state.routes,
+        entries = entries,
         modifier = modifier,
         onBack = coordinator::goBack,
         transitionSpec = { FestivalTransitions.push() },
         popTransitionSpec = { FestivalTransitions.pop() },
         predictivePopTransitionSpec = { FestivalTransitions.pop() },
+    )
+}
+
+/**
+ * 라이브 스택 항목. 탭을 바꿔도 남는 범위(메인 탭 항목)에서 부른다. 항목 범위(화면 ViewModel · 저장 상태)는 탭을 바꿔도 남고
+ * 스택에서 빠질 때만 정리된다(Navigation 3 `rememberDecoratedNavEntries` 여러 백스택 방식).
+ */
+@Composable
+fun rememberFestivalFlowEntries(
+    coordinator: FestivalCoordinator = koinViewModel(),
+    listViewModel: FestivalListViewModel = koinViewModel(),
+): List<NavEntry<NavKey>> {
+    val state by coordinator.collectAsState()
+    val flowLifecycleOwner = LocalLifecycleOwner.current
+    return rememberDecoratedNavEntries(
+        backStack = state.routes,
         entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),

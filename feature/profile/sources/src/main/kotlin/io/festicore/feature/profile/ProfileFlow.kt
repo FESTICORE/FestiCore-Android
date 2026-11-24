@@ -6,7 +6,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.domain.auth.entity.AuthUser
@@ -32,6 +35,36 @@ import org.orbitmvi.orbit.compose.collectAsState
  * 약관 문서는 `feature/web` 화면이라 상위가 [legalDocument]로 그린다(가입 흐름과 같은 방식).
  * Coordinator와 마이 ViewModel은 이 흐름을 그린 범위(메인 탭 항목)에 둔다. 탭을 바꿔도 스택과 받은 팩 목록이 남고,
  * 마이 화면이 다시 보일 때마다 팩을 다시 읽는다(iOS `onAppear`).
+ * 스택 항목([entries])은 탭을 바꿔도 남는 범위에서 [rememberProfileFlowEntries]로 만들어 받는다.
+ */
+@Composable
+fun ProfileFlow(
+    entries: List<NavEntry<NavKey>>,
+    account: StateFlow<AccountState>,
+    onHidesTabBarChanged: (hides: Boolean, reservesSpace: Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    coordinator: ProfileCoordinator = koinViewModel(),
+) {
+    val state by coordinator.collectAsState()
+    val currentAccount by account.collectAsState()
+    LaunchedEffect(currentAccount) { coordinator.onAccountChanged(currentAccount) }
+    LaunchedEffect(state.hidesTabBar, state.reservesTabBarSpace) {
+        onHidesTabBarChanged(state.hidesTabBar, state.reservesTabBarSpace)
+    }
+
+    NavDisplay(
+        entries = entries,
+        modifier = modifier,
+        onBack = coordinator::goBack,
+        transitionSpec = { ProfileTransitions.push() },
+        popTransitionSpec = { ProfileTransitions.pop() },
+        predictivePopTransitionSpec = { ProfileTransitions.pop() },
+    )
+}
+
+/**
+ * 마이 스택 항목. 탭을 바꿔도 남는 범위(메인 탭 항목)에서 부른다. 항목 범위(설정 · 팩 상세 ViewModel · 저장 상태)는 탭을 바꿔도 남고
+ * 스택에서 빠질 때만 정리된다(Navigation 3 `rememberDecoratedNavEntries` 여러 백스택 방식).
  *
  * @param onLoginRequested 로그인 시트 요청(문맥은 상위가 탭 기본으로 정한다, iOS `loginRequested`)
  * @param onGoogleLoginRequested 로그인 카드 Google 버튼(iOS `socialLoginRequested(.google)`)
@@ -42,9 +75,8 @@ import org.orbitmvi.orbit.compose.collectAsState
  * @param onNicknameUpdated 닉네임을 바꿨다(iOS `profileUpdated`)
  */
 @Composable
-fun ProfileFlow(
+fun rememberProfileFlowEntries(
     account: StateFlow<AccountState>,
-    onHidesTabBarChanged: (hides: Boolean, reservesSpace: Boolean) -> Unit,
     onLoginRequested: () -> Unit,
     onGoogleLoginRequested: () -> Unit,
     onFestivalListRequested: () -> Unit,
@@ -53,24 +85,13 @@ fun ProfileFlow(
     onRefreshRequested: () -> Unit,
     onNicknameUpdated: (AuthUser) -> Unit,
     legalDocument: @Composable (page: WebPage, onBack: () -> Unit) -> Unit,
-    modifier: Modifier = Modifier,
     coordinator: ProfileCoordinator = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel { parametersOf(account.value) },
-) {
+): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val currentAccount by account.collectAsState()
-    LaunchedEffect(currentAccount) { coordinator.onAccountChanged(currentAccount) }
-    LaunchedEffect(state.hidesTabBar, state.reservesTabBarSpace) {
-        onHidesTabBarChanged(state.hidesTabBar, state.reservesTabBarSpace)
-    }
-
-    NavDisplay(
+    return rememberDecoratedNavEntries(
         backStack = state.routes,
-        modifier = modifier,
-        onBack = coordinator::goBack,
-        transitionSpec = { ProfileTransitions.push() },
-        popTransitionSpec = { ProfileTransitions.pop() },
-        predictivePopTransitionSpec = { ProfileTransitions.pop() },
         entryDecorators =
             listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
