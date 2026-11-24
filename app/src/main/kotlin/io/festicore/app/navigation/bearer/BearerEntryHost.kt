@@ -1,12 +1,19 @@
 package io.festicore.app.navigation.bearer
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.ui.NavDisplay
 import io.festicore.domain.bearer.entity.BearerFlagProfile
+import io.festicore.domain.bearer.entity.BearerSet
 import io.festicore.feature.bearer.BearerRoute
 import io.festicore.feature.bearer.board.BearerBoardScreen
 import io.festicore.feature.bearer.claim.BearerClaimScreen
@@ -29,87 +36,106 @@ fun BearerEntryHost(
     onPackRequested: (festivalId: String) -> Unit,
     onClose: () -> Unit,
 ) {
-    val routes = remember(startRoute) { mutableStateListOf(startRoute) }
+    val routes = remember(startRoute) { mutableStateListOf<NavKey>(startRoute) }
     var claimedProfile by remember(startRoute) { mutableStateOf<BearerFlagProfile?>(null) }
-    var newBearer by remember(startRoute) { mutableStateOf(false) }
-    var profileViewModel by remember { mutableStateOf<BearerProfileViewModel?>(null) }
-    var planSets by remember(startRoute) { mutableStateOf(emptyList<io.festicore.domain.bearer.entity.BearerSet>()) }
-    val route = routes.last()
+    var planSets by remember(startRoute) { mutableStateOf(emptyList<BearerSet>()) }
+    var initialPlan by remember { mutableStateOf(emptyList<String>()) }
+    var selectedPlan by remember { mutableStateOf<List<String>?>(null) }
+
     fun push(next: BearerRoute) {
         routes.add(next)
     }
+
     fun closeOrPop() {
         if (routes.size > 1) routes.removeAt(routes.lastIndex) else onClose()
     }
 
-    when (route) {
-        is BearerRoute.Register -> {
-            val viewModel: BearerRegisterViewModel = koinViewModel { parametersOf(route.preferredFestivalId) }
-            BearerRegisterScreen(
-                viewModel = viewModel,
-                onRegistered = { flagId, festivalId ->
-                    claimedProfile = null
-                    newBearer = true
-                    onRegistered(festivalId)
-                    push(BearerRoute.Profile(festivalId, flagId, isNewBearer = true))
-                },
-                onPackRequested = onPackRequested,
-                onFinished = { closeOrPop() },
-                onClaimRequested = { push(BearerRoute.Claim(it)) },
-                onBackRequested = { closeOrPop() },
-                onCloseRequested = onClose,
-            )
-        }
+    val entries =
+        androidx.navigation3.runtime.rememberDecoratedNavEntries(
+            backStack = routes,
+            entryDecorators =
+                listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+            entryProvider =
+                entryProvider {
+                    entry<BearerRoute.Register> { route ->
+                        val viewModel: BearerRegisterViewModel = koinViewModel { parametersOf(route.preferredFestivalId) }
+                        BearerRegisterScreen(
+                            viewModel = viewModel,
+                            onRegistered = { flagId, festivalId ->
+                                claimedProfile = null
+                                onRegistered(festivalId)
+                                push(BearerRoute.Profile(festivalId, flagId, isNewBearer = true))
+                            },
+                            onPackRequested = onPackRequested,
+                            onFinished = { closeOrPop() },
+                            onClaimRequested = { push(BearerRoute.Claim(it)) },
+                            onBackRequested = ::closeOrPop,
+                            onCloseRequested = onClose,
+                        )
+                    }
 
-        is BearerRoute.Claim -> {
-            val viewModel: BearerClaimViewModel = koinViewModel { parametersOf(route.festivalId) }
-            BearerClaimScreen(
-                viewModel = viewModel,
-                onClaimed = { festivalId, claim ->
-                    claimedProfile = claim.profile
-                    newBearer = claim.isNew
-                    push(BearerRoute.Profile(festivalId, claim.flagId, claim.isNew))
-                },
-                onCloseRequested = ::closeOrPop,
-            )
-        }
+                    entry<BearerRoute.Claim> { route ->
+                        val viewModel: BearerClaimViewModel = koinViewModel { parametersOf(route.festivalId) }
+                        BearerClaimScreen(
+                            viewModel = viewModel,
+                            onClaimed = { festivalId, claim ->
+                                claimedProfile = claim.profile
+                                push(BearerRoute.Profile(festivalId, claim.flagId, claim.isNew))
+                            },
+                            onCloseRequested = ::closeOrPop,
+                        )
+                    }
 
-        is BearerRoute.Profile -> {
-            val viewModel: BearerProfileViewModel =
-                koinViewModel { parametersOf(route.festivalId, route.flagId, claimedProfile, route.isNewBearer || newBearer) }
-            profileViewModel = viewModel
-            BearerProfileScreen(
-                viewModel = viewModel,
-                onFinished = { flagId ->
-                    routes.clear()
-                    routes.add(BearerRoute.Board(route.festivalId, flagId))
-                },
-                onPlanRequested = { festivalId ->
-                    val current = viewModel.container.stateFlow.value
-                    push(BearerRoute.PlanPick(festivalId))
-                    planSets = current.sets
-                    claimedProfile = BearerFlagProfile(id = current.flagId, name = current.name, plan = current.plan)
-                },
-                onCloseRequested = ::closeOrPop,
-            )
-        }
+                    entry<BearerRoute.Profile> { route ->
+                        val viewModel: BearerProfileViewModel =
+                            koinViewModel { parametersOf(route.festivalId, route.flagId, claimedProfile, route.isNewBearer) }
+                        LaunchedEffect(viewModel, selectedPlan) {
+                            selectedPlan?.let { plan ->
+                                viewModel.onPlanChanged(plan)
+                                selectedPlan = null
+                            }
+                        }
+                        BearerProfileScreen(
+                            viewModel = viewModel,
+                            onFinished = { flagId ->
+                                routes.clear()
+                                routes.add(BearerRoute.Board(route.festivalId, flagId))
+                            },
+                            onPlanRequested = { festivalId ->
+                                val current = viewModel.container.stateFlow.value
+                                planSets = current.sets
+                                initialPlan = current.plan
+                                push(BearerRoute.PlanPick(festivalId))
+                            },
+                            onCloseRequested = ::closeOrPop,
+                        )
+                    }
 
-        is BearerRoute.PlanPick -> {
-            val profile = claimedProfile
-            val viewModel: BearerPlanPickViewModel =
-                koinViewModel { parametersOf(planSets, profile?.plan.orEmpty()) }
-            BearerPlanPickScreen(
-                viewModel = viewModel,
-                onPicked = { setIds ->
-                    profileViewModel?.onPlanChanged(setIds)
-                    closeOrPop()
+                    entry<BearerRoute.PlanPick> { route ->
+                        val viewModel: BearerPlanPickViewModel = koinViewModel { parametersOf(planSets, initialPlan) }
+                        BearerPlanPickScreen(
+                            viewModel = viewModel,
+                            onPicked = { setIds ->
+                                selectedPlan = setIds
+                                closeOrPop()
+                            },
+                            onCloseRequested = ::closeOrPop,
+                        )
+                    }
+
+                    entry<BearerRoute.Board> { route ->
+                        BearerBoardScreen(route = route, viewerUserId = viewerUserId, onClose = ::closeOrPop)
+                    }
+
+                    entry<BearerRoute.RoleChoice> { onClose() }
                 },
-                onCloseRequested = ::closeOrPop,
-            )
-        }
+        )
 
-        is BearerRoute.Board -> BearerBoardScreen(route = route, viewerUserId = viewerUserId, onClose = ::closeOrPop)
-
-        BearerRoute.RoleChoice -> onClose()
-    }
+    NavDisplay(
+        entries = entries,
+        onBack = ::closeOrPop,
+    )
 }
