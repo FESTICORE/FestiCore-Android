@@ -42,7 +42,7 @@ RULES = [
      r"^\s*(implementation|api)\(project\(\":(service:(pack|device|auth)|core:(network|storage)):sources\"\)",
      "다른 모듈은 :interface를 의존한다. sources는 assembly · app이 연결한다(iOS Interface/Sources). 테스트는 testImplementation 허용"),
     ("단일 feature 모듈은 app · featureassembly만 의존한다", "feature/**/build.gradle.kts",
-     ["feature/featureassembly/**"], r"project\(\s*\":feature:onboarding\"\s*\)",
+     ["feature/featureassembly/**"], r"project\(\s*\":feature:onboarding\"\s*\)|projects\.feature\.onboarding\b",
      "interface 없는 feature(iOS Feature/Onboarding)는 다른 feature가 보지 않는다. app이 직접 연결한다"),
     ("domain interface는 순수 Kotlin이다", "domain/*/interface/**/*.kt",
      [], r"^\s*import\s+(android\.|androidx\.|org\.koin\.|io\.ktor\.)",
