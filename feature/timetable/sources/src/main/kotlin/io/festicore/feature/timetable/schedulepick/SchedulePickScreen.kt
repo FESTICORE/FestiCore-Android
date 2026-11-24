@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.timetable.TimetableDay
 import io.festicore.feature.timetable.SchedulePickResult
+import io.festicore.feature.timetable.TimetablePushGate
 import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.ui.designkit.component.action.FCButton
 import io.festicore.ui.designkit.component.action.FCButtonStyle
@@ -126,11 +127,15 @@ private fun Header() {
             style = FestiCoreTextStyle.baseTitle2Bold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
         )
         BasicText(
-            text = "고른 무대는 시작 10분 전에 알려 드려요.\n나중에 타임테이블에서 언제든 바꿀 수 있어요.",
+            text = schedulePickGuide(),
             style = FestiCoreTextStyle.baseSubheadlineRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
         )
     }
 }
+
+/** 머리 안내(iOS 그대로). 푸시 전([TimetablePushGate])에는 알림 약속 줄을 빼고 바꾸기 안내만 둔다(설계 "P0 전 임시 숨김"). */
+internal fun schedulePickGuide(isPushReady: Boolean = TimetablePushGate.IS_PUSH_READY): String =
+    if (isPushReady) "고른 무대는 시작 10분 전에 알려 드려요.\n나중에 타임테이블에서 언제든 바꿀 수 있어요." else "나중에 타임테이블에서 언제든 바꿀 수 있어요."
 
 @Composable
 private fun SetList(state: SchedulePickState, onSetTapped: (String) -> Unit) {

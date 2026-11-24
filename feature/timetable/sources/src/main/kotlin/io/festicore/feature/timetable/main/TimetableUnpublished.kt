@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.timetable.TimetableLineupDay
+import io.festicore.feature.timetable.TimetablePushGate
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButtonStyle
 import io.festicore.ui.designkit.component.card.FCCardAction
@@ -50,7 +51,6 @@ internal fun TimetableUnpublished(
                 .fcScrollBottomInset(),
         verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP24 + FestiCoreSpacing.marginM2),
     ) {
-        val isSaving = notificationStatus == TimetableNotificationStatus.Saving
         FCEmptyCard(
             title = "시간표가 공개되면 알려 드릴게요",
             message = notificationMessage(notificationStatus),
@@ -59,10 +59,21 @@ internal fun TimetableUnpublished(
                     .background(FestiCoreSemanticColor.backgroundElevated.color, RoundedCornerShape(FestiCoreRadius.r16))
                     .padding(bottom = FestiCoreSpacing.marginM6),
             icon = R.drawable.ic_bell,
-            action = FCCardAction(if (isSaving) "설정 중" else "알림 받기", FCButtonStyle.Primary) { if (!isSaving) onNotify() },
+            action = notifyAction(notificationStatus, onNotify),
         )
         lineup.forEach { day -> LineupSection(day) }
     }
+}
+
+/** "알림 받기"(저장 중이면 "설정 중" · 무동작). 팩 알림 켜기(A1)와 푸시(P0) 전에는 눌러도 아무 일이 없어 숨긴다([TimetablePushGate]). */
+internal fun notifyAction(
+    status: TimetableNotificationStatus,
+    onNotify: () -> Unit,
+    isPushReady: Boolean = TimetablePushGate.IS_PUSH_READY,
+): FCCardAction? {
+    if (!isPushReady) return null
+    val isSaving = status == TimetableNotificationStatus.Saving
+    return FCCardAction(if (isSaving) "설정 중" else "알림 받기", FCButtonStyle.Primary) { if (!isSaving) onNotify() }
 }
 
 internal fun notificationMessage(status: TimetableNotificationStatus): String = when (status) {

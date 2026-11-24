@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import io.festicore.domain.timetable.TimetableSetDetail
+import io.festicore.feature.timetable.TimetablePushGate
 import io.festicore.feature.timetable.main.TimetableState
 import io.festicore.ui.designkit.component.modal.FCSheet
 import io.festicore.ui.designkit.component.toast.FCToast
@@ -83,9 +84,13 @@ internal fun sheetState(detail: TimetableSetDetail): FCSetSheetState {
     return FCSetSheetState.Default
 }
 
-/** 서버가 저장한 공연을 시작 10분 전에 알린다(Figma S03, iOS `scheduleHelper`). */
-internal fun scheduleHelper(content: TimetableSetDetailContent): String = when {
+/**
+ * 서버가 저장한 공연을 시작 10분 전에 알린다(Figma S03, iOS `scheduleHelper`).
+ * 푸시 전([TimetablePushGate])에는 알림을 약속하지 않도록 기본 안내를 비운다(설계 "P0 전 임시 숨김").
+ */
+internal fun scheduleHelper(content: TimetableSetDetailContent, isPushReady: Boolean = TimetablePushGate.IS_PUSH_READY): String? = when {
     content.isScheduleLoading -> "내 일정을 불러오는 중이에요"
     content.isScheduleLimitReached -> "내 일정은 최대 ${TimetableState.SCHEDULE_LIMIT}개까지 저장할 수 있어요"
-    else -> "공연 10분 전에 알려 드려요"
+    isPushReady -> "공연 10분 전에 알려 드려요"
+    else -> null
 }

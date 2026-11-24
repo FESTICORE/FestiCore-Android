@@ -15,7 +15,8 @@ iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Ma
 - 입력은 앱 범위 공유 상태 `FestivalBoardSelectionUseCase.selection`(보드가 쓴다, 설계 T1)이고, 팩 → 날짜 변환은 `FestivalPackTimetableMapper`(`domain/timetable/.spec/timetable-mapping.md`)가 한다.
 - 내 일정은 서버와 맞춘다(`FestivalScheduleUseCase` 읽기 · 저장 · 저장 알림). 계정은 `CurrentUserProvider.currentUserId`로 본다.
 - 탭 흐름은 `TimetableCoordinator` · `TimetableFlow`(아래 "탭 흐름")가 맡고, app `MainTabScreen` 타임테이블 자리에 그린다(#198).
-- 범위 밖: "알림 받기" 처리(A1, 푸시 P0 뒤 — 지금은 눌러도 아무 일도 없다), 공연 딥링크 · 10분 전 푸시(P0), 준비 안내 연결(PrepGuide).
+- 범위 밖: "알림 받기" 처리(A1, 푸시 P0 뒤), 공연 딥링크 · 10분 전 푸시(P0), 준비 안내 연결(PrepGuide).
+- **P0 전 임시 숨김**: `TimetablePushGate.IS_PUSH_READY = false`인 동안 공연 시트 기본 도움말 "공연 10분 전에 알려 드려요"(줄 자체를 숨김)와 공개 전 카드 "알림 받기" 버튼을 숨긴다. P0 · A1이 들어오면 이 값 하나만 `true`로 바꾼다. 공개 전 카드 제목 "시간표가 공개되면 알려 드릴게요"는 iOS 문구 그대로 둔다.
 
 ## 동작 규칙
 
@@ -62,7 +63,7 @@ iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Ma
 
 - 블록을 누르면 그 공연 내용으로 연다(없는 ID면 닫힘). 다른 공연을 열면 토스트를 멈춘다.
 - 내용: 아티스트, 무대(없으면 "무대 미정"), `timeRangeWithDuration`, 진행 상태, 내 일정 여부, 첫 겹침, 변경 전 시각 · 변경 문구, 사진, 메모, 출처.
-- 시트 상태 우선순위: 끝남 → 겹침 → 변경 → 기본. 도움말: 읽는 중 "내 일정을 불러오는 중이에요"(토글 꺼짐) / 한도 "내 일정은 최대 60개까지 저장할 수 있어요" / 기본 "공연 10분 전에 알려 드려요".
+- 시트 상태 우선순위: 끝남 → 겹침 → 변경 → 기본. 도움말: 읽는 중 "내 일정을 불러오는 중이에요"(토글 꺼짐) / 한도 "내 일정은 최대 60개까지 저장할 수 있어요" / 기본 "공연 10분 전에 알려 드려요"(P0 전 임시 숨김 — 줄 없음).
 - 토글: 동기화 `Loading`이면 무시. 빼면 한도 안내 끔. 넣을 때 끝난 공연은 거절, 이미 60개면 한도 안내만 켬. 바꾼 뒤 겹침이 있으면 격자 경고를 켠다. 넣으면 "내 일정에 추가됐어요" 토스트 2초(다시 넣으면 처음부터), 빼거나 시트를 닫거나 다른 공연 · 축제로 바뀌면 바로 숨긴다. 동기화 `Ready`일 때만 서버에 저장한다(`LocalOnly` · `Idle`은 이 기기 표시만).
 - 닫으면 한도 안내를 끈다. 시트는 `FCSheet`(창 위라 탭 바까지 덮음), 토스트는 시트 위 accessory(아래에서 올라오며 0.25초).
 

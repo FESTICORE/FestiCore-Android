@@ -403,6 +403,8 @@ TimetableCoordinatorState.hidesTabBar =
 
 순서: D1 → D2 → G1 → S1 → S2 → S3 → **P0(푸시 · 기기 등록, 별도 설계)** → A1 → C1. A1 · C1과 PrepGuide 연결(live-extras P2 이후)은 **P0이 develop에 머지된 뒤에만** 머지한다(각 PR 검증 기준에 "P0 머지 확인" 포함). 푸시(10분 전 · FCM · 채널 · `POST_NOTIFICATIONS` 요청 · 딥링크)는 P0 문서가 맡는다. PrepGuide 1단계 연결은 live-extras P2에서 이 문서의 S3 화면을 쓴다. 각 PR은 `verify --all` · CI 통과 후 squash merge.
 
+**변경(2026-11-24, #198)**: C1(탭 연결)은 P0보다 먼저 머지한다. 대신 **P0 전 임시 숨김**으로 거짓 약속을 없앤다: `feature/timetable` `TimetablePushGate.IS_PUSH_READY = false` 하나로 공연 시트 "공연 10분 전에 알려 드려요"(줄 숨김) · 내 일정 고르기 머리 안내의 "고른 무대는 시작 10분 전에 알려 드려요." 줄 · 공개 전 "알림 받기" 버튼을 숨긴다. P0 · A1 PR이 이 값을 `true`로 바꾼다. 공개 전 카드 제목 "시간표가 공개되면 알려 드릴게요"는 그대로 둔다.
+
 ### 기능 spec (`.spec/`)
 
 | PR           | spec 파일                                                                                                              | 담는 내용                                                      |

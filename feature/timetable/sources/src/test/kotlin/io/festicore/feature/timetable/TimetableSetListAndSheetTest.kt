@@ -96,6 +96,6 @@ class TimetableSetListAndSheetTest {
     fun scheduleHelperExplainsLoadingAndLimit() {
         assertEquals("내 일정을 불러오는 중이에요", scheduleHelper(content(isScheduleLoading = true, isScheduleLimitReached = true)))
         assertEquals("내 일정은 최대 60개까지 저장할 수 있어요", scheduleHelper(content(isScheduleLimitReached = true)))
-        assertEquals("공연 10분 전에 알려 드려요", scheduleHelper(content()))
+        assertEquals("공연 10분 전에 알려 드려요", scheduleHelper(content(), isPushReady = true))
     }
 }

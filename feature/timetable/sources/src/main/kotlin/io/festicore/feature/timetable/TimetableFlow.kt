@@ -22,7 +22,7 @@ import org.orbitmvi.orbit.compose.collectAsState
  * [coordinator]와 [timetableViewModel]은 메인 탭 범위에 두어 다른 탭에 다녀와도 스택 · 날짜 · 내 일정을 유지한다(설계 "탭 바 규칙").
  * 탭을 고를 때마다 이 흐름이 다시 그려지므로 그때 `onTimetableAppeared`를 부른다(iOS `MTC:337-341` `appearing: true`).
  * 탭 바 숨김(쌓인 화면 · 공연 시트)은 [onHidesTabBarChanged]로 알린다(iOS `MTC:101-104`).
- * 공개 전 "알림 받기"는 팩 알림 설정(A1, 푸시 P0 뒤)이 들어올 때 잇는다. 지금은 누르면 아무 일도 하지 않는다.
+ * 공개 전 "알림 받기"는 팩 알림 설정(A1, 푸시 P0 뒤)이 들어올 때 잇는다. 그 전에는 [TimetablePushGate]로 버튼을 숨긴다.
  */
 @Composable
 fun TimetableFlow(
