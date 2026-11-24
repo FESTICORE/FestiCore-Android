@@ -8,7 +8,7 @@ modules: [feature/bearer, feature/featureassembly]
 > 기수가 코드 인증 · 깃발 등록 · 프로필 · 오늘 계획 · 기수 보드 화면을 거쳐 깃발을 맡고 상태를 바꾼다. 이 문서는 화면이 들어올 때마다(BS1~BC2) 갱신한다.
 
 iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swift` · `Sources/{Claim,Register,Profile,Plan,Board}`).
-설계: `.claude/docs/specs/2026-11-24-bearer-android-design.md`(화면 2 기수 인증 · 화면 3 깃발 프로필 · 화면 4 오늘 계획 고르기 · 화면 전환 · iOS → Android 적응 · PR BS1 · BS2).
+설계: `.claude/docs/specs/2026-11-24-bearer-android-design.md`(화면 2 기수 인증 · 화면 3 깃발 프로필 · 화면 4 오늘 계획 고르기 · 화면 5 깃발 등록 · 화면 6 기수 여부 · 화면 전환 · iOS → Android 적응 · PR BS1 · BS2 · BS3).
 
 ## 개요
 
@@ -16,7 +16,8 @@ iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swif
 | --- | --- | --- |
 | 기수 인증(S13 F~I) | `claim/` | BS1 |
 | 깃발 프로필(S10 A~E) · 오늘 계획 고르기 | `profile/` · `plan/` | BS2 |
-| 보드 · 등록 · 기수 여부 | `board/` · `register/` | 아직(BS3~BS4) |
+| 깃발 등록(S14 D · E) · 기수 여부(S14 C) | `register/` | BS3 |
+| 보드 | `board/` | 아직(BS4) |
 
 경로는 `feature/bearer/interface` `BearerRoute`(NavKey)에 둔다. 화면은 SideEffect를 받아 콜백만 부르고, 경로 연결 · Coordinator는 BC1(`app` `navigation/bearer/BearerEntryCoordinator`)에서 한다.
 
@@ -123,6 +124,54 @@ iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swif
 
 - 날짜 · 시각 문구는 feature 안 `BearerPlanFormat`(iOS `AppDateFormat.festivalDay` · `.time`)이다. feature는 `core`를 의존하지 않는다(`feature.md`).
 
+## 깃발 등록 (`register/`, iOS `BearerRegisterFeature` · `BearerRegisterView`)
+
+경로 `BearerRoute.Register(preferredFestivalId)`. ViewModel은 `BearerUseCase` · `FestivalCatalogUseCase` · `FestivalReceivedPackUseCase`(`domain/festival/interface`)를 받는다.
+
+### 동작 규칙
+
+1. 화면이 보이면(이미 불러왔으면 건너뜀) 받은 팩(실패면 빈 목록) → 서버 축제 목록(실패면 기기 저장 목록 + 오프라인)을 읽는다. 받은 팩을 먼저, 받지 않은 축제는 마지막 날(없으면 첫날)이 오늘(서울) 이후인 것만 첫날 순. 둘 다 비면 실패(오프라인 여부), "다시 시도"는 다시 읽는다. 앞으로 열리는 축제는 3개만 보이고 "다른 페스티벌 찾기"로 모두 보인다.
+2. 날짜 문구: `11/20-22`, 달이 다르면 `11/30-12/1`, 하루 · 마지막 날 없음은 `11/20`. 줄 문구는 "{이름} · {날짜}"(날짜 없으면 이름).
+3. 처음 고르기: 이미 고른 축제가 목록에 있으면 유지, 아니면 라이브 탭에서 연 축제 → 첫 받은 팩. 고르면 존 · 주로 있는 존을 비우고, 받은 팩이면 그 팩 존을 읽는다(아니면 읽던 것을 멈춤). 존을 읽으면 목록에 없는 주로 있는 존을 지운다. 저장 중에는 축제를 바꾸지 못한다.
+4. 이름 2~20 · 소개 60은 코드포인트로 센다. 태그 0~3(0개면 "초보 환영"으로 보냄), 존은 다시 누르면 해제. 이름을 바꾸면 이름 · 저장 오류를 지운다.
+5. 저장(`canSave`: 고른 축제 · 이름 길이 · 소개 길이 · 태그 수 · 이름 오류 없음 · 저장 중 아님). 마지막으로 보낸 요청과 축제 · 내용이 같으면 그 요청(같은 멱등키)을 다시 보낸다. 실패: `NameTaken` → 이름 칸 오류 + 팝업, `BearerLimit` → 팝업, `Offline` → 저장 문구(요청을 남김), 그 외 → 저장 문구. 오프라인 외에는 요청을 지운다.
+6. 성공: 실제로 보낸 요청의 축제로 저장 완료를 만들고 `Registered(flagId, festivalId)`, 고른 사진이 있으면 그때 올린다(실패면 완료 화면 안내).
+7. 완료 버튼: 팩 있음 "완료" → `Finished` · "공동 기수 초대하기" → 초대 팝업, 팩 없음 "{이름} 팩 받기" → `PackRequested` · "나중에 받을게요" → `Finished`.
+8. "공동 기수 초대 코드가 있어요"(축제를 골랐을 때) → `ClaimRequested(festivalId)`. 뒤로(상단 · 시스템) → `BackRequested`, "나중에 할게요" → `CloseRequested`. 둘 다 등록 요청을 취소한다.
+
+### 문구
+
+| 상황 | 문구 |
+| --- | --- |
+| 머리글 | "내 깃발을 만들어요" / "팔로워에게 보일 깃발 프로필이에요.\n지금 다 채우지 않아도 언제든 고칠 수 있어요." |
+| 페스티벌 | "어느 페스티벌의 깃발인가요?" · 실패 "인터넷에 연결되지 않아 페스티벌을 불러오지 못했어요." / "깃발을 만들 수 있는 페스티벌을 불러오지 못했어요." + "다시 시도" · "내가 받은 팩" · "다른 페스티벌" · 안내 "로그인 전에 받은 팩·핀한 페스티벌이 먼저 보여요. 깃발은 페스티벌마다 따로 만들어요." / "앞으로 열리는 페스티벌이에요. 깃발은 페스티벌마다 따로 만들어요." |
+| 설정 | "팔로워에게 오늘 계획 보여주기" / "오늘 계획과 공동 기수 초대는 깃발을 만든 뒤 깃발 프로필에서 고를 수 있어요." |
+| 버튼 | "만드는 중이에요" / "등록하고 기수 시작하기" · "나중에 할게요 · 마이에서 언제든 만들 수 있어요" · "공동 기수 초대 코드가 있어요" |
+| 저장 완료 | "깃발이 준비됐어요" / 팩 있음 "공연 당일 기수 보드에서 깃발을 올리면\n팔로워에게 알림이 가요." · 팩 없음 "현장에서 기수 보드를 쓰려면 {이름} 팩이 필요해요. 지금 받아 두면 통신이 끊겨도 쓸 수 있어요." · 사진 실패 "사진을 올리지 못했어요. 깃발 프로필에서 다시 골라 주세요." |
+| 팝업 | 이름 중복 "이미 있는 깃발 이름이에요" / "이 페스티벌에서 하나뿐인 이름이어야 해요. 다른 이름을 지어 주세요." · 한도 "이미 이 페스티벌의 기수예요" / "{축제 이름 또는 '이 페스티벌'}에는 깃발을 하나만 만들 수 있어요. 마이의 내 깃발에서 확인해 주세요." · 초대 · 초대 실패는 프로필과 같다(확인 · 닫기) |
+
+이름 · 소개 · 태그 · 존 문구와 저장 · 초대 실패 문구는 깃발 프로필과 같다.
+
+### 화면
+
+- 배경 `backgroundNormal`, `FCTopBar(Back, "깃발 프로필")`, 섹션 간격 28 · 그룹 간격 12, 패딩 `P16`, 아래 바는 프로필과 같다(`FCPrimaryButton` + `FCButton(Ghost, Medium)`).
+- 순서: 머리글 · 페스티벌(불러오는 중 스켈레톤 높이 44 × 3, 줄은 `BearerZoneButton`, 더 보기 `FCButton(Ghost)` 가운데) · `FCPhotoPicker`(고른 사진 또는 빈 칸) · 이름 · 소개 · 태그 · 존(팩에 존이 없으면 숨김) · 설정 카드(r16 · 1 테두리, `FCListRow` 토글 1줄) · `FCButton(Ghost, Medium)` 가운데 · 저장 오류.
+- 저장 완료는 프로필 완료와 같은 배치(`FCDoneHero` · 미리보기 `FCFlagCard`, 썸네일은 고른 사진 또는 `FCThumbnail`).
+
+### Android에서 다른 점
+
+- '오늘'은 주입한 `Clock`(기본 서울)의 날짜다. iOS는 기기 달력(`\.calendar`)을 쓴다.
+- 사진은 프로필과 같은 Photo Picker. 바이트를 읽지 못하면 iOS처럼 아무것도 하지 않는다.
+
+## 기수 여부 (`register/`, iOS `BearerRoleChoiceFeature` · `BearerRoleChoiceView`)
+
+경로 `BearerRoute.RoleChoice`. 가입 직후에만 연다(쟁점 B1, BC2).
+
+- 고르기 전 "다음"은 아무것도 하지 않는다. 고르면 "다음"으로 `AudienceChosen` · `BearerChosen`. 뒤로(상단 · 시스템) → `CloseRequested`.
+- `FCTopBar(Back)`, 패딩 `P16` · 간격 `M24`, "페스티벌에서\n깃발을 드시나요?"(`baseTitle2Bold`) / "기수는 깃발을 들고 사람들을 이끄는 사람이에요. 나중에 마이에서도 바꿀 수 있어요."(`baseFootnoteRegular` · `labelNeutral`), 둘 다 줄 상자 없음.
+- 카드(간격 `P12`): 아이콘 20 in 44 원(`backgroundAlternative`) · 제목 `baseCalloutBold` · 설명 `baseFootnoteRegular`(간격 `P4`) · `FCCheckCircle`, 패딩 `P16`, r16, 테두리 고름 `primaryNormal` 2 / `lineNormal` 1. "관객이에요" / "깃발을 팔로우하고 크루와 함께 놀아요"(`ic_users_24`), "기수예요" / "내 깃발 프로필을 만들고 팔로워를 모아요"(`ic_flag_20`).
+- 아래 `FCPrimaryButton("다음", 고름)`(좌우 `P16` · 위아래 `P12`, 배경 `backgroundNormal`).
+
 ## 엣지 케이스
 
 - 사진 업로드 중에는 저장할 수 없고, 저장 중에는 새 사진을 받지 않는다. 업로드가 끝난 뒤 온 진행 · 실패는 버린다.
@@ -136,3 +185,5 @@ iOS `BearerClaimFeatureTests` 7건을 같은 이름으로 `BearerClaimViewModelT
 iOS `BearerProfileFeatureTests` 13건을 같은 이름으로 `BearerProfileViewModelTest`에 옮긴다: `placeholderCleared` · `planOpensMySchedule` · `coBearerText` · `loads` · `bioCountsScalars` · `tags` · `save` · `savesEditedPlan` · `nameTaken` · `uploadsPhoto` · `cancelsUpload` · `photoTooSmall` · `invites`.
 
 iOS `BearerPlanPickFeatureTests` 4건을 같은 이름으로 `BearerPlanPickViewModelTest`에 옮긴다: `groupsDaysAndOpensPlannedDay` · `togglesAndReturnsOrderedPlan` · `limitsToThirty` · `backCloses`. 같은 파일 `festivalDay`는 iOS `AppDateFormatTests`의 `festivalDay` 줄이다.
+
+iOS `BearerRegisterFeatureTests` 10건을 같은 이름으로 `BearerRegisterViewModelTest`에 옮긴다: `festivalOptions` · `loadsUpcomingAndSelectsPreferred` · `receivedPackLoadsZones` · `emptyFestivalsFail` · `registerSucceeds` · `offlineRetryReusesKey` · `conflictsShowAlerts` · `validation` · `roleChoice` · `savingKeepsRequestedFestival`.
