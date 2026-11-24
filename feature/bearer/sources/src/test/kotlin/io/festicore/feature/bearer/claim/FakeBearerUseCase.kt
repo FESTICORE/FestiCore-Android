@@ -6,6 +6,7 @@ import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerFestival
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
+import io.festicore.domain.bearer.entity.BearerFlagTag
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
 import io.festicore.domain.bearer.entity.BearerInvite
 import io.festicore.domain.bearer.entity.BearerOutboxEvent
@@ -30,9 +31,17 @@ internal val SampleClaim =
         coBearerIds = emptyList(),
     )
 
-/** 코드 인증만 쓰는 가짜 UseCase(iOS `BearerUseCaseStub(claim:)`). 다른 함수는 이 화면이 부르지 않는다. */
+/** 테스트 전용 가짜 값(iOS `BearerSample.profile`). 코드 등록 직후 서버 임시 이름 · 기본 태그다. */
+internal val SampleProfile = BearerFlagProfile(id = "flg_1", name = "새 깃발 a1b2c3", tags = listOf(BearerFlagTag.Newbie))
+
+/** 화면 테스트용 가짜 UseCase(iOS `BearerUseCaseStub`). 넘기지 않은 함수는 부르면 실패한다. 서버에 쓰지 않는다. */
 internal class FakeBearerUseCase(
     private val onClaim: suspend (festivalId: String, code: String) -> BearerClaim = { _, _ -> SampleClaim },
+    private val onFetchFestival: (suspend (festivalId: String) -> BearerFestival)? = null,
+    private val onFetchBoard: (suspend (flagId: String) -> BearerBoard)? = null,
+    private val onUpdateProfile: (suspend (flagId: String, change: BearerProfileChange) -> BearerFlagProfile)? = null,
+    private val onUploadPhoto: ((flagId: String, imageData: ByteArray) -> Flow<BearerPhotoUploadEvent>)? = null,
+    private val onInviteCoBearer: (suspend (flagId: String) -> BearerInvite)? = null,
 ) : BearerUseCase {
     override suspend fun claim(festivalId: String, code: String): BearerClaim = onClaim(festivalId, code)
 
@@ -46,13 +55,15 @@ internal class FakeBearerUseCase(
 
     override suspend fun fetchFollowedFlags(festivalId: String?): List<BearerFollowedFlag> = unused()
 
-    override suspend fun fetchFestival(festivalId: String): BearerFestival = unused()
+    override suspend fun fetchFestival(festivalId: String): BearerFestival = (onFetchFestival ?: unused())(festivalId)
 
-    override suspend fun fetchBoard(flagId: String): BearerBoard = unused()
+    override suspend fun fetchBoard(flagId: String): BearerBoard = (onFetchBoard ?: unused())(flagId)
 
-    override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile = unused()
+    override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile =
+        (onUpdateProfile ?: unused())(flagId, change)
 
-    override fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent> = unused()
+    override fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent> =
+        (onUploadPhoto ?: unused())(flagId, imageData)
 
     override fun makeStatusRequest(change: BearerStatusChange): BearerStatusRequest = unused()
 
@@ -70,11 +81,11 @@ internal class FakeBearerUseCase(
 
     override suspend fun retryPendingStatus(): Unit = unused()
 
-    override suspend fun inviteCoBearer(flagId: String): BearerInvite = unused()
+    override suspend fun inviteCoBearer(flagId: String): BearerInvite = (onInviteCoBearer ?: unused())(flagId)
 
     override suspend fun removeCoBearer(flagId: String, userId: String): Unit = unused()
 
-    private fun unused(): Nothing = throw UnsupportedOperationException("기수 인증 화면은 이 함수를 부르지 않는다")
+    private fun unused(): Nothing = throw UnsupportedOperationException("이 테스트는 이 함수를 넘기지 않았다")
 }
 
 /** 테스트가 시각을 옮기는 시계(iOS `DateGenerator { current.value }`). */
