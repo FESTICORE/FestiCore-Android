@@ -89,6 +89,13 @@ class BearerProfileViewModel(
         uploadPhoto(data)
     }
 
+    /** 고른 사진을 기기에서 읽지 못했다(URI 열기 · 읽기 실패). 저장 중이면 무시한다. Android 추가(iOS는 조용히 넘어감 `BPV:41`). */
+    fun onPhotoLoadFailed() = intent {
+        if (state.isSaving) return@intent
+        uploadJob.getAndSet(null)?.cancel()
+        reduce { state.copy(photoUpload = BearerPhotoUpload.Failed(photoMessage(BearerError.Unavailable()))) }
+    }
+
     fun onPhotoCancelTapped() = intent {
         if (!state.isUploadingPhoto) return@intent
         uploadJob.getAndSet(null)?.cancel()

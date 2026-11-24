@@ -27,7 +27,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
-/** iOS `BearerProfileFeatureTests` 13건. 함수 이름을 iOS와 같게 둔다. */
+/** iOS `BearerProfileFeatureTests` 13건(함수 이름을 iOS와 같게 둔다) + Android 추가 `photoLoadFailed` · `sampleSize`. */
 class BearerProfileViewModelTest {
     private fun newState(): BearerProfileState =
         BearerProfileState.initial(festivalId = "fst_1", flagId = "flg_1", profile = SampleProfile, isNewBearer = true)
@@ -255,5 +255,25 @@ class BearerProfileViewModelTest {
             containerHost.onAlertDismissed()
             expectState { copy(alert = null) }
         }
+    }
+
+    // Android 추가: 고른 사진을 기기에서 읽지 못하면 다시 고르라는 문구를 보이고, 저장 중이면 무시한다
+    @Test
+    fun photoLoadFailed() = runTest {
+        viewModel().test(this) {
+            containerHost.onPhotoLoadFailed()
+            expectState { copy(photoUpload = BearerPhotoUpload.Failed("사진을 올리지 못했어요. 다시 골라 주세요")) }
+        }
+        viewModel().test(this, initialState = newState().copy(isSaving = true)) {
+            containerHost.onPhotoLoadFailed()
+        }
+    }
+
+    // Android 추가: 미리보기는 짧은 변이 표시 크기 아래로 내려가지 않게 2의 거듭제곱으로 줄여 디코딩한다
+    @Test
+    fun sampleSize() {
+        assertEquals(1, sampleSize(width = 200, height = 300, sidePx = 264))
+        assertEquals(8, sampleSize(width = 4032, height = 3024, sidePx = 264))
+        assertEquals(2, sampleSize(width = 600, height = 8000, sidePx = 264))
     }
 }

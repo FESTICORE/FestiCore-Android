@@ -1,5 +1,6 @@
 package io.festicore.feature.bearer.profile
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -40,6 +42,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagTag
@@ -89,6 +93,10 @@ private val SkeletonFieldHeight = 52.dp
 private val CardBorderWidth = 1.dp
 private val PlaceholderIconSize = 20.dp
 
+// 디코딩 크기: `FCPhotoPicker` 사진 칸 88, `FCFlagCard` 썸네일 56
+private val PickerPhotoSize = 88.dp
+private val PreviewThumbnailSize = 56.dp
+
 /**
  * 깃발 프로필(iOS `BearerProfileView`, Figma S10 A~E). ViewModel을 잇는다.
  * 사진은 Android Photo Picker(`PickVisualMedia(ImageOnly)`)로 하나만 받아 권한을 선언 · 요청하지 않는다. 고른 사진 바이트는 IO에서 읽는다.
@@ -119,8 +127,8 @@ fun BearerProfileScreen(
                 val data =
                     withContext(Dispatchers.IO) {
                         runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-                    } ?: return@launch
-                viewModel.onPhotoPicked(data)
+                    }
+                if (data == null) viewModel.onPhotoLoadFailed() else viewModel.onPhotoPicked(data)
             }
         }
     BackHandler(onBack = viewModel::onBackTapped)
@@ -410,7 +418,7 @@ private fun ColumnScope.DoneContent(
 @Composable
 private fun PreviewCard(state: BearerProfileState, profile: BearerFlagProfile) {
     val zone = state.zones.firstOrNull { it.id == profile.homeZoneId }
-    val uploaded = rememberImageBitmap(state.uploadedPhotoData)
+    val uploaded = rememberImageBitmap(state.uploadedPhotoData, PreviewThumbnailSize)
     FCFlagCard(
         name = profile.name,
         status = FCStatusChipStatus.Scheduled,
@@ -519,8 +527,8 @@ private fun ProfileAlert(alert: BearerProfileAlert, onDismiss: () -> Unit) {
 @Composable
 private fun photoState(state: BearerProfileState): FCPhotoPickerState {
     val upload = state.photoUpload
-    val uploading = rememberImageBitmap((upload as? BearerPhotoUpload.Uploading)?.data)
-    val uploaded = rememberImageBitmap(state.uploadedPhotoData)
+    val uploading = rememberImageBitmap((upload as? BearerPhotoUpload.Uploading)?.data, PickerPhotoSize)
+    val uploaded = rememberImageBitmap(state.uploadedPhotoData, PickerPhotoSize)
     return when {
         upload is BearerPhotoUpload.Uploading && uploading != null -> FCPhotoPickerState.Uploading(
             image = BitmapPainter(uploading),
@@ -533,10 +541,38 @@ private fun photoState(state: BearerProfileState): FCPhotoPickerState {
     }
 }
 
-/** iOS `UIImage(data:)`. 읽지 못하는 바이트는 null이다. */
+/**
+ * iOS `UIImage(data:)`. 메인 스레드를 막지 않도록 [Dispatchers.Default]에서 [side](표시 한 변) 픽셀에 맞춰 줄여 디코딩한다.
+ * 디코딩 전 · 읽지 못하는 바이트는 null이라 iOS 이미지 없음과 같은 자리 표시(빈 칸 · 기본 썸네일)를 그린다.
+ */
 @Composable
-private fun rememberImageBitmap(data: ByteArray?): ImageBitmap? =
-    remember(data) { data?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() } }
+private fun rememberImageBitmap(data: ByteArray?, side: Dp): ImageBitmap? {
+    val sidePx = with(LocalDensity.current) { side.roundToPx() }
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, data, sidePx) {
+        value = data?.let { bytes -> withContext(Dispatchers.Default) { decodeSampled(bytes, sidePx)?.asImageBitmap() } }
+    }
+    return bitmap
+}
+
+/** 짧은 변이 [sidePx] 아래로 내려가지 않는 가장 큰 2의 거듭제곱으로 줄여 디코딩한다. */
+internal fun decodeSampled(bytes: ByteArray, sidePx: Int): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, sidePx) }
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+}
+
+internal fun sampleSize(
+    width: Int,
+    height: Int,
+    sidePx: Int,
+): Int {
+    var sample = 1
+    val shortSide = minOf(width, height)
+    while (sidePx > 0 && shortSide / (sample * 2) >= sidePx) sample *= 2
+    return sample
+}
 
 /** 서버에 사진은 있지만 이 기기에서 고른 사진이 없을 때. 사진 칸은 비우고 버튼만 "바꾸기"로 둔다. */
 private fun hasRemotePhotoOnly(state: BearerProfileState): Boolean =
