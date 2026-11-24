@@ -92,13 +92,14 @@ python3 -m unittest discover -s .claude/hooks/tests
 | `SharedPreferences` · DataStore                                                  | `core/storage/sources`                                |
 | Room                                                                             | `core/storage/sources`                                |
 | `FirebaseApp.initializeApp`                                                      | `service/config`                                      |
+| `com.mixpanel.*` · `io.sentry.*` import                                          | `service/analytics/sources`                           |
 | feature `build.gradle.kts`에서 `*.sources` 의존                                  | `feature/featureassembly` (목록만) · app              |
-| `implementation`/`api`로 `:service:{pack,device,auth}:sources` · `:core:{network,storage}:sources` 의존 | `*assembly` · app · `service/auth/sources` · `service/pack/sources` (테스트는 `testImplementation` 허용) |
+| `implementation`/`api`로 `:service:{pack,device,auth,analytics}:sources` · `:core:{network,storage}:sources` 의존 | `*assembly` · app · `service/auth/sources` · `service/pack/sources` (테스트는 `testImplementation` 허용) |
 | `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`)                          |
 | `service/apiendpoint`에서 `io.festicore.domain.*` import (응답 DTO)              | 없음 (호출하는 쪽이 디코딩)                           |
 | domain `build.gradle.kts`에서 `:service:festivalcatalog` main 의존(`testImplementation` 허용) | 없음 (`service/festivalcatalog`가 domain 계약을 구현) |
 | `domain/*/interface` `.kt`에서 `android.*` · `androidx.*` · Koin · Ktor import | 없음 (순수 Kotlin, 구현은 sources) |
-| feature `build.gradle.kts`에서 `service` · `core` 모듈 의존 | `feature/featureassembly` (목록만) |
+| feature `build.gradle.kts`에서 `service` · `core` 모듈 의존(`:service:analytics:interface`만 통과, 금지 패턴의 부정 전방탐색) | `feature/featureassembly` (목록만) |
 | feature `build.gradle.kts`에서 단일 feature 모듈(`:feature:onboarding`) 의존 | `feature/featureassembly` (목록만) · app |
 | `*assembly` 모듈 `.kt`에서 `single` · `factory` · `viewModel` · `scoped` · `worker` · `module { }` 정의 | 없음 (각 모듈 `di/`, assembly는 목록만)               |
 

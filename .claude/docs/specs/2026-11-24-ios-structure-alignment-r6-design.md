@@ -168,9 +168,9 @@ app · *assembly           → 새 sources 모듈
 
 | 용도                      | 후보 (좌표)                                                                                       | 라이선스                                              | 판정                            |
 | ------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------- |
-| 오류 · 로그 (R6b)         | `io.sentry:sentry-android`(BOM `io.sentry:sentry-bom`)                                            | MIT                                                   | 진행 가능                       |
-| 행동 분석 (R6b)           | `com.mixpanel.android:mixpanel-android`                                                           | Apache-2.0                                            | 진행 가능                       |
-| 난독화 매핑 업로드 (선택) | `io.sentry.android.gradle` 플러그인                                                               | MIT                                                   | 진행 가능, 단 업로드 토큰은 5절 |
+| 오류 · 로그 (R6b)         | `io.sentry:sentry-android`(BOM `io.sentry:sentry-bom`)                                            | MIT                                                   | **쓰지 않음(사용자 결정: Sentry 제외, R6b)** |
+| 행동 분석 (R6b)           | `com.mixpanel.android:mixpanel-android`                                                           | Apache-2.0                                            | 진행 가능 — R6b `8.12.0`(2026-10-30, POM Apache-2.0, 전이 `json-logic-java` MIT) |
+| 난독화 매핑 업로드 (선택) | `io.sentry.android.gradle` 플러그인                                                               | MIT                                                   | 쓰지 않음(Sentry 제외)          |
 | Firebase 초기화 (R6a)     | `com.google.firebase:firebase-bom` · `firebase-common`                                            | Apache-2.0                                            | 진행 가능                       |
 | 현재 위치 (R6c 추천)      | `androidx.core:core` `LocationManagerCompat.getCurrentLocation` + 플랫폼 `LocationManager`(Compose · splashscreen의 전이 의존이라 카탈로그에 직접 의존만 더한다)  | Apache-2.0                                            | 진행 가능         |
 | 현재 위치 (대안)          | `com.google.android.gms:play-services-location`                                                   | Android Software Development Kit License(Google 약관) | **사람 승인 필요**              |
@@ -190,6 +190,7 @@ app · *assembly           → 새 sources 모듈
 | Sentry 업로드 토큰(선택) | -                                                                 | CI 비밀 `SENTRY_AUTH_TOKEN`, 릴리스 빌드에서만                                                                                                  | 매핑 업로드를 건너뛴다                                                                     |
 
 - `app/config/{stage,prod}.properties`(추적, 공개 값만)에는 넣지 않는다. DSN · 토큰은 공개해도 동작은 하지만 남용을 막으려고 추적 파일 밖에 둔다.
+- R6b 사용자 결정: Sentry 제외. 위 표의 Sentry DSN · Sentry 환경 · `SENTRY_AUTH_TOKEN` 행은 만들지 않는다. Mixpanel 토큰은 iOS xcconfig처럼 stage · prod가 같은 이름 `FESTICORE_MIXPANEL_TOKEN` 하나다(`defaultConfig`).
 - PR CI(`android-pr.yml`)에는 비밀을 넣지 않는다. 키 없는 빌드가 통과하고 아무것도 보내지 않는 것을 단위 테스트로 고정한다(iOS `AnalyticsConfigurationTests` 대응: 빈 값 · 공백 값 → 초기화 안 함).
 - 릴리스 CI에 `FESTICORE_SENTRY_DSN` · `FESTICORE_MIXPANEL_TOKEN` · Firebase 값을 GitHub 비밀로 넣는 일은 **사람이 한다**(저장소 관리자 권한).
 - 이벤트 속성은 iOS `AnalyticsEvent`와 같은 이름 · 값만 쓴다. 사용자 ID는 iOS처럼 `identify` 인자로만 보내고 이벤트 속성 · 로그에 넣지 않는다.
@@ -200,6 +201,7 @@ app · *assembly           → 새 sources 모듈
 
 - `service/analytics/interface`: `event/`(`AnalyticsEvent` sealed — `signUp` · `screenView` · `uiAction` · `flagFollow` · `timetableAction` · `packSync` 등, `AnalyticsScreen` · `AnalyticsButton` · `AnalyticsProvider` · `FlagFollowData` · `TimetableActionData` · `PackSyncData`), `usecase/AnalyticsUseCase`(`registerBaseProperties` · `identify` · `track` · `reset`). iOS처럼 UseCase를 service에 둔다(domain이 아님).
 - `service/analytics/sources`: `configuration/{FestiCoreAnalyticsConfiguration,SentryConfiguration,MixpanelConfiguration}`, `log/SentryLogSink`(`core/logger` `FestiCoreLogSink` 구현, Sentry가 켜졌을 때만 추가), `usecase/AnalyticsUseCaseImpl`, `di/ServiceAnalyticsModule`. iOS `Trace/FestiCoreTracedView`는 사용처가 1곳이다 — R6b 착수 때 그곳을 보고 정한다(쟁점 F3).
+- **R6b 착수 결정 — 사용자 결정: Sentry 제외.** 라이브러리 · 초기화 · DSN · 오류 보고 전송 · Gradle 플러그인을 넣지 않는다. 계약(`AnalyticsUseCase` 4함수 · 이벤트 타입)은 iOS와 같고, iOS에서 Sentry가 맡던 자리(`SentryConfiguration` · `SentryLogSink` · `identify`의 `setUser` · `track`의 breadcrumb · `user.action.count` · `reset`의 `setUser(nil)`)는 Android 구현에서 아무 데도 보내지 않는다. 그래서 `log/SentryLogSink` · `configuration/SentryConfiguration`은 만들지 않고 8절 "Sentry 자동 계측" 위험도 없어진다. 쟁점 F3 `FestiCoreTracedView`(사용처 iOS `FestiCoreApp.swift:26` `"AppRoot"` 1곳)는 Sentry 트랜잭션 래퍼라 Android에서는 아무 일도 하지 않는 래퍼가 되므로 만들지 않는다(service 모듈에 Compose를 넣지 않는다). 규칙 · 호출처 대조 표는 `service/analytics/.spec/analytics.md`.
 - 호출처 이식(iOS `analyticsUseCase.*` 호출 기준): app `AuthCoordinator` 2 · `AccountCoordinator` 2 · 시작 1, feature `Login` 1 · `FestivalFeature` 4 · `FestivalFlagDirectory` 1 · `FestivalFlagFeature` 1 · `FestivalFlagDetailFeature` 1 · `AccountSettings` 2 · `Profile` 1 · `Timetable` 4 · `Web` 1. ViewModel이 생성자로 `AnalyticsUseCase`를 받는다. Android 화면이 아직 없는 호출처는 그 화면 이식 PR로 넘긴다.
 
 ### 6.2 location (R6c, 사용 기능 포함)
@@ -233,7 +235,7 @@ app · *assembly           → 새 sources 모듈
 | R6a-1 모듈 나눔        | 구조(로직 없음)   | `core/storage/{interface,sources}`(2.2), `feature/onboarding` 합치기(2.1), check-boundaries 저장 규칙 · 단일 feature 규칙                                                                                   | verify --all · 테스트 수 동일 · `./gradlew projects`에 `:core:storage:interface` · `:feature:onboarding` · 에뮬레이터 첫 실행 온보딩 → 로그인                                                                                                                           |
 | R6a-2 내부 폴더 · 이름 | 구조(로직 없음)   | 1.2의 패키지 이동 전부(app · feature/{auth,web,festival} · domain/{auth,timetable} · service/{festivalcatalog,pack} · core/network · ui/animation), `FestiCoreLog*` 이름, 요청 파일 나눔(2.3, F8 결정 따름) | verify --all · 테스트 수 동일 · 에뮬레이터 스플래시 → 탭 → 축제 목록 → 보드 → 깃발 상세 → 크루                                                                                                                                                                          |
 | R6a-3 config · 문서    | 구조 + 초기화 1곳 | `service/config` · Firebase BOM, `FestiCoreApplication` 호출, Firebase 초기화 규칙, `architecture.md` · `CLAUDE.md` 스택 · `harness.md` 문서 정정(1.3)                                                      | verify --all · 값 없는 빌드에서 앱 실행 · 크래시 없음 · 로그 한 줄. `FirebaseConfiguration` 단위 테스트(값 없음 → 초기화 안 함)                                                                                                                                         |
-| R6b analytics          | 이식(새 동작)     | 4 · 5 · 6.1, check-boundaries 2개, `service/analytics/.spec`                                                                                                                                                | verify --all · iOS `AnalyticsUseCaseTests` · `AnalyticsConfigurationTests` · `SentryLogSinkTests` 대응 테스트 · 키 없는 빌드에서 네트워크 요청 0건(Mixpanel · Sentry 호출 없음 확인 테스트) · 키 넣은 stage 빌드에서 이벤트 1건 수신(사람이 대시보드 확인, 범위만 보고) |
+| R6b analytics          | 이식(새 동작)     | 4 · 5 · 6.1(사용자 결정: Sentry 제외), check-boundaries 2개, `service/analytics/.spec`                                                                                                                                                | verify --all · iOS `AnalyticsUseCaseTests` · `AnalyticsConfigurationTests` 대응 테스트(`SentryLogSinkTests`는 Sentry 제외로 없음) · 키 없는 빌드에서 네트워크 요청 0건(Mixpanel · Sentry 호출 없음 확인 테스트) · 키 넣은 stage 빌드에서 이벤트 1건 수신(사람이 대시보드 확인, 범위만 보고) |
 | R6c location           | 이식(새 동작)     | 6.2(팩 상세 지도 앱 이동 + 보드 귀가 가는 길), 위치 규칙                                                                                                                                                    | verify --all · iOS `WalkingDurationTests` · `NearestPlaceTests` · `LocationAuthorizationTests` · `FestivalHomeWalkTests` · `PackDetailFeatureTests`(지도 앱) 대응 · 에뮬레이터 권한 허용 · 거부 두 경로                                                                 |
 | R6d 기수               | 이식(새 화면)     | 별도 화면 설계 문서 → 그 문서의 PR 묶음                                                                                                                                                                     | 그 문서에서 정한다                                                                                                                                                                                                                                                      |
 
@@ -269,11 +271,11 @@ app · *assembly           → 새 sources 모듈
 
 ## 10. 확인 못 한 것
 
-- iOS `FestiCoreTracedView` 사용처 1곳의 화면과 측정 이름.
+- ~~iOS `FestiCoreTracedView` 사용처 1곳의 화면과 측정 이름.~~ R6b에서 확인: `App/Sources/Application/FestiCoreApp.swift:26` `"AppRoot"`. Sentry 제외로 옮기지 않는다.
 - ~~`NetworkFestivalCatalogService.festivalDetail`의 캐시 여부(F8).~~ R6a-2에서 확인: 저장하지 않는 통과 호출(ID 검증만)이다.
 - iOS `BearerStatusOutbox`가 기록을 어디에 저장하는지(`BearerOutboxRecordDTO`), `Feature/Bearer`가 `core/utility`에서 쓰는 것.
-- Sentry Android · Mixpanel Android 최신 버전과 POM 라이선스(PR에서 다시 확인), Sentry Android 기본 계측이 요청 헤더를 담는지.
-- `service/analytics/sources`의 Mixpanel 초기화가 `Context`를 요구하므로 Koin 등록과 `Application` 초기화 순서.
+- ~~Sentry Android · Mixpanel Android 최신 버전과 POM 라이선스~~ R6b: Mixpanel `8.12.0` Apache-2.0 확인. Sentry는 제외.
+- ~~Mixpanel 초기화와 Koin 순서~~ R6b: `FestiCoreAnalyticsConfiguration.configure`(Koin 전) → Koin 시작 → `registerBaseProperties`.
 - Android `androidTest`(UI 테스트) 대응 여부 — iOS `App/Tests/UITests` 6개. 이 문서 범위 밖.
 - 이 문서는 Codex 교차 검토를 거치지 않았다.
 

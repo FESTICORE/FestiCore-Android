@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     val libs = catalog
+    implementation(project(":service:analytics:sources"))
     implementation(project(":service:apiendpoint"))
     implementation(project(":service:auth:sources"))
     implementation(project(":service:device:sources"))
