@@ -35,6 +35,8 @@ android {
         // 빌드 번호는 배포 때 -Pfesticore.versionCode=N으로 넣는다. 로컬 기본값 1
         versionCode = providers.gradleProperty("festicore.versionCode").map(String::toInt).getOrElse(1)
         versionName = AndroidConfig.VERSION_NAME
+        // Mixpanel 토큰(FESTICORE_MIXPANEL_TOKEN, iOS xcconfig와 같은 이름). 비면 service/analytics가 Mixpanel을 시작하지 않는다.
+        buildConfigField("String", "MIXPANEL_TOKEN", buildConfigString(secretValue("FESTICORE_MIXPANEL_TOKEN")))
     }
 
     flavorDimensions += "environment"

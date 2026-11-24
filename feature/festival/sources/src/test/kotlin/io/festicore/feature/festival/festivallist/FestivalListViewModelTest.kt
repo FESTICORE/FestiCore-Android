@@ -7,6 +7,9 @@ import io.festicore.domain.festival.entity.FestivalCatalogItem
 import io.festicore.domain.festival.entity.FestivalCatalogPage
 import io.festicore.domain.festival.entity.FestivalTicketLink
 import io.festicore.domain.festival.library.FestivalLibraryUseCase
+import io.festicore.feature.festival.RecordingAnalyticsUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -18,6 +21,8 @@ import org.orbitmvi.orbit.test.test
 
 /** iOS `FestivalCatalogPaginationTests` · `FestivalOfflineTests` · `FestivalRecentSearchFeatureTests` · `FestivalTicketLinkToastTests`의 목록 사례. */
 class FestivalListViewModelTest {
+    private val analytics = RecordingAnalyticsUseCase()
+
     private val first = FestivalCatalogItem(id = "fst_first", name = "첫 축제", packVersion = 0)
     private val second = FestivalCatalogItem(id = "fst_second", name = "둘째 축제", packVersion = 0)
     private val booked = FestivalCatalogItem(id = "fst_booked", name = "예매 축제", packVersion = 0)
@@ -34,7 +39,7 @@ class FestivalListViewModelTest {
         catalog: FakeCatalogUseCase = FakeCatalogUseCase(),
         library: FakeLibraryUseCase = FakeLibraryUseCase(),
         currentUser: FakeCurrentUserProvider = FakeCurrentUserProvider(),
-    ) = FestivalListViewModel(catalog, library, currentUser, FakePackUseCase())
+    ) = FestivalListViewModel(catalog, library, currentUser, FakePackUseCase(), analytics)
 
     @Test
     fun listSkeletonShowsUntilFirstCatalogRefresh() = runTest {
@@ -46,6 +51,7 @@ class FestivalListViewModelTest {
             expectState { copy(catalog = listOf(cached), viewState = FestivalListViewState.Loaded) }
             expectState { copy(hasFinishedFirstCatalogRefresh = true, catalogRefreshFailed = true, imageRetryPending = true) }
         }
+        assertEquals(listOf(AnalyticsEvent.ScreenView(AnalyticsScreen.FestivalList)), analytics.events)
     }
 
     @Test

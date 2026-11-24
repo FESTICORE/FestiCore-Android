@@ -8,6 +8,9 @@ import io.festicore.feature.timetable.main.TimetableScheduleSave
 import io.festicore.feature.timetable.main.TimetableScheduleSync
 import io.festicore.feature.timetable.main.TimetableState
 import io.festicore.feature.timetable.main.TimetableViewModel
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsTimetableAction
+import io.festicore.service.analytics.event.TimetableActionData
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -24,6 +27,7 @@ import org.orbitmvi.orbit.test.test
  * Orbit은 내부 결과 함수를 밖에서 부를 수 없어 실제로 저장을 보내고 [CompletableDeferred]로 응답을 붙잡아 같은 상황을 만든다.
  */
 class TimetableScheduleSyncTest {
+    private val analytics = RecordingAnalyticsUseCase()
     private val clock = MutableClock(BEFORE_FESTIVAL)
     private val sleeper = TestSleeper()
     private val boardSelection = FakeBoardSelectionUseCase()
@@ -31,7 +35,8 @@ class TimetableScheduleSyncTest {
     private val mapper = FakeMapper()
     private var schedule = FakeScheduleUseCase()
 
-    private fun viewModel() = TimetableViewModel(boardSelection, schedule, user, mapper, FakeOverlapCalculator(), clock, sleeper::sleep)
+    private fun viewModel() =
+        TimetableViewModel(boardSelection, schedule, user, mapper, FakeOverlapCalculator(), analytics, clock, sleeper::sleep)
 
     private fun readyState(mine: Set<String> = emptySet()): TimetableState =
         sample().copy(festivalId = "fst", mySetIds = mine, scheduleSync = TimetableScheduleSync.Ready).derived()
@@ -86,12 +91,26 @@ class TimetableScheduleSyncTest {
     }
 
     @Test
+    fun togglingScheduleTracksAnalyticsEvent() = runTest {
+        viewModel().test(this, initialState = opened(readyState(setOf("lime")), "lime")) {
+            containerHost.onScheduleToggled()
+            assertTrue(awaitState().isSaving)
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(
+            listOf(AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.ScheduleToggle, "fst", setId = "lime"))),
+            analytics.events,
+        )
+    }
+
+    @Test
     fun togglingWhileLoadingIsIgnored() = runTest {
         val initial = opened(readyState().copy(scheduleSync = TimetableScheduleSync.Loading), "lime")
         viewModel().test(this, initialState = initial) {
             containerHost.onScheduleToggled()
             expectNoItems()
         }
+        assertTrue(analytics.events.isEmpty())
     }
 
     @Test

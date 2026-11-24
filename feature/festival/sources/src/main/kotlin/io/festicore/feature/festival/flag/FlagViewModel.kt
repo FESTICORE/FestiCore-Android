@@ -7,6 +7,10 @@ import io.festicore.domain.festival.entity.FestivalLiveBoardError
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.flagdetail.FestivalFlagUseCase
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.event.FlagFollowData
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
@@ -26,6 +30,7 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 class FlagViewModel(
     private val liveBoardUseCase: FestivalLiveBoardUseCase,
     private val flagUseCase: FestivalFlagUseCase,
+    private val analyticsUseCase: AnalyticsUseCase,
     festivalId: String? = null,
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -39,6 +44,8 @@ class FlagViewModel(
     // MARK: - View
 
     fun onAppeared() = intent {
+        // iOS `tracksScreenView`는 준비 안내(PrepGuide) 안 깃발 목록만 끈다. 그 화면은 아직 옮기지 않아 항상 남긴다.
+        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.FestivalFlag))
         reduce { state.copy(isVisible = true) }
         load()
     }
@@ -252,6 +259,7 @@ class FlagViewModel(
                     ),
                 )
             }
+            analyticsUseCase.track(AnalyticsEvent.FlagFollow(FlagFollowData(flagId = id, isFollowing = response.isFollowing)))
             return@subIntent
         }
         val error = result.exceptionOrNull()

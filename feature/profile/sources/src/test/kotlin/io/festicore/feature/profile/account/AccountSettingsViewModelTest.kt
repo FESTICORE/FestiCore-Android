@@ -6,6 +6,10 @@ import io.festicore.domain.auth.entity.AuthLoginResult
 import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.domain.auth.entity.AuthUser
 import io.festicore.feature.profile.AccountState
+import io.festicore.feature.profile.RecordingAnalyticsUseCase
+import io.festicore.service.analytics.event.AnalyticsButton
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -72,7 +76,8 @@ class AccountSettingsViewModelTest {
     private fun viewModel(
         account: AccountState = AccountState(profile = profile("로이"), hasSession = true),
         repository: AuthRepository = NicknameAuthRepository { throw AuthDomainError.Unavailable() },
-    ) = AccountSettingsViewModel(initialAccount = account, authRepository = repository)
+        analytics: RecordingAnalyticsUseCase = RecordingAnalyticsUseCase(),
+    ) = AccountSettingsViewModel(initialAccount = account, authRepository = repository, analyticsUseCase = analytics)
 
     private val logoutAlert = AccountSettingsDestination.Alert(AccountConfirmation.Logout)
     private val withdrawAlert = AccountSettingsDestination.Alert(AccountConfirmation.Withdraw)
@@ -105,6 +110,26 @@ class AccountSettingsViewModelTest {
             // 확인 뒤 다이얼로그가 부르는 닫기는 아무것도 바꾸지 않는다.
             containerHost.onConfirmationDismissed().join()
         }
+    }
+
+    @Test
+    fun logoutAndWithdrawTapsAreTrackedLikeIos() = runTest {
+        val analytics = RecordingAnalyticsUseCase()
+        viewModel(analytics = analytics).test(this) {
+            containerHost.onWithdrawTapped()
+            expectState { copy(destination = withdrawAlert) }
+            containerHost.onConfirmationDismissed()
+            expectState { copy(destination = null) }
+            containerHost.onLogoutTapped()
+            expectState { copy(destination = logoutAlert) }
+        }
+        assertEquals(
+            listOf(
+                AnalyticsEvent.UiAction(AnalyticsButton.ProfileWithdraw, AnalyticsScreen.Profile),
+                AnalyticsEvent.UiAction(AnalyticsButton.ProfileLogout, AnalyticsScreen.Profile),
+            ),
+            analytics.events,
+        )
     }
 
     @Test

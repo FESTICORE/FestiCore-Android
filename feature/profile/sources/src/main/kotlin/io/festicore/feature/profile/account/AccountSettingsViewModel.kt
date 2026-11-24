@@ -6,6 +6,10 @@ import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.entity.AuthNicknameRule
 import io.festicore.domain.auth.entity.AuthUser
 import io.festicore.feature.profile.AccountState
+import io.festicore.service.analytics.event.AnalyticsButton
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import kotlin.coroutines.cancellation.CancellationException
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -13,13 +17,14 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 /**
  * 계정(Figma S13-D) + 닉네임 변경 시트. iOS `AccountSettingsFeature` + `NicknameEditFeature`(Orbit은 자식 Store가 없어 한 ViewModel이 시트 상태도 가진다).
  * 로그아웃 · 탈퇴는 확인 팝업 뒤 요청(SideEffect)까지만 보낸다. 실행은 앱(`AccountCoordinator`, A1)이 한다.
- * 분석 `profile_logout` · `profile_withdraw`는 `service/analytics`가 없어 보내지 않는다.
+ * 로그아웃 · 탈퇴 버튼 탭은 분석 `ui_action`(`profile_logout` · `profile_withdraw`)으로 남긴다(iOS와 같음).
  *
  * @param initialAccount 화면을 만들 때의 계정 상태.
  */
 class AccountSettingsViewModel(
     initialAccount: AccountState,
     private val authRepository: AuthRepository,
+    private val analyticsUseCase: AnalyticsUseCase,
 ) : ViewModel(),
     OrbitContainerHost<AccountSettingsState, AccountSettingsState, AccountSettingsSideEffect> {
     override val container =
@@ -58,9 +63,9 @@ class AccountSettingsViewModel(
 
     fun onRefreshTapped() = intent { postSideEffect(AccountSettingsSideEffect.RefreshRequested) }
 
-    fun onWithdrawTapped() = presentConfirmation(AccountConfirmation.Withdraw)
+    fun onWithdrawTapped() = presentConfirmation(AccountConfirmation.Withdraw, AnalyticsButton.ProfileWithdraw)
 
-    fun onLogoutTapped() = presentConfirmation(AccountConfirmation.Logout)
+    fun onLogoutTapped() = presentConfirmation(AccountConfirmation.Logout, AnalyticsButton.ProfileLogout)
 
     /** 확인 팝업의 확인 버튼. iOS `alert(.confirmTapped)`. */
     fun onConfirmationConfirmed() = intent {
@@ -135,8 +140,9 @@ class AccountSettingsViewModel(
         reduce { state.withNickname(edit.copy(isSaving = false, errorMessage = message)) }
     }
 
-    /** 처리 중이거나 같은 팝업이 떠 있으면 다시 띄우지 않는다. iOS `presentConfirmation`. */
-    private fun presentConfirmation(confirmation: AccountConfirmation) = intent {
+    /** 처리 중이거나 같은 팝업이 떠 있으면 다시 띄우지 않는다. iOS `presentConfirmation`. 탭은 iOS와 같이 그 전에 항상 남긴다. */
+    private fun presentConfirmation(confirmation: AccountConfirmation, button: AnalyticsButton) = intent {
+        analyticsUseCase.track(AnalyticsEvent.UiAction(action = button, screen = AnalyticsScreen.Profile))
         val alert = AccountSettingsDestination.Alert(confirmation)
         if (state.isLoading || state.destination == alert) return@intent
         reduce { state.copy(destination = alert) }

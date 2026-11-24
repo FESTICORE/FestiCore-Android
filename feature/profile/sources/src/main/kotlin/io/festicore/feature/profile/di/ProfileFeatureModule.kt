@@ -21,7 +21,12 @@ val profileFeatureModule = module {
     viewModelOf(::ProfileCoordinator)
     // 인자: 화면을 만들 때의 계정 상태(AccountState). 이후 변경은 화면이 onAccountChanged로 알린다(설계 쟁점 M13).
     viewModel { params ->
-        ProfileViewModel(initialAccount = params.get(), receivedPackUseCase = get(), packDetailUseCase = get())
+        ProfileViewModel(
+            initialAccount = params.get(),
+            receivedPackUseCase = get(),
+            packDetailUseCase = get(),
+            analyticsUseCase = get(),
+        )
     }
     // 인자: 화면을 만들 때의 계정 상태(AccountState).
     viewModel { params ->
@@ -29,7 +34,7 @@ val profileFeatureModule = module {
     }
     viewModelOf(::AppearanceSettingsViewModel)
     // 인자: 화면을 만들 때의 계정 상태(AccountState). 닉네임 저장은 domain/auth `AuthRepository.updateNickname`.
-    viewModel { params -> AccountSettingsViewModel(initialAccount = params.get(), authRepository = get()) }
+    viewModel { params -> AccountSettingsViewModel(initialAccount = params.get(), authRepository = get(), analyticsUseCase = get()) }
     // 공지 읽기는 domain/notice `NoticeUseCase`(domainNoticeModule).
     viewModelOf(::NoticeListViewModel)
     // 인자: 목록에서 고른 공지 id · 제목.

@@ -96,6 +96,9 @@ class AppCoordinatorTest {
     /** 만료 팩 정리를 부른 횟수. */
     private var packCleanupCount = 0
 
+    /** 분석 reset(계정 분리)을 부른 횟수. */
+    private var analyticsResetCount = 0
+
     private fun coordinator(
         store: FirstInstallOnboardingStore,
         loggedIn: Boolean,
@@ -113,6 +116,7 @@ class AppCoordinatorTest {
         deeplinks?.received ?: emptyFlow(),
         { deeplinks?.consume() },
         { packCleanupCount++ },
+        { analyticsResetCount++ },
     )
 
     /** 대기 딥링크 하나와 새 딥링크 신호(앱의 `AppDeeplinkBridge` 대신). */
@@ -302,6 +306,7 @@ class AppCoordinatorTest {
             {},
             emptyFlow(),
             { null },
+            {},
             {},
         ).test(this) {
             runOnCreate()
@@ -838,12 +843,15 @@ class AppCoordinatorTest {
             expiry.expire("old")
             scope.testScheduler.runCurrent()
             assertEquals("u1", users.currentUserId.value)
+            assertEquals(0, analyticsResetCount)
 
             // 토큰 갱신 401로 저장소가 비고 만료 이벤트가 온다.
             auth.sessionId = null
             expiry.expire("s1")
             scope.testScheduler.runCurrent()
             assertEquals(null, users.currentUserId.value)
+            // 세션을 잃으면 분석 사용자도 분리한다.
+            assertEquals(1, analyticsResetCount)
             cancelAndIgnoreRemainingItems()
         }
     }
@@ -866,6 +874,7 @@ class AppCoordinatorTest {
                 expectState(home)
             }
             assertEquals(null, users.currentUserId.value)
+            assertEquals(if (expired) 2 else 1, analyticsResetCount)
         }
     }
 
@@ -885,12 +894,16 @@ class AppCoordinatorTest {
                 containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = expired))
                 scope.testScheduler.runCurrent()
                 assertEquals("u1", users.currentUserId.value)
+                // 버린 결과는 분석 사용자도 그대로 둔다.
+                assertEquals(if (expired) 1 else 0, analyticsResetCount)
 
                 auth.sessionId = null
                 containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = expired))
                 if (expired) expectState { copy(coverEpoch = 1) } else expectState { copy(launchLogin = false) }
             }
             assertEquals(null, users.currentUserId.value)
+            // 로그인 직후 계정 확인 401: identify한 사용자를 분리한다.
+            assertEquals(if (expired) 2 else 1, analyticsResetCount)
         }
     }
 
@@ -1071,6 +1084,7 @@ class AppCoordinatorTest {
                 expectState { copy(loginSheet = null) }
             }
             assertEquals(null, users.currentUserId.value)
+            assertEquals(if (expired) 2 else 1, analyticsResetCount)
         }
     }
 

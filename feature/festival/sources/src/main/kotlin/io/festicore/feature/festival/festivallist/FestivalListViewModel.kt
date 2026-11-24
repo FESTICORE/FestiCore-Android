@@ -11,6 +11,11 @@ import io.festicore.domain.festival.entity.PackDownloadProgress
 import io.festicore.domain.festival.entity.PackSyncResult
 import io.festicore.domain.festival.library.FestivalLibraryUseCase
 import io.festicore.domain.festival.pack.FestivalPackUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsPackSyncResult
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.event.PackSyncData
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
@@ -34,6 +39,7 @@ class FestivalListViewModel(
     private val libraryUseCase: FestivalLibraryUseCase,
     private val currentUserProvider: CurrentUserProvider,
     private val packUseCase: FestivalPackUseCase,
+    private val analyticsUseCase: AnalyticsUseCase,
 ) : ViewModel(),
     OrbitContainerHost<FestivalListState, FestivalListState, FestivalListSideEffect> {
     override val container =
@@ -55,7 +61,10 @@ class FestivalListViewModel(
 
     // MARK: - View
 
-    fun onAppear() = intent { start() }
+    fun onAppear() = intent {
+        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.FestivalList))
+        start()
+    }
 
     fun onForegroundChanged(isForeground: Boolean) = intent {
         reduce { state.copy(isForeground = isForeground) }
@@ -253,6 +262,13 @@ class FestivalListViewModel(
         result: PackSyncResult,
     ) = subIntent {
         if (generation != state.accountGeneration || festivalId !in state.packDownloads) return@subIntent
+        val syncResult =
+            when (result) {
+                is PackSyncResult.Updated -> AnalyticsPackSyncResult.Updated
+                is PackSyncResult.NotModified -> AnalyticsPackSyncResult.NotModified
+                is PackSyncResult.RetryAfter, PackSyncResult.Reconnecting -> AnalyticsPackSyncResult.Failed
+            }
+        analyticsUseCase.track(AnalyticsEvent.PackSync(PackSyncData(festivalId = festivalId, result = syncResult)))
         reduce {
             val finished = state.copy(packDownloads = state.packDownloads - festivalId)
             when (result) {
@@ -265,6 +281,7 @@ class FestivalListViewModel(
 
     private suspend fun onPackDownloadFailed(festivalId: String, generation: Int) = subIntent {
         if (generation != state.accountGeneration || festivalId !in state.packDownloads) return@subIntent
+        analyticsUseCase.track(AnalyticsEvent.PackSync(PackSyncData(festivalId = festivalId, result = AnalyticsPackSyncResult.Failed)))
         reduce { state.copy(packDownloads = state.packDownloads - festivalId).withPackFailureToast() }
     }
 

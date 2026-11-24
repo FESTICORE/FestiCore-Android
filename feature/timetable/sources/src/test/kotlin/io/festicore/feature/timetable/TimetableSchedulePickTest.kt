@@ -36,6 +36,7 @@ class TimetableSchedulePickTest {
         FakeCurrentUserProvider(),
         mapper,
         FakeOverlapCalculator(),
+        RecordingAnalyticsUseCase(),
         clock,
         TestSleeper()::sleep,
     )

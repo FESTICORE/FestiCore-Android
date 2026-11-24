@@ -12,6 +12,7 @@ android {
 dependencies {
     val libs = catalog
     api(project(":feature:web:interface"))
+    implementation(project(":service:analytics:interface"))
     implementation(project(":ui:designkit"))
     implementation(libs.lib("compose-foundation"))
 

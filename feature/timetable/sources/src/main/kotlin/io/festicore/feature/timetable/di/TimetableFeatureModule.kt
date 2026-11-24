@@ -17,6 +17,7 @@ val timetableFeatureModule = module {
             currentUserProvider = get(),
             mapper = get(),
             overlapCalculator = get(),
+            analyticsUseCase = get(),
         )
     }
     // 인자: 목록 모드, 열 때 타임테이블이 가진 날짜(iOS가 타임테이블 상태를 복사해 push하는 것과 같은 자리).

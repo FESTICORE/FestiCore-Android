@@ -204,6 +204,58 @@ class BoundaryTests(unittest.TestCase):
         path = "service/config/src/main/kotlin/A.kt"
         self.assertEqual(0, self.check(path, "val a = FirebaseApp.initializeApp(context, options)\n").returncode)
 
+    def test_feature_may_depend_only_on_analytics_interface(self):
+        path = "feature/festival/sources/build.gradle.kts"
+        allowed = [
+            'dependencies { implementation(project(":service:analytics:interface")) }\n',
+            "dependencies { implementation(projects.service.analytics.`interface`) }\n",
+        ]
+        for text in allowed:
+            self.assertEqual(0, self.check(path, text).returncode, text)
+        blocked = [
+            'dependencies { implementation(project(":service:analytics:sources")) }\n',
+            'dependencies { implementation(project(":core:storage:sources")) }\n',
+            'dependencies { implementation(project(":core:network:interface")) }\n',
+            'dependencies { implementation(project(":core:storage:interface")) }\n',
+            'dependencies { implementation(project(":core:location:interface")) }\n',
+            'dependencies { implementation(project(":service:analytics:interfaceX")) }\n',
+            "dependencies { implementation(projects.service.analytics.sources) }\n",
+            "dependencies { implementation(projects.core.network.`interface`) }\n",
+        ]
+        for text in blocked:
+            result = self.check(path, text)
+            self.assertEqual(1, result.returncode, text)
+            self.assertIn("feature는 service · core를 의존하지 않는다", result.stdout)
+
+    def test_analytics_sources_only_assembled(self):
+        text = 'dependencies {\n    implementation(project(":service:analytics:sources"))\n}\n'
+        result = self.check("domain/auth/sources/build.gradle.kts", text)
+        self.assertEqual(1, result.returncode)
+        self.assertIn("조립하는 곳만", result.stdout)
+        self.assertEqual(0, self.check("domain/auth/sources/build.gradle.kts", "val a = 1\n").returncode)
+        self.assertEqual(0, self.check("service/serviceassembly/build.gradle.kts", text).returncode)
+        # 타입 안전 접근자도 같은 규칙으로 막는다.
+        for accessor in ["service.analytics", "service.auth", "service.pack", "service.device", "core.network", "core.storage"]:
+            text = "dependencies {\n    implementation(projects.%s.sources)\n}\n" % accessor
+            result = self.check("domain/auth/sources/build.gradle.kts", text)
+            self.assertEqual(1, result.returncode, accessor)
+            self.assertIn("조립하는 곳만", result.stdout)
+        interface = "dependencies {\n    implementation(projects.service.analytics.`interface`)\n    api(projects.core.network.`interface`)\n}\n"
+        self.assertEqual(0, self.check("domain/auth/sources/build.gradle.kts", interface).returncode)
+        test_only = "dependencies {\n    testImplementation(projects.core.network.sources)\n}\n"
+        self.assertEqual(0, self.check("domain/auth/sources/build.gradle.kts", test_only).returncode)
+        accessor = "dependencies {\n    implementation(projects.service.analytics.sources)\n}\n"
+        self.assertEqual(0, self.check("service/serviceassembly/build.gradle.kts", accessor).returncode)
+
+    def test_analytics_sdk_outside_analytics_sources_blocked(self):
+        for text in ["import com.mixpanel.android.mpmetrics.MixpanelAPI\n", "import io.sentry.Sentry\n"]:
+            result = self.check("feature/auth/sources/src/main/kotlin/A.kt", text)
+            self.assertEqual(1, result.returncode, text)
+            self.assertIn("service:analytics:sources", result.stdout)
+        self.assertEqual(0, self.check("feature/auth/sources/src/main/kotlin/A.kt", "val a = 1\n").returncode)
+        path = "service/analytics/sources/src/main/kotlin/A.kt"
+        self.assertEqual(0, self.check(path, "import com.mixpanel.android.mpmetrics.MixpanelAPI\n").returncode)
+
     def test_hex_color_outside_tokens_blocked(self):
         result = self.check("feature/home/sources/src/main/kotlin/A.kt", "val c = Color(0xFF111113)\n")
         self.assertEqual(1, result.returncode)

@@ -12,6 +12,7 @@ android {
 dependencies {
     val libs = catalog
     api(project(":feature:auth:interface"))
+    implementation(project(":service:analytics:interface"))
     implementation(project(":domain:auth:interface"))
     implementation(project(":ui:designkit"))
     implementation(libs.lib("compose-foundation"))

@@ -11,6 +11,11 @@ import io.festicore.domain.auth.google.GoogleLoginUseCase
 import io.festicore.feature.auth.AuthCoordinator
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
+import io.festicore.service.analytics.event.AnalyticsButton
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsProvider
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import kotlin.coroutines.cancellation.CancellationException
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -22,12 +27,22 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 class LaunchLoginViewModel(
     private val googleLoginUseCase: GoogleLoginUseCase,
     private val authRepository: AuthRepository,
+    private val analyticsUseCase: AnalyticsUseCase,
 ) : ViewModel(),
     OrbitContainerHost<LaunchLoginState, LaunchLoginState, LaunchLoginSideEffect> {
     override val container = orbitContainer<LaunchLoginState, LaunchLoginSideEffect>(LaunchLoginState())
 
+    /** 로그인 버튼을 눌렀다(iOS `signInTapped`). 탭을 남기고 로그인을 시작한다. */
     fun onSignInTapped() = intent {
-        if (state.isSigningIn) return@intent
+        analyticsUseCase.track(AnalyticsEvent.UiAction(action = AnalyticsButton.LoginGoogle, screen = AnalyticsScreen.Login))
+        startSignIn()
+    }
+
+    /** 탭 없이 바로 로그인을 시작한다(iOS `AuthCoordinator`가 보내는 `signIn`, 마이 Google 바로 로그인). 탭 이벤트를 남기지 않는다. */
+    fun onSignInRequested() = intent { startSignIn() }
+
+    private suspend fun startSignIn() = subIntent {
+        if (state.isSigningIn) return@subIntent
         val attemptId = state.attemptId + 1
         reduce { state.copy(isSigningIn = true, errorMessage = null, attemptId = attemptId) }
         signIn(attemptId)
@@ -48,7 +63,15 @@ class LaunchLoginViewModel(
                 onSignInFailed(attemptId, e)
                 return@subIntent
             }
+        acceptLogin(login)
         fetchProfile(attemptId, login)
+    }
+
+    /** 로그인이 확정된 직후 사용자 ID를 분석 도구에 연결하고, 신규 계정이면 sign_up을 남긴다(iOS `AuthCoordinator.acceptLogin`). */
+    private fun acceptLogin(login: AuthLoginResult) {
+        analyticsUseCase.identify(login.user.id, login.user.provider)
+        val provider = AnalyticsProvider.fromRawValue(login.user.provider)
+        if (login.newUser && provider != null) analyticsUseCase.track(AnalyticsEvent.SignUp(method = provider))
     }
 
     private suspend fun fetchProfile(attemptId: Int, login: AuthLoginResult) = subIntent {

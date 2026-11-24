@@ -9,6 +9,9 @@ import io.festicore.domain.festival.entity.FestivalFlagReportError
 import io.festicore.domain.festival.entity.FestivalFlagReportReason
 import io.festicore.domain.festival.flagdetail.FestivalFlagDetailUseCase
 import io.festicore.domain.festival.flagdetail.FestivalFlagUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.FlagFollowData
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import java.time.Clock
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
@@ -30,6 +33,7 @@ class FlagDetailViewModel(
     context: FlagDetailContext,
     private val detailUseCase: FestivalFlagDetailUseCase,
     private val flagUseCase: FestivalFlagUseCase,
+    private val analyticsUseCase: AnalyticsUseCase,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -275,6 +279,7 @@ class FlagDetailViewModel(
                 loadGeneration = state.loadGeneration + 1,
             )
         }
+        analyticsUseCase.track(AnalyticsEvent.FlagFollow(FlagFollowData(flagId = response.flagId, isFollowing = response.isFollowing)))
         postSideEffect(
             FlagDetailSideEffect.FollowChanged(
                 flagId = response.flagId,

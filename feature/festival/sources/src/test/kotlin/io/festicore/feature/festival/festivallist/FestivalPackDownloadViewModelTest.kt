@@ -9,6 +9,10 @@ import io.festicore.domain.festival.entity.PackDownloadEvent
 import io.festicore.domain.festival.entity.PackDownloadProgress
 import io.festicore.domain.festival.entity.PackSyncResult
 import io.festicore.domain.festival.pack.FestivalPackUseCase
+import io.festicore.feature.festival.RecordingAnalyticsUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsPackSyncResult
+import io.festicore.service.analytics.event.PackSyncData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +31,8 @@ import org.orbitmvi.orbit.test.test
  * 목록이 보이는 결과(카드 문구 · 받는 중 · 토스트)만 확인한다.
  */
 class FestivalPackDownloadViewModelTest {
+    private val analytics = RecordingAnalyticsUseCase()
+
     private val festival = FestivalCatalogItem(id = "festival", name = "축제", firstDate = "2099-11-21", packVersion = 2)
 
     private val started =
@@ -46,7 +52,7 @@ class FestivalPackDownloadViewModelTest {
     )
 
     private fun viewModel(packs: FakePackUseCase, currentUser: FakeCurrentUserProvider = FakeCurrentUserProvider()) =
-        FestivalListViewModel(FakeCatalogUseCase(), FakeLibraryUseCase(), currentUser, packs)
+        FestivalListViewModel(FakeCatalogUseCase(), FakeLibraryUseCase(), currentUser, packs, analytics)
 
     private fun FestivalListState.packCopy() = FestivalListPresentation.packCopy(festivals.first())
 
@@ -113,6 +119,7 @@ class FestivalPackDownloadViewModelTest {
             expectState { copy(packDownloads = emptyMap(), cachedPacks = mapOf("festival" to pack(2))) }
         }
         assertEquals(listOf("festival"), packs.downloaded)
+        assertEquals(listOf(AnalyticsEvent.PackSync(PackSyncData("festival", AnalyticsPackSyncResult.Updated))), analytics.events)
     }
 
     @Test
@@ -231,6 +238,7 @@ class FestivalPackDownloadViewModelTest {
             expectState { copy(packDownloads = mapOf("festival" to null)) }
             expectState { copy(packDownloads = emptyMap(), toast = FestivalListToast.PackDownloadFailed, toastRevision = 1) }
         }
+        assertEquals(listOf(AnalyticsEvent.PackSync(PackSyncData("festival", AnalyticsPackSyncResult.Failed))), analytics.events)
     }
 
     @Test

@@ -14,6 +14,7 @@ import io.festicore.feature.profile.ProfileCoordinator
 import io.festicore.feature.profile.ProfileRoute
 import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.rememberProfileFlowEntries
+import io.festicore.service.analytics.usecase.PreviewAnalyticsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -64,7 +65,7 @@ class HiddenProfileTabSyncTest {
         val signedIn = AccountState(hasSession = true)
         val account = MutableStateFlow(signedIn)
         val coordinator = ProfileCoordinator(FakeCurrentUserProvider())
-        val profileViewModel = ProfileViewModel(signedIn, NoPacks, NoPackDetail)
+        val profileViewModel = ProfileViewModel(signedIn, NoPacks, NoPackDetail, PreviewAnalyticsUseCase)
         composeRule.setContent {
             rememberProfileFlowEntries(
                 account = account,
@@ -84,15 +85,18 @@ class HiddenProfileTabSyncTest {
             coordinator.onSettingsRequested()
             coordinator.onAccountRequested()
         }
-        composeRule.waitForIdle()
-        assertEquals(
-            listOf(ProfileRoute.Profile, ProfileRoute.Settings, ProfileRoute.Account),
-            coordinator.container.stateFlow.value.routes,
-        )
+        // Orbit은 intent를 Dispatchers.Default 이벤트 루프에서 처리해 Compose idle 동기화(waitForIdle)가 기다리지 않는다. 경로가 바뀔 때까지 기다린다.
+        val opened = listOf(ProfileRoute.Profile, ProfileRoute.Settings, ProfileRoute.Account)
+        composeRule.waitUntil(ROUTE_TIMEOUT_MS) { coordinator.container.stateFlow.value.routes == opened }
+        assertEquals(opened, coordinator.container.stateFlow.value.routes)
 
         composeRule.runOnIdle { account.value = AccountState(hasSession = false) }
-        composeRule.waitForIdle()
+        composeRule.waitUntil(ROUTE_TIMEOUT_MS) { coordinator.container.stateFlow.value.routes != opened }
 
         assertEquals(listOf(ProfileRoute.Profile), coordinator.container.stateFlow.value.routes)
+    }
+
+    private companion object {
+        const val ROUTE_TIMEOUT_MS = 5_000L
     }
 }

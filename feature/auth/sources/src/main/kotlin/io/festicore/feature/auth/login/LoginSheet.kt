@@ -77,7 +77,7 @@ fun LoginSheet(
         }
     }
     // 진행 중인 로그인이 있으면 ViewModel이 다시 누르기를 무시한다(화면 회전 등으로 다시 실행돼도 한 번만 시작한다).
-    LaunchedEffect(presentationId, startsSignIn) { if (startsSignIn) viewModel.onSignInTapped() }
+    LaunchedEffect(presentationId, startsSignIn) { if (startsSignIn) viewModel.onSignInRequested() }
 
     FCSheet(item = context, onDismissRequest = onDismiss, isDismissible = !state.isSigningIn) { shown ->
         val dismiss = LocalFCSheetDismiss.current
