@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":service:config"))
     implementation(project(":service:serviceassembly"))
     implementation(project(":domain:auth:sources"))
+    implementation(project(":domain:bearer:sources"))
     implementation(project(":domain:festival:sources"))
     implementation(project(":domain:notice:sources"))
     implementation(project(":domain:timetable:sources"))
