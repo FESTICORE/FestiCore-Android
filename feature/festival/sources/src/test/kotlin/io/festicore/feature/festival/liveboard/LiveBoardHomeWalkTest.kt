@@ -273,6 +273,61 @@ class LiveBoardHomeWalkTest {
         }
     }
 
+    @Test
+    fun `같은 축제 팩이 바뀌어 목적지가 달라지면 이전 계산을 취소하고 새 목적지로 다시 계산한다`() = runTest {
+        val oldPlaceGate = CompletableDeferred<WalkingDuration>()
+        val asked = mutableListOf<String>()
+        val location = FakeLocationClient(authorization = { LocationAuthorization.Authorized }, currentLocation = { origin })
+        val maps =
+            FakeMapsClient(walkingDuration = { _, place ->
+                asked += place.name
+                if (place.name == STATION_NAME) oldPlaceGate.await() else WalkingDuration(300.0)
+            })
+        val packs = FakeBoardPackUseCase(FestivalPackState(packs = mapOf(FESTIVAL_ID to pack(directions()))))
+        val state = homeState().copy(isVisible = true, hasStarted = true)
+        viewModel(location, maps, packs).test(this, initialState = state) {
+            runOnCreate()
+            containerHost.onHomeRideAppeared()
+            awaitBoard { it.homeWalk == HomeWalkState.Estimating(FESTIVAL_ID, last = null) }
+            testScheduler.runCurrent()
+            assertTrue(STATION_NAME in asked)
+            // 서버가 역 이름 · 좌표를 고친 새 팩(같은 축제)
+            val moved = directions(stationLocation = FestivalPackDetail.Coordinate(37.3800, 127.1300)).copy(transitStationName = "야탑역")
+            packs.state.value = FestivalPackState(packs = mapOf(FESTIVAL_ID to pack(moved).copy(etag = "v2")))
+            val updated = awaitBoard { it.homeWalk is HomeWalkState.Estimated }
+            assertEquals(HomeWalkMinutes(station = 5, shuttleStop = 5), (updated.homeWalk as HomeWalkState.Estimated).minutes)
+            assertEquals("야탑역", updated.homeWalkPlaces.station?.name)
+            // 취소된 옛 계산의 결과가 늦게 와도 바꾸지 않는다.
+            oldPlaceGate.complete(WalkingDuration(60.0))
+            cancelAndIgnoreRemainingItems()
+            assertEquals(updated.homeWalk, containerHost.container.stateFlow.value.homeWalk)
+        }
+        assertTrue("야탑역" in asked)
+    }
+
+    @Test
+    fun `팩이 바뀌어도 목적지가 같으면 다시 계산하지 않는다`() = runTest {
+        val location = FakeLocationClient(authorization = { LocationAuthorization.Authorized }, currentLocation = { origin })
+        var calls = 0
+        val maps = FakeMapsClient(walkingDuration = { _, _ ->
+            calls++
+            WalkingDuration(300.0)
+        })
+        val packs = FakeBoardPackUseCase(FestivalPackState(packs = mapOf(FESTIVAL_ID to pack(directions()))))
+        viewModel(location, maps, packs).test(this, initialState = homeState().copy(isVisible = true, hasStarted = true)) {
+            runOnCreate()
+            containerHost.onHomeRideAppeared()
+            awaitBoard { it.homeWalk is HomeWalkState.Estimated }
+            packs.state.value =
+                FestivalPackState(
+                    packs = mapOf(FESTIVAL_ID to pack(directions(lastShuttleAt = "2026-11-08T23:45:00+09:00")).copy(etag = "v2")),
+                )
+            awaitBoard { it.homeDirections?.lastShuttleAt == "2026-11-08T23:45:00+09:00" }
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(2, calls)
+    }
+
     // MARK: - 카드 문구와 출발 판단
 
     @Test

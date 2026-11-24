@@ -19,7 +19,7 @@ import org.koin.dsl.module
  * Routes API는 앱 서버가 아니라 외부 호스트라 core/network의 HttpClient 생성 함수로 따로 만든다.
  */
 fun coreLocationModule(routesApiKey: String): Module = module {
-    single<LocationClient> { PlatformLocationClient(androidContext(), get()) }
+    single<LocationClient> { PlatformLocationClient(androidContext(), get(), get()) }
     single<MapsClient> {
         val context = androidContext()
         val identity by lazy { appSigningIdentity(context) }

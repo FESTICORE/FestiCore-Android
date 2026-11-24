@@ -104,6 +104,9 @@ class LiveBoardViewModel(
     private val notificationUnreadCountJob = AtomicReference<Job?>(null)
     private val homeWalkJob = AtomicReference<Job?>(null)
 
+    /** 마지막으로 계산을 시작한 목적지. 팩이 바뀌어 목적지가 달라지면 다시 계산한다(점검 R6-LOC-002). */
+    private val homeWalkPlaces = AtomicReference<HomeWalkPlaces?>(null)
+
     // MARK: - View
 
     /** 보드가 화면에 들어왔다(iOS `onAppear` · `liveBoardOnAppear` · `onlineDetailOnAppear`). */
@@ -278,13 +281,11 @@ class LiveBoardViewModel(
         if (state.hasSession) boundary(LiveBoardBoundary.Crew(state.festivalId, crew.id))
     }
 
-    /** 귀가 카드가 보였다(iOS `homeRideAppeared`). 역 · 정류장이 있고 계산 중이 아닐 때만 도보 시간을 계산한다. */
+    /** 귀가 카드가 보였다(iOS `homeRideAppeared`). 역 · 정류장이 있고 같은 목적지를 계산 중이 아닐 때만 도보 시간을 계산한다. */
     fun onHomeRideAppeared() = intent {
-        val festivalId = state.festivalId
         val places = state.homeWalkPlaces
-        if (places.isEmpty || state.homeWalk.isEstimating(festivalId)) return@intent
-        reduce { state.copy(homeWalk = HomeWalkState.Estimating(festivalId, last = state.homeWalk.minutes(festivalId))) }
-        replace(homeWalkJob) { estimateHomeWalk(festivalId, places) }
+        if (places.isEmpty || (state.homeWalk.isEstimating(state.festivalId) && isSamePlaces(places))) return@intent
+        startHomeWalk(places)
     }
 
     /** 귀가 "가는 길"(iOS `homeDirectionsTapped`). 안내할 역 · 정류장이 없으면 기존처럼 팩 상세의 가는 길로 보낸다. */
@@ -475,6 +476,37 @@ class LiveBoardViewModel(
     private fun launchOnlineDetail(festivalId: String) = replace(onlineDetailJob) {
         val document = attempt { liveBoardUseCase.festivalDetail(festivalId) }
         if (document == null) onOnlineDetailFailed(festivalId) else onOnlineDetailLoaded(festivalId, document)
+    }
+
+    /** 계산을 시작한 기록이 없으면(복원된 상태 등) 같은 목적지로 본다. */
+    private fun isSamePlaces(places: HomeWalkPlaces): Boolean = homeWalkPlaces.get()?.let { it == places } ?: true
+
+    /** 직전 결과는 같은 목적지일 때만 계산 중에 계속 보인다. 목적지가 바뀌었으면 이전 값을 버린다. */
+    private suspend fun startHomeWalk(places: HomeWalkPlaces) = subIntent {
+        val festivalId = state.festivalId
+        val last = state.homeWalk.minutes(festivalId).takeIf { isSamePlaces(places) }
+        homeWalkPlaces.set(places)
+        reduce { state.copy(homeWalk = HomeWalkState.Estimating(festivalId, last = last)) }
+        replace(homeWalkJob) { estimateHomeWalk(festivalId, places) }
+    }
+
+    /**
+     * 같은 축제 팩이 바뀌어 역 · 정류장 이름 · 좌표가 달라졌으면 이전 계산을 취소하고 다시 계산한다(점검 R6-LOC-002).
+     * iOS는 팩을 새로 받으면 귀가 상세를 다시 읽고(`FestivalFeature.swift:755-757` `loadHomeDetails`), 읽는 동안 스켈레톤으로 바뀐 카드가
+     * 다시 보이면서 `homeRideAppeared`(`FestivalLiveBoardScreen.swift:437`, `FestivalFeature.swift:1037-1046`)로 다시 계산한다.
+     * Android 카드는 팩을 바로 읽어 스켈레톤이 없으므로 목적지 변화를 직접 본다. 카드가 보이기 전(Idle)이나 화면 밖이면 그대로 둔다.
+     */
+    private suspend fun refreshHomeWalkIfPlacesChanged() = subIntent {
+        if (!state.isVisible || state.homeWalk == HomeWalkState.Idle) return@subIntent
+        val places = state.homeWalkPlaces
+        if (isSamePlaces(places)) return@subIntent
+        if (places.isEmpty) {
+            homeWalkJob.getAndSet(null)?.cancel()
+            homeWalkPlaces.set(null)
+            reduce { state.copy(homeWalk = HomeWalkState.Idle) }
+            return@subIntent
+        }
+        startHomeWalk(places)
     }
 
     /**
@@ -690,6 +722,7 @@ class LiveBoardViewModel(
             // 목록 · 다시 읽기로 같은 축제 팩이 새 버전 · 내용으로 바뀌었다: 표시 팩만 새로 그린다(감시는 그대로).
             previous != null && current != null && previous != current -> reduce { showCachedPack(state) }
         }
+        refreshHomeWalkIfPlacesChanged()
     }
 
     /** 공유 배지가 바뀌었다(설계 E7). 비로그인이면 보이지 않는다(iOS `guard state.hasSession`). */

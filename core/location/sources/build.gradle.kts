@@ -9,6 +9,7 @@ plugins {
 dependencies {
     val libs = catalog
     api(project(":core:location:interface"))
+    implementation(project(":core:storage:interface"))
     // Routes API(외부 호스트) 호출용 HttpClient 생성. 경계 규칙 예외(설계 R6 쟁점 F4)
     implementation(project(":core:network:sources"))
     implementation(libs.lib("ktor-client-core"))
@@ -23,4 +24,5 @@ dependencies {
     testImplementation(libs.lib("junit"))
     testImplementation(libs.lib("kotlinx-coroutines-test"))
     testImplementation(libs.lib("ktor-client-mock"))
+    testImplementation(libs.lib("robolectric"))
 }
