@@ -7,7 +7,7 @@ plugins {
 
 dependencies {
     val libs = catalog
-    implementation(project(":feature:onboarding:sources"))
+    implementation(project(":feature:onboarding"))
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))

@@ -8,7 +8,7 @@ plugins {
 dependencies {
     val libs = catalog
     implementation(project(":core:network:sources"))
-    implementation(project(":core:storage"))
+    implementation(project(":core:storage:sources"))
     implementation(platform(libs.lib("koin-bom")))
     implementation(libs.lib("koin-core"))
 }

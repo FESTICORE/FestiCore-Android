@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
-import io.festicore.core.storage.AppearanceMode
+import io.festicore.core.storage.shared.AppearanceMode
 
 /**
  * 고른 화면 모드를 앱 전체에 적용한다(iOS 앱 루트 `preferredColorScheme`, 설계 쟁점 M6).

@@ -11,7 +11,7 @@ paths:
 
 ## Hard
 
-- Keystore · SharedPreferences · DataStore · Room은 `core/storage`(iOS `FestiCoreStorage`)에서만 쓴다. 다른 모듈은 주입받아 쓴다(verify `boundaries`가 검사).
+- Keystore · SharedPreferences · DataStore · Room은 `core/storage/sources`(iOS `FestiCoreStorage/Sources`)에서만 쓴다. 다른 모듈은 주입받아 쓴다(verify `boundaries`가 검사).
 - 토큰 · 인가 코드 · 개인정보는 로그 · Sentry · Mixpanel로 보내지 않는다. Sentry · Mixpanel 호출은 `service/analytics`에만 둔다.
 - 모듈 공통 Gradle 설정은 `build-logic/`의 convention plugin에만, 버전은 `gradle/libs.versions.toml`에만 쓴다.
 - Koin 정의는 그 클래스가 있는 모듈의 `di/`에 둔다.

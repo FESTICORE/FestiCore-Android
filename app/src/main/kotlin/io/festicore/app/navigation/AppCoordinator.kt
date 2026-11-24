@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
 import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.logger.LogCategory
-import io.festicore.core.storage.FirstInstallOnboardingStore
+import io.festicore.core.storage.onboarding.FirstInstallOnboardingStore
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.auth.AuthRepository
 import io.festicore.domain.auth.entity.AuthDomainError

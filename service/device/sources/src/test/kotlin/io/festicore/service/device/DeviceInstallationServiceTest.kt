@@ -1,6 +1,6 @@
 package io.festicore.service.device
 
-import io.festicore.core.storage.SecureStorage
+import io.festicore.core.storage.secure.SecureStorage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest

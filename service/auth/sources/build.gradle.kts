@@ -11,7 +11,7 @@ dependencies {
     api(project(":service:auth:interface"))
     api(project(":service:apiendpoint"))
     implementation(project(":core:network:sources"))
-    implementation(project(":core:storage"))
+    implementation(project(":core:storage:interface"))
     implementation(libs.lib("kotlinx-coroutines-core"))
 
     implementation(platform(libs.lib("koin-bom")))

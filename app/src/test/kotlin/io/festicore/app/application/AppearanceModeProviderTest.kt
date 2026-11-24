@@ -3,7 +3,7 @@ package io.festicore.app.application
 import android.app.Application
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import io.festicore.core.storage.AppearanceMode
+import io.festicore.core.storage.shared.AppearanceMode
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import org.junit.Assert.assertEquals
 import org.junit.Rule

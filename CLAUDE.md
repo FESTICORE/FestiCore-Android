@@ -21,7 +21,7 @@ app/        진입점 (Application · MainActivity · 루트 Coordinator · Koin
 feature/    화면 {기능}/{interface,sources}. 이름은 iOS Projects/Feature와 같다
 domain/     기능별 계약(interface)과 구현(sources)
 service/    API · 인증 세션 · 분석 등 서비스. pack · device · auth는 {interface,sources}
-core/       network({interface,sources}) · storage · logger 등 공통
+core/       network · storage(각 {interface,sources}) · logger 등 공통
 ui/         designkit(토큰 · 컴포넌트) · sharedui
 build-logic/  Gradle convention plugin
 .claude/    에이전트 규칙 · 문서 · 훅

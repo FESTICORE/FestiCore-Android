@@ -12,7 +12,7 @@ android {
 dependencies {
     val libs = catalog
     implementation(project(":core:logger"))
-    implementation(project(":core:storage"))
+    implementation(project(":core:storage:interface"))
     implementation(project(":core:utility"))
     implementation(project(":core:coreassembly"))
     implementation(project(":service:auth:interface"))
@@ -25,7 +25,7 @@ dependencies {
     implementation(project(":ui:designkit"))
     implementation(project(":ui:animation"))
     implementation(project(":ui:sharedui"))
-    implementation(project(":feature:onboarding:sources"))
+    implementation(project(":feature:onboarding"))
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))

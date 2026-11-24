@@ -17,7 +17,7 @@ dependencies {
 
     testImplementation(project(":service:auth:sources"))
     testImplementation(project(":core:network:sources"))
-    testImplementation(project(":core:storage"))
+    testImplementation(project(":core:storage:interface"))
     testImplementation(libs.lib("junit"))
     testImplementation(libs.lib("kotlinx-coroutines-test"))
     testImplementation(libs.lib("ktor-client-mock"))
