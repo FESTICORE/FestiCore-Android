@@ -10,8 +10,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -21,16 +24,23 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.festicore.app.navigation.bearer.BearerEntryHost
 import io.festicore.app.navigation.maintab.LiveTabRequest
 import io.festicore.app.navigation.maintab.MainTabCoordinator
 import io.festicore.app.navigation.maintab.MainTabScreen
 import io.festicore.app.navigation.splash.LaunchTransitions
 import io.festicore.app.navigation.splash.RootScreen
 import io.festicore.app.navigation.splash.SplashScreen
+import io.festicore.core.logger.FestiCoreLogCategory
+import io.festicore.core.logger.FestiCoreLogger
+import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.domain.festival.liveboard.FestivalLiveBoardPreferenceUseCase
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.login.LaunchLoginFlow
 import io.festicore.feature.auth.login.LoginSheet
+import io.festicore.feature.bearer.BearerRoute
+import io.festicore.feature.bearer.board.BearerBoardScreen
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalFlow
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
@@ -46,6 +56,7 @@ import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
 import io.festicore.feature.profile.ProfileCoordinator
 import io.festicore.feature.profile.ProfileFlow
+import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.rememberProfileFlowEntries
 import io.festicore.feature.timetable.TimetableCoordinator
 import io.festicore.feature.timetable.TimetableFlow
@@ -53,9 +64,12 @@ import io.festicore.feature.timetable.main.TimetableViewModel
 import io.festicore.feature.timetable.rememberTimetableFlowEntries
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -141,14 +155,18 @@ private fun HomeWithCovers(
     flagCoordinator: FlagCoordinator = koinViewModel(),
     flagViewModel: FlagViewModel = koinViewModel(),
     profileCoordinator: ProfileCoordinator = koinViewModel(),
+    profileViewModel: ProfileViewModel = koinViewModel { parametersOf(coordinator.account.value) },
     timetableCoordinator: TimetableCoordinator = koinViewModel(),
     timetableViewModel: TimetableViewModel = koinViewModel(),
     currentUserProvider: CurrentUserProvider = koinInject(),
+    liveBoardPreferenceUseCase: FestivalLiveBoardPreferenceUseCase = koinInject(),
 ) {
     val mainTabState by mainTab.collectAsState()
     val festivalState by festivalCoordinator.collectAsState()
     val flagState by flagViewModel.collectAsState()
     val accountId by currentUserProvider.currentUserId.collectAsState()
+    var profileBearerRoute by remember { mutableStateOf<BearerRoute?>(null) }
+    val coroutineScope = rememberCoroutineScope()
     val flagBoard = festivalState.flagBoard
     val flagDetailContext = remember { MutableStateFlow(flagBoard.flagDetailContext(flagState.snapshot, accountId)) }
     LaunchedEffect(flagBoard, flagState.snapshot, accountId) {
@@ -183,7 +201,18 @@ private fun HomeWithCovers(
     }
     // 탭마다 스택 항목을 탭 밖에서 만들어 둔다. 고른 탭만 그려도 다른 탭의 화면 ViewModel · 저장 상태가 남고(iOS `TabView`),
     // 스택에서 빠진 항목(계정 변경 정리 등)은 탭이 안 보여도 바로 정리된다(Navigation 3 `rememberDecoratedNavEntries` 여러 백스택).
-    val festivalEntries = rememberFestivalFlowEntries(coordinator = festivalCoordinator, listViewModel = festivalListViewModel)
+    val festivalEntries =
+        rememberFestivalFlowEntries(
+            coordinator = festivalCoordinator,
+            listViewModel = festivalListViewModel,
+            bearerBoardContent = { festivalId, flagId ->
+                BearerBoardScreen(
+                    route = BearerRoute.Board(festivalId, flagId),
+                    viewerUserId = accountId,
+                    onClose = festivalCoordinator::goBack,
+                )
+            },
+        )
     val flagEntries =
         rememberFlagFlowEntries(
             input = flagBoard.flagTabInput(accountId),
@@ -203,6 +232,55 @@ private fun HomeWithCovers(
             onWithdrawRequested = coordinator::onWithdrawRequested,
             onRefreshRequested = coordinator::onProfileRefreshRequested,
             onNicknameUpdated = coordinator::onNicknameUpdated,
+            profileViewModel = profileViewModel,
+            onBearerEntryRequested = {
+                profileBearerRoute = BearerRoute.Register()
+                profileCoordinator.onBearerEntryRequested()
+            },
+            onBearerFlagsRetryTapped = profileViewModel::onBearerFlagsRetryTapped,
+            onBearerFlagsLoadFailed = {
+                FestiCoreLogger.error("기수 목록 조회 실패", FestiCoreLogCategory.NETWORK)
+            },
+            onBearerFlagRequested = { flag, opensBoard ->
+                profileBearerRoute =
+                    if (opensBoard) {
+                        BearerRoute.Board(flag.festivalId, flag.id)
+                    } else {
+                        BearerRoute.Profile(flag.festivalId, flag.id)
+                    }
+                profileCoordinator.onBearerEntryRequested()
+            },
+            bearerEntryContent = {
+                profileBearerRoute?.let { route ->
+                    BearerEntryHost(
+                        startRoute = route,
+                        viewerUserId = accountId,
+                        onRegistered = { festivalId ->
+                            coroutineScope.launch {
+                                try {
+                                    liveBoardPreferenceUseCase.saveSelectedFestivalId(festivalId)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    FestiCoreLogger.error(
+                                        "기수 등록 축제 선택 저장 실패: ${e::class.simpleName}",
+                                        FestiCoreLogCategory.STORAGE,
+                                    )
+                                }
+                            }
+                        },
+                        onPackRequested = { festivalId ->
+                            profileCoordinator.goBackToRoot()
+                            profileViewModel.onBearerEntryClosed()
+                            mainTab.open(FestiCoreDeeplink.Festival(festivalId))
+                        },
+                        onClose = {
+                            profileCoordinator.goBack()
+                            profileViewModel.onBearerEntryClosed()
+                        },
+                    )
+                }
+            },
             legalDocument = { page, onBack -> WebScreen(page = page, onBackToRoot = onBack) },
             coordinator = profileCoordinator,
         )

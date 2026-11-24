@@ -21,6 +21,7 @@ data class ProfileCoordinatorState(
     val hidesTabBarForRoute: Boolean
         get() = when (routes.lastOrNull()) {
             ProfileRoute.Settings,
+            ProfileRoute.BearerEntry,
             ProfileRoute.Account,
             ProfileRoute.Appearance,
             ProfileRoute.NoticeList,
@@ -78,6 +79,9 @@ class ProfileCoordinator(currentUserProvider: CurrentUserProvider) :
 
     /** 받은 팩 행(iOS `packTapped`). */
     fun onPackDetailRequested(festivalId: String, title: String) = openOnProfile(ProfileRoute.PackDetail(festivalId, title))
+
+    /** 마이 화면에서 app 소유 기수 흐름을 스택에 push한다. */
+    fun onBearerEntryRequested() = openOnProfile(ProfileRoute.BearerEntry)
 
     /** 라이브 보드 "가는 길"(iOS `openPackDirections`). 받은 팩 목록과 상관없이 그 축제의 팩 상세를 연다. */
     fun onOpenPackDirections(festivalId: String, title: String) = onPackDetailRequested(festivalId, title)

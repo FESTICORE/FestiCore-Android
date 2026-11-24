@@ -23,6 +23,7 @@ val profileFeatureModule = module {
             receivedPackUseCase = get(),
             packDetailUseCase = get(),
             analyticsUseCase = get(),
+            bearerUseCase = get(),
         )
     }
     // 인자: 화면을 만들 때의 계정 상태(AccountState).

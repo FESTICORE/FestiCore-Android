@@ -2,6 +2,7 @@ package io.festicore.feature.profile.main
 
 import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.domain.auth.entity.AuthUser
+import io.festicore.domain.bearer.testing.FakeBearerUseCase
 import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDetail
@@ -71,7 +72,14 @@ class ProfileViewModelTest {
         detail: FakePackDetailUseCase = FakePackDetailUseCase(),
         account: AccountState = AccountState(),
         analytics: RecordingAnalyticsUseCase = RecordingAnalyticsUseCase(),
-    ) = ProfileViewModel(initialAccount = account, receivedPackUseCase = packs, packDetailUseCase = detail, analyticsUseCase = analytics)
+        bearerUseCase: FakeBearerUseCase = FakeBearerUseCase(onFetchBearerFlags = { emptyList() }),
+    ) = ProfileViewModel(
+        initialAccount = account,
+        receivedPackUseCase = packs,
+        packDetailUseCase = detail,
+        analyticsUseCase = analytics,
+        bearerUseCase = bearerUseCase,
+    )
 
     private val signedIn = AccountState(hasSession = true)
 

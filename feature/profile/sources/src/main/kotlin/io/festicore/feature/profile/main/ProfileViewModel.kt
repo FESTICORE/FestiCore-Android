@@ -1,6 +1,8 @@
 package io.festicore.feature.profile.main
 
 import androidx.lifecycle.ViewModel
+import io.festicore.domain.bearer.bearer.BearerUseCase
+import io.festicore.domain.bearer.entity.BearerOwnedFlag
 import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.domain.festival.packdetail.FestivalPackDetailUseCase
 import io.festicore.domain.festival.receivedpack.FestivalReceivedPackUseCase
@@ -23,6 +25,7 @@ class ProfileViewModel(
     private val receivedPackUseCase: FestivalReceivedPackUseCase,
     private val packDetailUseCase: FestivalPackDetailUseCase,
     private val analyticsUseCase: AnalyticsUseCase,
+    private val bearerUseCase: BearerUseCase,
 ) : ViewModel(),
     OrbitContainerHost<ProfileState, ProfileState, ProfileSideEffect> {
     override val container = orbitContainer<ProfileState, ProfileSideEffect>(ProfileState(account = initialAccount))
@@ -32,12 +35,25 @@ class ProfileViewModel(
     /** 앱 코디네이터가 계정 상태가 바뀔 때 보내는 입력. */
     fun onAccountChanged(account: AccountState) = intent {
         val lostSession = state.account.hasSession && !account.hasSession
-        reduce { state.copy(account = account) }
+        val hasAccount = account.hasSession || account.profile != null
+        val newUserId = account.profile?.user?.id
+        val changedAccount = newUserId != null && newUserId != state.account.profile?.user?.id
+        val shouldFetchBearerFlags = account.hasSession && (!state.account.hasSession || changedAccount)
+        reduce {
+            state.copy(
+                account = account,
+                bearerFlags = if (hasAccount && !changedAccount) state.bearerFlags else emptyList(),
+                bearerFlagsLoaded = if (hasAccount && !changedAccount) state.bearerFlagsLoaded else false,
+                bearerFlagsLoadFailed = false,
+            )
+        }
+        if (shouldFetchBearerFlags) fetchBearerFlags()
         if (lostSession) postSideEffect(ProfileSideEffect.SessionLost)
     }
 
     fun onAppear() = intent {
         analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.Profile))
+        if (state.account.hasSession || state.account.profile != null) fetchBearerFlags()
         if (state.packLoad == ProfilePackLoad.Loading) return@intent
         // 이미 보여 준 목록은 다시 읽는 동안 그대로 둔다.
         if (state.packLoad != ProfilePackLoad.Loaded) reduce { state.copy(packLoad = ProfilePackLoad.Loading) }
@@ -57,6 +73,18 @@ class ProfileViewModel(
     fun onPackTapped(id: String) = intent {
         val pack = state.packs.firstOrNull { it.id == id } ?: return@intent
         postSideEffect(ProfileSideEffect.PackDetailRequested(festivalId = pack.id, title = pack.name))
+    }
+
+    fun onBearerEntryTapped() = intent { postSideEffect(ProfileSideEffect.BearerEntryRequested) }
+
+    /** 기수 흐름을 닫으면 새로 등록 · 인증한 깃발을 다시 읽는다(iOS `bearerEntryClosed`). */
+    fun onBearerEntryClosed() = intent { fetchBearerFlags() }
+
+    fun onBearerFlagsRetryTapped() = intent { fetchBearerFlags() }
+
+    fun onBearerFlagTapped(flagId: String, opensBoard: Boolean) = intent {
+        val flag = state.bearerFlags.firstOrNull { it.id == flagId } ?: return@intent
+        postSideEffect(ProfileSideEffect.BearerFlagRequested(flag, opensBoard))
     }
 
     /** 라이브 보드 "가는 길" 경계. 받은 팩 목록과 상관없이 그 축제의 팩 상세를 연다. */
@@ -99,6 +127,22 @@ class ProfileViewModel(
                 return@subIntent
             }
         onPacksRefreshed(refreshed)
+    }
+
+    private suspend fun fetchBearerFlags() = subIntent {
+        if (state.bearerFlagsLoading) return@subIntent
+        reduce { state.copy(bearerFlagsLoading = true, bearerFlagsLoadFailed = false) }
+        val flags =
+            try {
+                bearerUseCase.fetchBearerFlags(null).filterNot { it.isHidden }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                reduce { state.copy(bearerFlagsLoading = false, bearerFlagsLoaded = true, bearerFlagsLoadFailed = true) }
+                postSideEffect(ProfileSideEffect.BearerFlagsLoadFailed)
+                return@subIntent
+            }
+        reduce { state.copy(bearerFlags = flags, bearerFlagsLoading = false, bearerFlagsLoaded = true, bearerFlagsLoadFailed = false) }
     }
 
     private suspend fun fetchPackChanges(festivalId: String, fromVersion: Int) = subIntent {

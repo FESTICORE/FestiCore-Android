@@ -3,6 +3,7 @@ package io.festicore.app.navigation.maintab
 import android.app.Application
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.domain.bearer.testing.FakeBearerUseCase
 import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDetail
@@ -65,7 +66,14 @@ class HiddenProfileTabSyncTest {
         val signedIn = AccountState(hasSession = true)
         val account = MutableStateFlow(signedIn)
         val coordinator = ProfileCoordinator(FakeCurrentUserProvider())
-        val profileViewModel = ProfileViewModel(signedIn, NoPacks, NoPackDetail, PreviewAnalyticsUseCase)
+        val profileViewModel =
+            ProfileViewModel(
+                signedIn,
+                NoPacks,
+                NoPackDetail,
+                PreviewAnalyticsUseCase,
+                FakeBearerUseCase(onFetchBearerFlags = { emptyList() }),
+            )
         composeRule.setContent {
             rememberProfileFlowEntries(
                 account = account,

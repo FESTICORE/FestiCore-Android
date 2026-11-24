@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))
+    implementation(project(":feature:bearer:sources"))
     implementation(project(":feature:profile:sources"))
     implementation(project(":feature:timetable:sources"))
     implementation(project(":feature:featureassembly"))
@@ -41,6 +42,7 @@ dependencies {
     implementation(libs.lib("lifecycle-runtime-compose"))
 
     testImplementation(libs.lib("robolectric"))
+    testImplementation(testFixtures(project(":domain:bearer:interface")))
     testImplementation(libs.lib("compose-ui-test-junit4"))
     debugImplementation(libs.lib("compose-ui-test-manifest"))
 }

@@ -71,11 +71,13 @@ class FestivalCoordinatorTest {
     }
 
     @Test
-    fun `대상 화면이 없는 기수 경계는 받아 두기만 한다`() = runTest {
+    fun `라이브 보드의 기수 경계는 기수 보드를 한 번 쌓는다`() = runTest {
         FestivalCoordinator(FakeCurrentUserProvider()).test(this) {
             val bearer = LiveBoardBoundary.Bearer("fst_1", "flag_1", null)
             containerHost.onLiveBoardBoundary(bearer)
-            expectState { copy(lastBoundary = bearer) }
+            val route = FestivalRoute.BearerBoard("fst_1", "flag_1")
+            expectState { copy(routes = listOf(FestivalRoute.List, route)) }
+            containerHost.onLiveBoardBoundary(bearer)
         }
     }
 
