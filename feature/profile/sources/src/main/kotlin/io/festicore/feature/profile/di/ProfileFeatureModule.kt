@@ -6,11 +6,8 @@ import io.festicore.feature.profile.appearance.AppearanceSettingsViewModel
 import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.notice.NoticeDetailViewModel
 import io.festicore.feature.profile.notice.NoticeListViewModel
-import io.festicore.feature.profile.packdetail.MapAppClient
 import io.festicore.feature.profile.packdetail.PackDetailViewModel
-import io.festicore.feature.profile.packdetail.PackageManagerMapAppClient
 import io.festicore.feature.profile.settings.SettingsHomeViewModel
-import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -40,7 +37,6 @@ val profileFeatureModule = module {
     // 인자: 목록에서 고른 공지 id · 제목.
     viewModel { (id: String, title: String) -> NoticeDetailViewModel(id = id, title = title, noticeUseCase = get()) }
     // 지도 앱 설치 여부(설계 쟁점 M10). 패키지 이름은 app 매니페스트 `<queries>`에 적는다.
-    factory<MapAppClient> { PackageManagerMapAppClient(androidContext()) }
     // 인자: 팩 축제 id · 넘겨받은 축제 이름. 팩 읽기 · 업데이트 · 삭제 · 준비물은 domain/festival `FestivalPackDetailUseCase`.
     viewModel { (festivalId: String, title: String) ->
         PackDetailViewModel(festivalId = festivalId, title = title, packDetailUseCase = get(), mapAppClient = get())
