@@ -192,6 +192,7 @@ class FestivalPackDetailUseCaseTest {
                 shuttleStopName = "정문 셔틀 정류장",
                 transitStationName = null,
                 transitWalkMinutes = null,
+                venueLocation = detail.directions.venueLocation,
             ),
             board,
         )

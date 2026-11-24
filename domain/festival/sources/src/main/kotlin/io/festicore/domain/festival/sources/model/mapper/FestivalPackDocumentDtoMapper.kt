@@ -35,9 +35,13 @@ internal fun FestivalPackDocumentDto.toDomain() = FestivalPackDocument(
             FestivalPackDocument.Directions(
                 lastShuttleAt = it.lastShuttleAt,
                 lastTrainAt = it.lastTrainAt,
-                shuttleStopName = it.shuttle?.stopName,
+                // 정류장 이름이 없던 예전 팩은 역 이름 칸을 쓴다(iOS `Directions.shuttleStopName`).
+                shuttleStopName = it.shuttle?.stopName ?: it.shuttle?.stationName,
                 transitStationName = it.transit?.stationName,
                 transitWalkMinutes = it.transit?.walkMinutes,
+                shuttleLocation = it.shuttle?.location?.toDomain(),
+                transitLocation = it.transit?.location?.toDomain(),
+                venueLocation = it.location?.toDomain(),
             )
         },
     mapImageUrl = mapImageUrl,

@@ -56,7 +56,7 @@ private fun FestivalPackDetailSectionDto.toDomain(): FestivalPackDetail.Section?
 }
 
 /** 위도 · 경도가 모두 있고 유한하며 범위 안일 때만 좌표로 쓴다. */
-private fun FestivalPackCoordinateDto.toDomain(): FestivalPackDetail.Coordinate? {
+internal fun FestivalPackCoordinateDto.toDomain(): FestivalPackDetail.Coordinate? {
     val latitude = latitude ?: return null
     val longitude = longitude ?: return null
     if (!latitude.isFinite() || !longitude.isFinite() || latitude !in -90.0..90.0 || longitude !in -180.0..180.0) return null

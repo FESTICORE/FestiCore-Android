@@ -89,6 +89,8 @@ data class LiveBoardState(
     val crewGather: CrewGatherInput? = null,
     /** 모여 시트를 연 횟수. 시트 ViewModel 키로 쓴다. */
     val crewGatherCount: Int = 0,
+    /** 귀가 카드 도보 계산 단계(iOS `homeWalk`). */
+    val homeWalk: HomeWalkState = HomeWalkState.Idle,
     val isVisible: Boolean = false,
     val isForeground: Boolean = true,
     val hasStarted: Boolean = false,
@@ -181,7 +183,7 @@ sealed interface LiveBoardBoundary {
         val crewId: String,
     ) : LiveBoardBoundary
 
-    /** 귀가 "가는 길". 위치 계산이 없어 iOS의 역 · 정류장이 없을 때처럼 팩 가는 길로 보낸다(iOS `packDirectionsRequested`). */
+    /** 귀가 "가는 길"에서 안내할 역 · 정류장이 없거나 지도 앱을 열지 못했다. 팩 가는 길로 보낸다(iOS `packDirectionsRequested`). */
     data class PackDirections(
         val festivalId: String,
         val title: String,

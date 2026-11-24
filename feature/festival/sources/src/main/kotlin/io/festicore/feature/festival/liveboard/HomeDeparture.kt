@@ -6,8 +6,8 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.math.ceil
 
-/** 귀가 카드 역 · 셔틀 정류장까지 도보 분. 1차는 서버 값만 쓴다(설계 D6). iOS `FestivalFeature.HomeWalkMinutes`. */
-internal data class HomeWalkMinutes(
+/** 귀가 카드 역 · 셔틀 정류장까지 도보 분. iOS `FestivalFeature.HomeWalkMinutes`. */
+data class HomeWalkMinutes(
     val station: Int? = null,
     val shuttleStop: Int? = null,
 )

@@ -171,6 +171,7 @@ fun LiveBoardScreen(
         onHideFollowGuideTapped = viewModel::onHideFollowGuideTapped,
         onFollowGuideDialogDismissed = viewModel::onFollowGuideDialogDismissed,
         onHideFollowGuideConfirmed = viewModel::onHideFollowGuideConfirmed,
+        onHomeRideAppeared = viewModel::onHomeRideAppeared,
         onHomeDirectionsTapped = viewModel::onHomeDirectionsTapped,
         onHomeTogetherTapped = viewModel::onHomeTogetherTapped,
     )
@@ -271,6 +272,7 @@ fun LiveBoardContent(
     onHideFollowGuideTapped: () -> Unit = {},
     onFollowGuideDialogDismissed: () -> Unit = {},
     onHideFollowGuideConfirmed: () -> Unit = {},
+    onHomeRideAppeared: () -> Unit = {},
     onHomeDirectionsTapped: () -> Unit = {},
     onHomeTogetherTapped: () -> Unit = {},
 ) {
@@ -316,6 +318,7 @@ fun LiveBoardContent(
                 onFollowLoginTapped = onFollowLoginTapped,
                 onFindFlagTapped = onFindFlagTapped,
                 onHideFollowGuideTapped = onHideFollowGuideTapped,
+                onHomeRideAppeared = onHomeRideAppeared,
                 onHomeDirectionsTapped = onHomeDirectionsTapped,
                 onHomeTogetherTapped = onHomeTogetherTapped,
             )
@@ -364,6 +367,7 @@ private fun Board(
     onFollowLoginTapped: () -> Unit,
     onFindFlagTapped: () -> Unit,
     onHideFollowGuideTapped: () -> Unit,
+    onHomeRideAppeared: () -> Unit,
     onHomeDirectionsTapped: () -> Unit,
     onHomeTogetherTapped: () -> Unit,
 ) {
@@ -451,7 +455,7 @@ private fun Board(
                 onRetryTapped = onRetryLiveBoard,
             )
         }
-        val home = @Composable { HomeCard(model, now, onHomeDirectionsTapped, onHomeTogetherTapped) }
+        val home = @Composable { HomeCard(model, now, onHomeRideAppeared, onHomeDirectionsTapped, onHomeTogetherTapped) }
 
         when {
             state.isUnpublished ->
@@ -641,10 +645,14 @@ private fun RetryText(onClick: () -> Unit) {
 private fun HomeCard(
     model: LiveBoardScreenModel,
     now: Instant,
+    onHomeRideAppeared: () -> Unit,
     onHomeDirectionsTapped: () -> Unit,
     onHomeTogetherTapped: () -> Unit,
 ) {
     val ride = model.homeRide(now) ?: return
+    // 카드가 처음 보일 때만 위치 권한 · 도보 계산을 시작한다(iOS `.onAppear { send(.homeRideAppeared) }`).
+    val appeared by rememberUpdatedState(onHomeRideAppeared)
+    LaunchedEffect(Unit) { appeared() }
     FCHomeCard(
         remain = ride.remain,
         shuttle = ride.shuttle,

@@ -81,6 +81,8 @@ class LiveBoardViewModelTest {
         notificationBadgeUseCase = badge,
         boardSelectionUseCase = selection,
         analyticsUseCase = analytics,
+        locationClient = FakeLocationClient(),
+        mapsClient = FakeMapsClient(),
         clock = clock,
         sleep = sleeper::sleep,
     )

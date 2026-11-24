@@ -1,5 +1,12 @@
 package io.festicore.feature.festival.liveboard
 
+import io.festicore.core.location.client.LocationClient
+import io.festicore.core.location.client.MapsClient
+import io.festicore.core.location.entity.LocationAuthorization
+import io.festicore.core.location.entity.LocationClientError
+import io.festicore.core.location.entity.LocationCoordinate
+import io.festicore.core.location.entity.WalkingDuration
+import io.festicore.core.location.entity.WalkingPlace
 import io.festicore.domain.festival.entity.FestivalBoardSelection
 import io.festicore.domain.festival.entity.FestivalFlagFollowResult
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
@@ -234,5 +241,56 @@ internal class FakeFlagUseCase(
     override suspend fun setFollowing(following: Boolean, flagId: String): FestivalFlagFollowResult {
         calls += following to flagId
         return setFollowing.invoke(following, flagId)
+    }
+}
+
+/**
+ * 위치 클라이언트 가짜 구현(iOS `MockLocationClient`). 넘기지 않은 호출은 [unexpected]에 남기고 위치를 쓰지 않는 쪽으로 답한다.
+ */
+internal class FakeLocationClient(
+    private val authorization: (suspend () -> LocationAuthorization)? = null,
+    private val requestWhenInUseAuthorization: (suspend () -> LocationAuthorization)? = null,
+    private val currentLocation: (suspend () -> LocationCoordinate)? = null,
+) : LocationClient {
+    val unexpected = mutableListOf<String>()
+    var requestCount = 0
+
+    override suspend fun authorization(): LocationAuthorization =
+        authorization?.invoke() ?: LocationAuthorization.Denied.also { unexpected += "authorization" }
+
+    override suspend fun requestWhenInUseAuthorization(): LocationAuthorization {
+        requestCount += 1
+        return requestWhenInUseAuthorization?.invoke()
+            ?: LocationAuthorization.Denied.also { unexpected += "requestWhenInUseAuthorization" }
+    }
+
+    override suspend fun currentLocation(): LocationCoordinate {
+        val handler = currentLocation ?: run {
+            unexpected += "currentLocation"
+            throw LocationClientError.LocationUnavailable
+        }
+        return handler()
+    }
+}
+
+/** 지도 클라이언트 가짜 구현(iOS `MockAppleMapsClient`). 넘기지 않은 호출은 [unexpected]에 남기고 실패로 답한다. */
+internal class FakeMapsClient(
+    private val walkingDuration: (suspend (LocationCoordinate, WalkingPlace) -> WalkingDuration)? = null,
+    private val openWalkingDirections: (suspend (WalkingPlace) -> Boolean)? = null,
+) : MapsClient {
+    val unexpected = mutableListOf<String>()
+    val opened = mutableListOf<WalkingPlace>()
+
+    override suspend fun walkingDuration(origin: LocationCoordinate, place: WalkingPlace): WalkingDuration {
+        val handler = walkingDuration ?: run {
+            unexpected += "walkingDuration"
+            throw LocationClientError.RouteUnavailable
+        }
+        return handler(origin, place)
+    }
+
+    override suspend fun openWalkingDirections(place: WalkingPlace): Boolean {
+        opened += place
+        return openWalkingDirections?.invoke(place) ?: false.also { unexpected += "openWalkingDirections" }
     }
 }
