@@ -3,6 +3,7 @@ package io.festicore.domain.festival.sources.request
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.core.network.error.NetworkError
+import io.festicore.domain.festival.entity.FestivalPackDetail
 import io.festicore.domain.festival.sources.model.dto.FestivalEventPeriodDto
 import io.festicore.domain.festival.sources.model.dto.FestivalFlagsDto
 import io.festicore.domain.festival.sources.model.dto.FestivalLiveBoardDto
@@ -13,6 +14,7 @@ import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackSourceDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackZoneDto
 import io.festicore.domain.festival.sources.model.dto.FestivalScheduleDto
+import io.festicore.domain.festival.sources.model.mapper.toDomain
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
 import io.festicore.service.apiendpoint.festival.FestivalScheduleReplaceBody
@@ -133,6 +135,20 @@ class FestivalLiveBoardRequestTest {
             dto.directions,
         )
         assertNull(broken.directions)
+    }
+
+    @Test
+    fun `팩 문서의 가는 길은 귀가 가는 길 목적지 좌표를 읽고 정류장 이름이 없으면 역 이름 칸을 쓴다`() {
+        val directions = document(
+            ""","directions":{"location":{"latitude":37.3850,"longitude":127.1230},""" +
+                """"shuttle":{"stationName":"정문","location":{"latitude":"x","longitude":127.1}},""" +
+                """"transit":{"stationName":"서현역","location":{"latitude":37.3836,"longitude":127.1268}}}""",
+        ).toDomain().directions
+
+        assertEquals("정문", directions?.shuttleStopName)
+        assertNull(directions?.shuttleLocation)
+        assertEquals(FestivalPackDetail.Coordinate(37.3836, 127.1268), directions?.transitLocation)
+        assertEquals(FestivalPackDetail.Coordinate(37.3850, 127.1230), directions?.venueLocation)
     }
 
     @Test

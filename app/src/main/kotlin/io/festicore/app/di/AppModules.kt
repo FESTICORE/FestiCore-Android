@@ -7,6 +7,7 @@ import io.festicore.app.deeplink.AppDeeplinkBridge
 import io.festicore.app.navigation.main.AppCoordinator
 import io.festicore.app.navigation.maintab.MainTabCoordinator
 import io.festicore.core.coreassembly.coreModules
+import io.festicore.core.location.client.LocationActivityProvider
 import io.festicore.domain.auth.sources.auth.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.auth.sources.google.ActivityProvider
@@ -27,12 +28,12 @@ import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
-import org.koin.dsl.bind
+import org.koin.dsl.binds
 import org.koin.dsl.module
 
 /** app이 가진 루트 · 메인 탭 Coordinator, 현재 Activity 제공자, 딥링크 브리지, 화면 모드 저장소 연결만 등록한다. */
 private val appModule = module {
-    single { MainActivityProvider() } bind ActivityProvider::class
+    single { MainActivityProvider() } binds arrayOf(ActivityProvider::class, LocationActivityProvider::class)
     single<AppearanceModeSettings> { StoredAppearanceModeSettings(get()) }
     single { AppDeeplinkBridge(store = get(), scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     viewModel {
@@ -55,7 +56,7 @@ private val appModule = module {
 
 /** core · service · domain · feature 목록과 app 정의를 합친다. 정의는 각 모듈의 di/에 두고, core · service · feature 목록은 각 assembly 모듈이 가진다. */
 val appModules: List<Module> =
-    coreModules +
+    coreModules(routesApiKey = BuildConfig.GOOGLE_ROUTES_API_KEY) +
         serviceModules(baseUrl = BuildConfig.BASE_URL) +
         listOf(
             domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),

@@ -32,14 +32,10 @@ internal class LiveBoardScreenModel(private val state: LiveBoardState) {
     val packDownload: FestivalListPresentation.PackDownloadDisplay?
         get() = FestivalListPresentation.packDownloadDisplay(state.packDownloads, state.festivalId)
 
-    /**
-     * 받은 팩의 가는 길(iOS `homeDetails`는 받은 팩의 상세를 읽는다). 도보 분은 서버의 역 도보 분만 쓴다(설계 D6,
-     * iOS `homeWalkMinutes`에서 Apple 지도 계산이 없을 때와 같음).
-     */
-    private val directions: FestivalPackDocument.Directions?
-        get() = pack?.id?.let { state.cachedPacks[it]?.document?.directions }
+    private val directions: FestivalPackDocument.Directions? get() = state.homeDirections
 
-    private val walkMinutes: HomeWalkMinutes get() = HomeWalkMinutes(station = directions?.transitWalkMinutes)
+    /** 지도 계산값, 없으면 서버의 역 도보 분(iOS `homeWalkMinutes`). */
+    private val walkMinutes: HomeWalkMinutes get() = state.homeWalkMinutes
 
     fun homeRide(now: Instant): HomeRide? {
         val directions = directions ?: return null
@@ -48,8 +44,8 @@ internal class LiveBoardScreenModel(private val state: LiveBoardState) {
         val trainAt = validTime(directions.lastTrainAt)
         val shuttleStation = directions.shuttleStopName?.let { " · $it" }.orEmpty()
         val trainStation = directions.transitStationName?.let { " · $it" }.orEmpty()
-        val shuttleWalk = walkText(walkMinutes.shuttleStop)
-        val trainWalk = walkText(walkMinutes.station)
+        val shuttleWalk = walkText(walkMinutes.shuttleStop, walkMinutes.shuttleStopDriving)
+        val trainWalk = walkText(walkMinutes.station, walkMinutes.stationDriving)
         return HomeRide(
             remain = "${departure.name}까지 ${departure.remainingMinutes(now)}분",
             shuttle = shuttleAt?.let { "마지막 셔틀 ${timeText(it)}$shuttleStation$shuttleWalk" },
@@ -78,7 +74,11 @@ internal class LiveBoardScreenModel(private val state: LiveBoardState) {
 
     private fun timeText(value: String): String = FestivalIsoTime.parse(value)?.let(LiveBoardPresentation::time) ?: value
 
-    private fun walkText(minutes: Int?): String = minutes?.let { " (도보 ${it}분)" }.orEmpty()
+    /** " (도보 N분)", 자동차 분이 있으면 " (도보 N분 · 차로 M분)"(자동차는 iOS에 없는 사용자 요청 표시, 설계 R6 쟁점 F4). */
+    private fun walkText(walking: Int?, driving: Int?): String {
+        val parts = listOfNotNull(walking?.let { "도보 ${it}분" }, driving?.let { "차로 ${it}분" })
+        return if (parts.isEmpty()) "" else parts.joinToString(" · ", prefix = " (", postfix = ")")
+    }
 
     private fun validTime(value: String?): String? {
         val trimmed = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null

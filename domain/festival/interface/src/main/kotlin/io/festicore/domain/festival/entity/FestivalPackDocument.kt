@@ -62,6 +62,11 @@ data class FestivalPackDocument(
         val transitStationName: String? = null,
         /** 서버가 적은 역까지 도보 분. */
         val transitWalkMinutes: Int? = null,
+        /** 서버가 준 셔틀 정류장 · 역 좌표. 귀가 "가는 길"의 목적지로 쓴다. */
+        val shuttleLocation: FestivalPackDetail.Coordinate? = null,
+        val transitLocation: FestivalPackDetail.Coordinate? = null,
+        /** 축제 장소 좌표. 목적지 좌표가 없을 때 이름을 이 근처에서 찾는다. */
+        val venueLocation: FestivalPackDetail.Coordinate? = null,
     )
 
     data class TicketLink(

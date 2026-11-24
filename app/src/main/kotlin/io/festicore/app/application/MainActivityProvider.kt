@@ -1,11 +1,14 @@
 package io.festicore.app.application
 import android.app.Activity
 import io.festicore.app.MainActivity
+import io.festicore.core.location.client.LocationActivityProvider
 import io.festicore.domain.auth.sources.google.ActivityProvider
 import java.lang.ref.WeakReference
 
-/** Credential Manager 계정 선택 창을 띄울 [MainActivity]. Activity를 붙잡지 않도록 약한 참조로 둔다. */
-class MainActivityProvider : ActivityProvider {
+/** Credential Manager 계정 선택 창 · 위치 권한 대화상자를 띄울 [MainActivity]. Activity를 붙잡지 않도록 약한 참조로 둔다. */
+class MainActivityProvider :
+    ActivityProvider,
+    LocationActivityProvider {
     @Volatile
     private var current: WeakReference<Activity>? = null
 

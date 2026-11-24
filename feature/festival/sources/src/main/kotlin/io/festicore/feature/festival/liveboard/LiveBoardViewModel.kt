@@ -1,6 +1,11 @@
 package io.festicore.feature.festival.liveboard
 
 import androidx.lifecycle.ViewModel
+import io.festicore.core.location.client.LocationClient
+import io.festicore.core.location.client.MapsClient
+import io.festicore.core.location.entity.LocationAuthorization
+import io.festicore.core.location.entity.LocationCoordinate
+import io.festicore.core.location.entity.WalkingPlace
 import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.domain.festival.catalog.FestivalCatalogUseCase
 import io.festicore.domain.festival.entity.CachedFestivalPack
@@ -29,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -43,6 +49,7 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
  * 함수 이름은 iOS `Action.View`와 같고, 순서는 view → async → inner를 따른다.
  * 알림 배지 · 배너는 공유 저장소(설계 E7)를 따르고, 보일 때 · 세션이 바뀔 때 다시 조회한다(iOS `FestivalFeature+NotificationUnreadCount`).
  * 라이브 상태 폴링(35초) · 공식 소식(300초) · 팩 감시 · 상세 · 내 일정 · 배지 조회는 각각 하나만 돈다. 새로 시작하면 이전 것을 취소한다(iOS `cancelInFlight`).
+ * 귀가 카드 도보 시간 · 가는 길은 iOS `FestivalFeature+HomeWalk`를 따른다. 위치 좌표는 기기 안에서만 쓰고 로그 · 분석으로 보내지 않는다.
  * [sleep]은 테스트에서 기다림을 조절하려고 주입한다.
  */
 class LiveBoardViewModel(
@@ -57,6 +64,8 @@ class LiveBoardViewModel(
     private val notificationBadgeUseCase: UserNotificationBadgeUseCase,
     private val boardSelectionUseCase: FestivalBoardSelectionUseCase,
     private val analyticsUseCase: AnalyticsUseCase,
+    private val locationClient: LocationClient,
+    private val mapsClient: MapsClient,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -93,6 +102,10 @@ class LiveBoardViewModel(
     private val onlineDetailJob = AtomicReference<Job?>(null)
     private val myScheduleJob = AtomicReference<Job?>(null)
     private val notificationUnreadCountJob = AtomicReference<Job?>(null)
+    private val homeWalkJob = AtomicReference<Job?>(null)
+
+    /** 마지막으로 계산을 시작한 목적지. 팩이 바뀌어 목적지가 달라지면 다시 계산한다(점검 R6-LOC-002). */
+    private val homeWalkPlaces = AtomicReference<HomeWalkPlaces?>(null)
 
     // MARK: - View
 
@@ -113,9 +126,11 @@ class LiveBoardViewModel(
 
     /** 보드가 화면에서 빠졌다(iOS `liveBoardOnDisappear`). 폴링 · 공식 소식 · 상세를 멈춘다. 팩 감시는 그대로 둔다. */
     fun onDisappear() = intent {
-        reduce { state.copy(isVisible = false, onlineDetailLoading = false) }
+        // 화면을 떠나면 위치 · 경로 계산을 멈추고, 다시 보일 때 새로 계산한다.
+        reduce { state.copy(isVisible = false, onlineDetailLoading = false, homeWalk = state.homeWalk.stopped) }
         stopLiveBoard()
         onlineDetailJob.getAndSet(null)?.cancel()
+        homeWalkJob.getAndSet(null)?.cancel()
     }
 
     /** 앱이 포그라운드를 얻거나 잃었다(iOS `foregroundChanged`). */
@@ -266,9 +281,23 @@ class LiveBoardViewModel(
         if (state.hasSession) boundary(LiveBoardBoundary.Crew(state.festivalId, crew.id))
     }
 
+    /** 귀가 카드가 보였다(iOS `homeRideAppeared`). 역 · 정류장이 있고 같은 목적지를 계산 중이 아닐 때만 도보 시간을 계산한다. */
+    fun onHomeRideAppeared() = intent {
+        val places = state.homeWalkPlaces
+        if (places.isEmpty || (state.homeWalk.isEstimating(state.festivalId) && isSamePlaces(places))) return@intent
+        startHomeWalk(places)
+    }
+
+    /** 귀가 "가는 길"(iOS `homeDirectionsTapped`). 안내할 역 · 정류장이 없으면 기존처럼 팩 상세의 가는 길로 보낸다. */
     fun onHomeDirectionsTapped() = intent {
         val festival = state.selectedFestival ?: return@intent
-        boundary(LiveBoardBoundary.PackDirections(festival.id, festival.name))
+        val now = LiveBoardPresentation.serverNow(state.snapshot?.serverAt, state.clockAnchorAt, clock.instant())
+        val place = state.homeDirectionsPlace(now)
+        if (place == null) {
+            boundary(LiveBoardBoundary.PackDirections(festival.id, festival.name))
+            return@intent
+        }
+        openHomeDirections(festival.id, place)
     }
 
     /** "같이 귀가"(iOS `homeTogetherTapped` → `createCrewTapped`). */
@@ -321,6 +350,7 @@ class LiveBoardViewModel(
                     myScheduleUnavailable = false,
                     packWatchFailed = false,
                     isFollowGuideDialogPresented = false,
+                    homeWalk = HomeWalkState.Idle,
                 ),
             )
         }
@@ -446,6 +476,86 @@ class LiveBoardViewModel(
     private fun launchOnlineDetail(festivalId: String) = replace(onlineDetailJob) {
         val document = attempt { liveBoardUseCase.festivalDetail(festivalId) }
         if (document == null) onOnlineDetailFailed(festivalId) else onOnlineDetailLoaded(festivalId, document)
+    }
+
+    /** 계산을 시작한 기록이 없으면(복원된 상태 등) 같은 목적지로 본다. */
+    private fun isSamePlaces(places: HomeWalkPlaces): Boolean = homeWalkPlaces.get()?.let { it == places } ?: true
+
+    /** 직전 결과는 같은 목적지일 때만 계산 중에 계속 보인다. 목적지가 바뀌었으면 이전 값을 버린다. */
+    private suspend fun startHomeWalk(places: HomeWalkPlaces) = subIntent {
+        val festivalId = state.festivalId
+        val last = state.homeWalk.minutes(festivalId).takeIf { isSamePlaces(places) }
+        homeWalkPlaces.set(places)
+        reduce { state.copy(homeWalk = HomeWalkState.Estimating(festivalId, last = last)) }
+        replace(homeWalkJob) { estimateHomeWalk(festivalId, places) }
+    }
+
+    /**
+     * 같은 축제 팩이 바뀌어 역 · 정류장 이름 · 좌표가 달라졌으면 이전 계산을 취소하고 다시 계산한다(점검 R6-LOC-002).
+     * iOS는 팩을 새로 받으면 귀가 상세를 다시 읽고(`FestivalFeature.swift:755-757` `loadHomeDetails`), 읽는 동안 스켈레톤으로 바뀐 카드가
+     * 다시 보이면서 `homeRideAppeared`(`FestivalLiveBoardScreen.swift:437`, `FestivalFeature.swift:1037-1046`)로 다시 계산한다.
+     * Android 카드는 팩을 바로 읽어 스켈레톤이 없으므로 목적지 변화를 직접 본다. 카드가 보이기 전(Idle)이나 화면 밖이면 그대로 둔다.
+     */
+    private suspend fun refreshHomeWalkIfPlacesChanged() = subIntent {
+        if (!state.isVisible || state.homeWalk == HomeWalkState.Idle) return@subIntent
+        val places = state.homeWalkPlaces
+        if (isSamePlaces(places)) return@subIntent
+        if (places.isEmpty) {
+            homeWalkJob.getAndSet(null)?.cancel()
+            homeWalkPlaces.set(null)
+            reduce { state.copy(homeWalk = HomeWalkState.Idle) }
+            return@subIntent
+        }
+        startHomeWalk(places)
+    }
+
+    /**
+     * 위치 권한을 확인하고 현재 위치에서 역 · 셔틀 정류장까지 도보 시간을 계산한다(iOS `estimateHomeWalk`).
+     * 권한이 없거나 현재 위치를 잡지 못하면 서버 값을 쓰도록 알린다.
+     */
+    private suspend fun estimateHomeWalk(festivalId: String, places: HomeWalkPlaces) {
+        val origin = if (isLocationAuthorized()) attempt { locationClient.currentLocation() } else null
+        if (origin == null) {
+            onHomeWalkUnavailable(festivalId)
+            return
+        }
+        val minutes = coroutineScope {
+            val station = async { walkingMinutes(origin, places.station) }
+            val shuttleStop = async { walkingMinutes(origin, places.shuttleStop) }
+            // 자동차 분은 iOS에 없고 사용자 요청으로 더한다(설계 R6 쟁점 F4). 계산하지 못하면 표시하지 않는다.
+            val stationDriving = async { drivingMinutes(origin, places.station) }
+            val shuttleStopDriving = async { drivingMinutes(origin, places.shuttleStop) }
+            HomeWalkMinutes(
+                station = station.await(),
+                shuttleStop = shuttleStop.await(),
+                stationDriving = stationDriving.await(),
+                shuttleStopDriving = shuttleStopDriving.await(),
+            )
+        }
+        onHomeWalkEstimated(festivalId, minutes)
+    }
+
+    /** 지도 앱에서 역 · 정류장까지 도보 길찾기를 연다. 열지 못하면 팩 상세의 가는 길로 대신 보낸다(iOS `openHomeDirections`). */
+    private suspend fun openHomeDirections(festivalId: String, place: WalkingPlace) {
+        if (attempt { mapsClient.openWalkingDirections(place) } != true) onHomeDirectionsMapsFailed(festivalId)
+    }
+
+    /** 권한을 아직 정하지 않았을 때만 사용 중 권한을 요청한다. 거부 · 제한이면 다시 묻지 않는다. */
+    private suspend fun isLocationAuthorized(): Boolean = when (locationClient.authorization()) {
+        LocationAuthorization.Authorized -> true
+        LocationAuthorization.NotDetermined -> locationClient.requestWhenInUseAuthorization() == LocationAuthorization.Authorized
+        LocationAuthorization.Denied, LocationAuthorization.Restricted -> false
+    }
+
+    /** 목적지가 없거나 찾지 못하면 null이라 그 줄은 서버 값을 쓴다. */
+    private suspend fun walkingMinutes(origin: LocationCoordinate, place: WalkingPlace?): Int? {
+        place ?: return null
+        return attempt { mapsClient.walkingDuration(origin, place) }?.minutes
+    }
+
+    private suspend fun drivingMinutes(origin: LocationCoordinate, place: WalkingPlace?): Int? {
+        place ?: return null
+        return attempt { mapsClient.drivingDuration(origin, place) }?.minutes
     }
 
     // MARK: - Inner
@@ -581,6 +691,22 @@ class LiveBoardViewModel(
      * 공유 팩 상태가 바뀌었다(설계 D1). 받는 중 진행률을 따르고, 선택 축제 팩이 새로 생기거나 사라지면 표시 팩과 감시를 맞추고,
      * 같은 축제 팩이 다른 버전 · 내용으로 바뀌면(목록에서 받기 · 다시 읽기) 표시 팩을 새로 그린다.
      */
+    private suspend fun onHomeWalkEstimated(festivalId: String, minutes: HomeWalkMinutes) = subIntent {
+        if (state.festivalId != festivalId) return@subIntent
+        reduce { state.copy(homeWalk = HomeWalkState.Estimated(festivalId, minutes)) }
+    }
+
+    private suspend fun onHomeWalkUnavailable(festivalId: String) = subIntent {
+        if (state.festivalId != festivalId) return@subIntent
+        reduce { state.copy(homeWalk = HomeWalkState.Unavailable(festivalId)) }
+    }
+
+    private suspend fun onHomeDirectionsMapsFailed(festivalId: String) = subIntent {
+        val festival = state.selectedFestival ?: return@subIntent
+        if (festival.id != festivalId) return@subIntent
+        boundary(LiveBoardBoundary.PackDirections(festival.id, festival.name))
+    }
+
     private suspend fun onPackStateChanged(packState: FestivalPackState) = subIntent {
         val previous = state.cachedPacks[state.festivalId]
         reduce { state.copy(cachedPacks = packState.packs, packDownloads = packState.downloads) }
@@ -596,6 +722,7 @@ class LiveBoardViewModel(
             // 목록 · 다시 읽기로 같은 축제 팩이 새 버전 · 내용으로 바뀌었다: 표시 팩만 새로 그린다(감시는 그대로).
             previous != null && current != null && previous != current -> reduce { showCachedPack(state) }
         }
+        refreshHomeWalkIfPlacesChanged()
     }
 
     /** 공유 배지가 바뀌었다(설계 E7). 비로그인이면 보이지 않는다(iOS `guard state.hasSession`). */

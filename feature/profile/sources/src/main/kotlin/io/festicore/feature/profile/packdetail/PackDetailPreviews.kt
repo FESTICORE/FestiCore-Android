@@ -2,6 +2,7 @@ package io.festicore.feature.profile.packdetail
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import io.festicore.core.location.client.MapApp
 import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDetail

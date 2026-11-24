@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":core:storage:interface"))
     implementation(project(":core:utility"))
     implementation(project(":core:coreassembly"))
+    implementation(project(":core:location:sources"))
     implementation(project(":service:analytics:interface"))
     implementation(project(":service:analytics:sources"))
     implementation(project(":service:auth:interface"))

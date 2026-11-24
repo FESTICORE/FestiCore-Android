@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.festicore.core.location.client.MapApp
 import io.festicore.domain.festival.entity.FestivalPackDetail
 import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.ui.designkit.R

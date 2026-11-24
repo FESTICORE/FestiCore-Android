@@ -74,6 +74,9 @@ data class FestivalPackDirectionsDto(
     val lastTrainAt: String? = null,
     val shuttle: FestivalPackDirectionsSectionDto? = null,
     val transit: FestivalPackDirectionsSectionDto? = null,
+    /** 축제 장소 좌표(팩 상세와 같은 읽기, iOS `CoordinateDTO`) */
+    @Serializable(with = FestivalPackCoordinateSerializer::class)
+    val location: FestivalPackCoordinateDto? = null,
 )
 
 @Serializable
@@ -83,6 +86,8 @@ data class FestivalPackDirectionsSectionDto(
     /** 셔틀 정류장 */
     val stopName: String? = null,
     val walkMinutes: Int? = null,
+    @Serializable(with = FestivalPackCoordinateSerializer::class)
+    val location: FestivalPackCoordinateDto? = null,
 )
 
 @Serializable

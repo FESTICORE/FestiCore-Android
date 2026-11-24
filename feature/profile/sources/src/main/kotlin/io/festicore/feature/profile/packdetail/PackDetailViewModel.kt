@@ -1,6 +1,8 @@
 package io.festicore.feature.profile.packdetail
 
 import androidx.lifecycle.ViewModel
+import io.festicore.core.location.client.MapApp
+import io.festicore.core.location.client.MapAppClient
 import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDetail
