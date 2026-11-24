@@ -45,7 +45,8 @@ RULES = [
      "서비스 계약은 domain에 두고 service/festivalcatalog가 구현한다(iOS와 같은 방향). 실제 구현을 붙이는 테스트만 testImplementation 허용"),
     ("service · core 구현(sources)은 조립하는 곳만 의존한다", "**/build.gradle.kts",
      ["**/*assembly/**", "app/**", "service/auth/sources/**", "service/pack/sources/**"],
-     r"^\s*(implementation|api)\(project\(\":(service:(pack|device|auth|analytics)|core:(network|storage)):sources\"\)",
+     r"^\s*(implementation|api)\((project\(\":(service:(pack|device|auth|analytics)|core:(network|storage)):sources\"\)"
+     r"|projects\.(service\.(pack|device|auth|analytics)|core\.(network|storage))\.sources\b)",
      "다른 모듈은 :interface를 의존한다. sources는 assembly · app이 연결한다(iOS Interface/Sources). 테스트는 testImplementation 허용"),
     ("단일 feature 모듈은 app · featureassembly만 의존한다", "feature/**/build.gradle.kts",
      ["feature/featureassembly/**"], r"project\(\s*\":feature:onboarding\"\s*\)|projects\.feature\.onboarding\b",

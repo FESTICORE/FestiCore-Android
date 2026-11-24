@@ -234,6 +234,18 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("조립하는 곳만", result.stdout)
         self.assertEqual(0, self.check("domain/auth/sources/build.gradle.kts", "val a = 1\n").returncode)
         self.assertEqual(0, self.check("service/serviceassembly/build.gradle.kts", text).returncode)
+        # 타입 안전 접근자도 같은 규칙으로 막는다.
+        for accessor in ["service.analytics", "service.auth", "service.pack", "service.device", "core.network", "core.storage"]:
+            text = "dependencies {\n    implementation(projects.%s.sources)\n}\n" % accessor
+            result = self.check("domain/auth/sources/build.gradle.kts", text)
+            self.assertEqual(1, result.returncode, accessor)
+            self.assertIn("조립하는 곳만", result.stdout)
+        interface = "dependencies {\n    implementation(projects.service.analytics.`interface`)\n    api(projects.core.network.`interface`)\n}\n"
+        self.assertEqual(0, self.check("domain/auth/sources/build.gradle.kts", interface).returncode)
+        test_only = "dependencies {\n    testImplementation(projects.core.network.sources)\n}\n"
+        self.assertEqual(0, self.check("domain/auth/sources/build.gradle.kts", test_only).returncode)
+        accessor = "dependencies {\n    implementation(projects.service.analytics.sources)\n}\n"
+        self.assertEqual(0, self.check("service/serviceassembly/build.gradle.kts", accessor).returncode)
 
     def test_analytics_sdk_outside_analytics_sources_blocked(self):
         for text in ["import com.mixpanel.android.mpmetrics.MixpanelAPI\n", "import io.sentry.Sentry\n"]:

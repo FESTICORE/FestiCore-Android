@@ -30,6 +30,8 @@ iOS 대응: `Projects/Service/FestiCoreAnalytics/{Interface/Event,Interface/UseC
 4. 공통 슈퍼 프로퍼티: `os_type`(`android`) · `app_version`(versionName) · `build`(versionCode). 읽지 못하면 빈 문자열.
 5. `identify(userId, method)`: 빈 ID는 무시. `identify(userId)` → method가 있으면 `people.set("provider", method)` → 슈퍼 프로퍼티 `is_logged_in = true`(+ `login_provider`).
 6. `reset()`: `reset()` 후 공통 슈퍼 프로퍼티만 다시 등록한다(`is_logged_in` 없음).
+   - 세션을 잃으면 사용자를 분리한다. `AppCoordinator`가 현재 사용자를 비우는 모든 경로(`forgetCurrentUser`)에서 reset한다: 로그아웃 · 탈퇴 성공, 계정 작업 중 로그인 잃음, 세션 만료, 재확인 401, 로그인 직후 계정 확인 401(첫 진입 · 로그인 시트). 다른 세션의 오래된 결과로 버리는 경우는 reset하지 않는다.
+   - iOS와 다른 점: iOS는 `AccountCoordinator.swift:205,213`에서만 reset하고 `SessionCoordinator.swift:196-224`(세션 만료) · `:341-351`(프로필 401) · `:430-435`(약관 저장 401)에서는 하지 않는다. iOS도 Android도 계정 확인 전에 identify(`AuthCoordinator.swift:469`)하므로, 확인이 401로 끝나면 distinct ID · `is_logged_in`이 남는다. Android는 이것을 남기지 않는다.
 7. `track(event)`: 이름 · 속성은 아래 표와 같고, 디버그 로그(`FestiCoreLogger.debug`, sink로 가지 않는 단계)에 이름 · 속성을 남긴다.
 8. 옵트아웃: iOS에 없어 Android도 두지 않는다.
 
@@ -54,7 +56,7 @@ iOS 대응: `Projects/Service/FestiCoreAnalytics/{Interface/Event,Interface/UseC
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | `AppDelegate+Configuration.swift:17-18`                     | `FestiCoreApplication.onCreate`                                                                                       |
 | `AuthCoordinator.swift:469-476` identify · sign_up          | `LaunchLoginViewModel.acceptLogin`(로그인 성공 직후, 계정 확인 전)                                                    |
-| `AccountCoordinator.swift:205,213` reset                    | `AppCoordinator.onAccountOperationFinished`(`Succeeded` · `SessionLost`)                                              |
+| `AccountCoordinator.swift:205,213` reset                    | `AppCoordinator.forgetCurrentUser`(계정 작업 끝 · 세션 만료 · 재확인 401 · 로그인 직후 401, 규칙 6)                                              |
 | `LoginFeature.swift:119` ui_action login                    | `LaunchLoginViewModel.onSignInTapped`(바로 로그인 `onSignInRequested`는 남기지 않음, iOS `AuthCoordinator.swift:181`) |
 | `WebFeature.swift:72`                                       | `WebViewModel.onAppear`(첫 로드만)                                                                                    |
 | `AccountSettingsFeature.swift:122,130`                      | `AccountSettingsViewModel.onWithdrawTapped` · `onLogoutTapped`                                                        |
@@ -70,7 +72,7 @@ iOS 대응: `Projects/Service/FestiCoreAnalytics/{Interface/Event,Interface/UseC
 
 - 토큰이 공백뿐이면 토큰 없음과 같다.
 - `configure`를 두 번 불러도 Mixpanel은 하나다.
-- 계정 작업 중 로그인을 잃은 경우: iOS는 `isLoggedIn == false`면 `sessionExpired`로 가 reset하지 않고, `.notAuthenticated`로 끝나면 reset한다. Android `AccountCoordinator`는 둘을 `SessionLost` 하나로 합쳐 두 경우 모두 reset한다(계정 분리 쪽).
+- 계정 작업 중 로그인을 잃은 경우: iOS는 `isLoggedIn == false`면 `sessionExpired`로 가 reset하지 않고, `.notAuthenticated`로 끝나면 reset한다. Android는 `SessionLost` 하나로 합쳐 두 경우 모두 reset한다(규칙 6).
 - 날짜 선택은 다른 날을 고르고 축제가 있을 때만, 내 일정 토글은 실제로 넣거나 뺐고 축제가 있을 때만 남긴다(iOS와 같음).
 
 ## 제약 / 가정
@@ -100,4 +102,5 @@ iOS 대응: `Projects/Service/FestiCoreAnalytics/{Interface/Event,Interface/UseC
 
 ## 변경 이력
 
+- #208 세션을 잃는 모든 경로에서 분석 사용자 분리(리뷰 R6-REV-2)
 - #208 Mixpanel 분석 모듈과 iOS 호출처 이식(Sentry 제외)

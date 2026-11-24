@@ -94,7 +94,7 @@ python3 -m unittest discover -s .claude/hooks/tests
 | `FirebaseApp.initializeApp`                                                      | `service/config`                                      |
 | `com.mixpanel.*` · `io.sentry.*` import                                          | `service/analytics/sources`                           |
 | feature `build.gradle.kts`에서 `*.sources` 의존                                  | `feature/featureassembly` (목록만) · app              |
-| `implementation`/`api`로 `:service:{pack,device,auth,analytics}:sources` · `:core:{network,storage}:sources` 의존 | `*assembly` · app · `service/auth/sources` · `service/pack/sources` (테스트는 `testImplementation` 허용) |
+| `implementation`/`api`로 `:service:{pack,device,auth,analytics}:sources`(`project(":…")` · `projects.…` 접근자 모두) · `:core:{network,storage}:sources` 의존 | `*assembly` · app · `service/auth/sources` · `service/pack/sources` (테스트는 `testImplementation` 허용) |
 | `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`)                          |
 | `service/apiendpoint`에서 `io.festicore.domain.*` import (응답 DTO)              | 없음 (호출하는 쪽이 디코딩)                           |
 | domain `build.gradle.kts`에서 `:service:festivalcatalog` main 의존(`testImplementation` 허용) | 없음 (`service/festivalcatalog`가 domain 계약을 구현) |

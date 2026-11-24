@@ -85,15 +85,18 @@ class HiddenProfileTabSyncTest {
             coordinator.onSettingsRequested()
             coordinator.onAccountRequested()
         }
-        composeRule.waitForIdle()
-        assertEquals(
-            listOf(ProfileRoute.Profile, ProfileRoute.Settings, ProfileRoute.Account),
-            coordinator.container.stateFlow.value.routes,
-        )
+        // Orbit은 intent를 Dispatchers.Default 이벤트 루프에서 처리해 Compose idle 동기화(waitForIdle)가 기다리지 않는다. 경로가 바뀔 때까지 기다린다.
+        val opened = listOf(ProfileRoute.Profile, ProfileRoute.Settings, ProfileRoute.Account)
+        composeRule.waitUntil(ROUTE_TIMEOUT_MS) { coordinator.container.stateFlow.value.routes == opened }
+        assertEquals(opened, coordinator.container.stateFlow.value.routes)
 
         composeRule.runOnIdle { account.value = AccountState(hasSession = false) }
-        composeRule.waitForIdle()
+        composeRule.waitUntil(ROUTE_TIMEOUT_MS) { coordinator.container.stateFlow.value.routes != opened }
 
         assertEquals(listOf(ProfileRoute.Profile), coordinator.container.stateFlow.value.routes)
+    }
+
+    private companion object {
+        const val ROUTE_TIMEOUT_MS = 5_000L
     }
 }

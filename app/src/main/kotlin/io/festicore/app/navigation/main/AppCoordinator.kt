@@ -94,7 +94,7 @@ class AppCoordinator(
     private val consumePendingDeeplink: suspend () -> FestiCoreDeeplink?,
     /** 페스티벌이 끝나고 30일이 지난 팩을 지운다(iOS `deleteExpiredPacks`, 설계 쟁점 M8). */
     private val deleteExpiredPacks: suspend () -> Unit,
-    /** 계정을 비울 때 분석 식별자 · 슈퍼 프로퍼티를 초기화한다(iOS `AccountCoordinator` `analyticsUseCase.reset()`). */
+    /** 현재 사용자를 비울 때마다 분석 식별자 · 슈퍼 프로퍼티를 초기화한다(`AnalyticsUseCase.reset`, [forgetCurrentUser]). */
     private val resetAnalytics: () -> Unit,
     private val accountCoordinator: AccountCoordinator = AccountCoordinator(authRepository),
 ) : ViewModel(),
@@ -215,7 +215,7 @@ class AppCoordinator(
                     if (state.directLogin) reduce { state.copy(directLogin = false) }
                     return@intent
                 }
-                updateCurrentUserId(null)
+                forgetCurrentUser()
                 forgetAccount()
             }
 
@@ -350,13 +350,21 @@ class AppCoordinator(
                     AccountCoordinator.SESSION_EXPIRED_DURING_WITHDRAW.takeIf {
                         result == AccountOperationResult.SessionLost && operation == AccountOperation.Withdraw
                     }
-                // 계정 분리 — 다음 사용자와 섞이지 않게 분석 식별자와 슈퍼 프로퍼티를 초기화한다(iOS `AcC:205,213`).
-                resetAnalytics()
-                updateCurrentUserId(null)
+                forgetCurrentUser()
                 accountState.value = AccountState(message = message)
                 if (state.signUp != null && !state.launchLogin) closeCover()
             }
         }
+    }
+
+    /**
+     * 현재 사용자를 비우고 분석 식별자 · 슈퍼 프로퍼티를 초기화한다(계정 분리). 로그아웃 · 탈퇴 · 세션 만료 · 재확인 401 · 로그인 직후 401 모두 여기를 지난다.
+     * iOS는 로그아웃 · 탈퇴(`AccountCoordinator.swift:205,213`)에서만 reset하고 세션 만료(`SessionCoordinator.swift:196-224`) · 프로필 401(`:341-351`)에서는 하지 않는다.
+     * Android는 로그인 직후 계정 확인 전에 identify하므로(`AuthCoordinator.acceptLogin`과 같은 시점) 세션을 잃는 모든 경로에서 분리한다(spec `service/analytics/.spec/analytics.md`).
+     */
+    private fun forgetCurrentUser() {
+        resetAnalytics()
+        updateCurrentUserId(null)
     }
 
     /**
@@ -403,7 +411,7 @@ class AppCoordinator(
     private suspend fun onLaunchSessionLost(result: LaunchLoginResult.SessionLost) = subIntent {
         val current = currentSessionId()
         if (current != null && current != result.sessionId) return@subIntent
-        updateCurrentUserId(null)
+        forgetCurrentUser()
         forgetAccount()
         if (result.expired) {
             reduce { state.copy(launchLogin = true, signUp = null, coverEpoch = state.coverEpoch + 1, coverTop = null) }
@@ -487,7 +495,7 @@ class AppCoordinator(
         // 지금 세션이 없거나 만료된 세션이면 현재 사용자를 비운다. 그 사이 저장된 다른 세션의 사용자는 남긴다.
         val current = currentSessionId()
         if (current == null || current == sessionId) {
-            updateCurrentUserId(null)
+            forgetCurrentUser()
             forgetAccount()
         }
         when {
@@ -559,7 +567,7 @@ class AppCoordinator(
     private suspend fun onProfileRechecked(sessionId: String, result: Result<AuthProfile>) = subIntent {
         val current = currentSessionId()
         if (result.exceptionOrNull() is AuthDomainError.NotAuthenticated && (current == null || current == sessionId)) {
-            updateCurrentUserId(null)
+            forgetCurrentUser()
             forgetAccount()
             if (authRepository.hasSessionExpired(sessionId)) return@subIntent
             if (current != null) clearSessionIf(sessionId)
