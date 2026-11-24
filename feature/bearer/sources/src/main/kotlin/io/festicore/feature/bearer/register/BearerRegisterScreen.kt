@@ -92,7 +92,7 @@ private val PreviewThumbnailSize = 56.dp
 
 /**
  * 깃발 등록(iOS `BearerRegisterView`, Figma S14 D1 · D2 · E1 · E2). ViewModel을 잇는다.
- * 사진은 Android Photo Picker(`PickVisualMedia(ImageOnly)`)로 하나만 받고 바이트는 IO에서 읽는다. 읽지 못하면 iOS처럼 조용히 넘어간다(`BRV:44`).
+ * 사진은 Android Photo Picker(`PickVisualMedia(ImageOnly)`)로 하나만 받고 바이트는 IO에서 읽는다. 읽지 못하면 프로필처럼 사진 칸 아래에 안내한다(iOS는 조용히 넘어감 `BRV:44`).
  * 결과는 콜백으로만 알린다. 경로 연결 · 핀은 BC1(`BearerEntryCoordinator`)이다. 시스템 뒤로는 상단 뒤로와 같다.
  */
 @Composable
@@ -127,7 +127,7 @@ fun BearerRegisterScreen(
                     withContext(Dispatchers.IO) {
                         runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
                     }
-                if (data != null) viewModel.onPhotoPicked(data)
+                if (data == null) viewModel.onPhotoLoadFailed() else viewModel.onPhotoPicked(data)
             }
         }
     BackHandler(onBack = viewModel::onBackTapped)
@@ -364,10 +364,21 @@ private fun FestivalButton(
 @Composable
 private fun PhotoSection(state: BearerRegisterState, onPhotoTapped: () -> Unit) {
     val image = rememberImageBitmap(state.photoData, PickerPhotoSize)
-    FCPhotoPicker(
-        state = if (image != null) FCPhotoPickerState.Filled(image = BitmapPainter(image)) else FCPhotoPickerState.Empty,
-        onClick = onPhotoTapped,
-    )
+    // 프로필 사진 칸과 같은 배치: 사진 칸 아래 M8에 실패 안내(Android 보완)
+    Column(verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.marginM8)) {
+        FCPhotoPicker(
+            state = if (image != null) FCPhotoPickerState.Filled(image = BitmapPainter(image)) else FCPhotoPickerState.Empty,
+            onClick = onPhotoTapped,
+        )
+        state.photoError?.let { message ->
+            BasicText(
+                text = message,
+                style = FestiCoreTextStyle.baseFootnoteRegular.textStyleWithoutLineBox.copy(
+                    color = FestiCoreSemanticColor.statusNegative.color,
+                ),
+            )
+        }
+    }
 }
 
 @Composable

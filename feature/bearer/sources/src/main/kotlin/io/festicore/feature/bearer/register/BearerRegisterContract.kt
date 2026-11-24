@@ -14,6 +14,7 @@ import io.festicore.feature.bearer.profile.BearerProfileState
  * @param preferredFestivalId 먼저 골라 둘 페스티벌(라이브 탭에서 연 페스티벌)
  * @param zones 고른 페스티벌의 받은 팩에서 읽은 존. 팩이 없으면 비어 있어 존 고르기를 숨긴다.
  * @param photoData 등록한 뒤 올릴 사진
+ * @param photoError 고른 사진을 기기에서 읽지 못했을 때 안내(Android 보완, iOS는 조용히 넘김 `BRV:44`)
  * @param pendingRequest 마지막으로 보낸 등록. 같은 내용을 다시 보내면 같은 멱등키를 쓴다.
  */
 data class BearerRegisterState(
@@ -23,6 +24,7 @@ data class BearerRegisterState(
     val zones: List<BearerZone> = emptyList(),
     val form: BearerRegisterForm = BearerRegisterForm(),
     val photoData: ByteArray? = null,
+    val photoError: String? = null,
     val isSaving: Boolean = false,
     val nameError: String? = null,
     val saveError: String? = null,

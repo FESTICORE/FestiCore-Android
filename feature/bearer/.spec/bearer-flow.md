@@ -161,7 +161,9 @@ iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swif
 ### Android에서 다른 점
 
 - '오늘'은 주입한 `Clock`(기본 서울)의 날짜다. iOS는 기기 달력(`\.calendar`)을 쓴다.
-- 사진은 프로필과 같은 Photo Picker. 바이트를 읽지 못하면 iOS처럼 아무것도 하지 않는다.
+- 사진은 프로필과 같은 Photo Picker. 바이트를 읽지 못하면 사진 칸 아래에 "사진을 올리지 못했어요. 다시 골라 주세요"(`statusNegative`, 간격 `M8`)를 보이고 이전 사진은 둔다. 다시 고르면 지운다(Android 보완, iOS는 조용히 넘어감 `BRV:44`, 프로필과 같음).
+- 고른 축제의 존을 읽지 못하면 존 섹션을 숨긴 채 둔다 — iOS와 같음 — 사용자가 멈춘 듯 보일 수 있음(`BRF:426-437`).
+- 저장 응답의 축제가 목록에 없으면 저장 중만 끄고 완료 화면 · 안내 없이 입력 화면에 남는다 — iOS와 같음 — 사용자가 멈춘 듯 보일 수 있음(`BRF:533`).
 
 ## 기수 여부 (`register/`, iOS `BearerRoleChoiceFeature` · `BearerRoleChoiceView`)
 
@@ -186,4 +188,4 @@ iOS `BearerProfileFeatureTests` 13건을 같은 이름으로 `BearerProfileViewM
 
 iOS `BearerPlanPickFeatureTests` 4건을 같은 이름으로 `BearerPlanPickViewModelTest`에 옮긴다: `groupsDaysAndOpensPlannedDay` · `togglesAndReturnsOrderedPlan` · `limitsToThirty` · `backCloses`. 같은 파일 `festivalDay`는 iOS `AppDateFormatTests`의 `festivalDay` 줄이다.
 
-iOS `BearerRegisterFeatureTests` 10건을 같은 이름으로 `BearerRegisterViewModelTest`에 옮긴다: `festivalOptions` · `loadsUpcomingAndSelectsPreferred` · `receivedPackLoadsZones` · `emptyFestivalsFail` · `registerSucceeds` · `offlineRetryReusesKey` · `conflictsShowAlerts` · `validation` · `roleChoice` · `savingKeepsRequestedFestival`.
+iOS `BearerRegisterFeatureTests` 10건을 같은 이름으로 `BearerRegisterViewModelTest`에 옮긴다: `festivalOptions` · `loadsUpcomingAndSelectsPreferred` · `receivedPackLoadsZones` · `emptyFestivalsFail` · `registerSucceeds` · `offlineRetryReusesKey` · `conflictsShowAlerts` · `validation` · `roleChoice` · `savingKeepsRequestedFestival`. Android 추가 `photoLoadFailed`.

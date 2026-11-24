@@ -26,7 +26,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
-/** iOS `BearerRegisterFeatureTests` 10건(함수 이름을 iOS와 같게 둔다). 서버에 쓰지 않는다. */
+/** iOS `BearerRegisterFeatureTests` 10건(함수 이름을 iOS와 같게 둔다) + Android 추가 `photoLoadFailed`. 서버에 쓰지 않는다. */
 class BearerRegisterViewModelTest {
     private companion object {
         // 2026-11-13 00:00 UTC(서울 09:00)
@@ -297,6 +297,18 @@ class BearerRegisterViewModelTest {
                 copy(isSaving = false, pendingRequest = null, completion = BearerRegisterCompletion(claim = claim, festival = wonder))
             }
             expectSideEffect(BearerRegisterSideEffect.Registered(flagId = "flg_9", festivalId = "fst_wonder"))
+        }
+    }
+
+    // Android 추가: 고른 사진을 읽지 못하면 안내하고, 다시 고르면 지운다(프로필 `photoLoadFailed`와 같음)
+    @Test
+    fun photoLoadFailed() = runTest {
+        val data = byteArrayOf(1, 2, 3)
+        viewModel().test(this, initialState = loadedState()) {
+            containerHost.onPhotoLoadFailed()
+            expectState { copy(photoError = "사진을 올리지 못했어요. 다시 골라 주세요") }
+            containerHost.onPhotoPicked(data)
+            expectState { copy(photoData = data, photoError = null) }
         }
     }
 }

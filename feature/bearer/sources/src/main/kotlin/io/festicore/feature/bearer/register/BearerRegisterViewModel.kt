@@ -103,7 +103,12 @@ class BearerRegisterViewModel(
     }
 
     fun onPhotoPicked(data: ByteArray) = intent {
-        reduce { state.copy(photoData = data) }
+        reduce { state.copy(photoData = data, photoError = null) }
+    }
+
+    /** 고른 사진을 기기에서 읽지 못했다(URI 열기 · 읽기 실패). 이전에 고른 사진은 둔다. Android 추가(iOS는 조용히 넘어감 `BRV:44`, 프로필 `onPhotoLoadFailed`와 같음). */
+    fun onPhotoLoadFailed() = intent {
+        reduce { state.copy(photoError = BearerProfileViewModel.photoMessage(BearerError.Unavailable())) }
     }
 
     fun onSaveTapped() = intent {
