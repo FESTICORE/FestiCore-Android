@@ -464,6 +464,7 @@ private fun RestartCTA(restartUsedToday: Boolean, onRestartTapped: () -> Unit) {
                     caption = "오늘은 이미 다시 시작했어요",
                     note = "내일 다시 올릴 수 있어요",
                 ),
+            enabled = false,
             onClick = {},
         )
     } else {
