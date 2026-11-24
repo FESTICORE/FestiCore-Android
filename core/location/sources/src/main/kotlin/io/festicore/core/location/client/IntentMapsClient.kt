@@ -22,15 +22,25 @@ import kotlinx.coroutines.withContext
 /**
  * iOS `MapKitAppleMapsClient` 대응. 목적지는 서버 좌표, 없으면 플랫폼 `Geocoder`로 축제 장소 근처에서 이름을 찾고([NearestPlace]),
  * 도보 길찾기는 지도 URL 인텐트(`https://www.google.com/maps/dir/?api=1&travelmode=walking`)로 기본 지도 앱이 연다.
- * 기기 안에서 무료로 도보 경로를 계산할 방법이 없어 [walkingDuration]은 늘 [LocationClientError.RouteUnavailable]이다(설계 쟁점 F4).
- * 호출자는 iOS의 "계산 못 함" 경로대로 서버 `walkMinutes`를 보인다. 위치 값은 로그 · 분석에 넣지 않는다.
+ * 소요 시간은 Google Routes API([routes])로 구한다(사용자 결정 · 설계 쟁점 F4). 키가 없거나 실패하면 도보는 직선거리 어림([WalkingEstimate]),
+ * 자동차는 [LocationClientError.RouteUnavailable]이라 표시하지 않는다.
+ * 목적지를 찾지 못하면 [LocationClientError.PlaceNotFound]를 던지고 호출자는 서버 `walkMinutes`를 보인다. 위치 값은 로그 · 분석에 넣지 않는다.
  */
 internal class IntentMapsClient(
     private val context: Context,
     private val activityProvider: LocationActivityProvider,
+    private val routes: GoogleRoutesClient,
 ) : MapsClient {
-    override suspend fun walkingDuration(origin: LocationCoordinate, place: WalkingPlace): WalkingDuration =
-        throw LocationClientError.RouteUnavailable
+    override suspend fun walkingDuration(origin: LocationCoordinate, place: WalkingPlace): WalkingDuration {
+        if (!origin.isValid) throw LocationClientError.LocationUnavailable
+        val destination = coordinate(place)
+        return routes.duration(origin, destination, GoogleRoutesClient.TravelMode.WALK) ?: WalkingEstimate.duration(origin, destination)
+    }
+
+    override suspend fun drivingDuration(origin: LocationCoordinate, place: WalkingPlace): WalkingDuration {
+        if (!origin.isValid) throw LocationClientError.LocationUnavailable
+        return routes.duration(origin, coordinate(place), GoogleRoutesClient.TravelMode.DRIVE) ?: throw LocationClientError.RouteUnavailable
+    }
 
     override suspend fun openWalkingDirections(place: WalkingPlace): Boolean {
         val destination = try {

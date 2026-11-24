@@ -37,6 +37,8 @@ android {
         versionName = AndroidConfig.VERSION_NAME
         // Mixpanel 토큰(FESTICORE_MIXPANEL_TOKEN, iOS xcconfig와 같은 이름). 비면 service/analytics가 Mixpanel을 시작하지 않는다.
         buildConfigField("String", "MIXPANEL_TOKEN", buildConfigString(secretValue("FESTICORE_MIXPANEL_TOKEN")))
+        // Google Routes API 키(FESTICORE_GOOGLE_ROUTES_API_KEY). 비면 귀가 카드는 도보만 직선거리로 어림한다(설계 R6 쟁점 F4).
+        buildConfigField("String", "GOOGLE_ROUTES_API_KEY", buildConfigString(secretValue("FESTICORE_GOOGLE_ROUTES_API_KEY")))
     }
 
     flavorDimensions += "environment"

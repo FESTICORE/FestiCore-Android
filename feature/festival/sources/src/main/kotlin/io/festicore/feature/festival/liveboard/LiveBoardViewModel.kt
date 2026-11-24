@@ -490,7 +490,15 @@ class LiveBoardViewModel(
         val minutes = coroutineScope {
             val station = async { walkingMinutes(origin, places.station) }
             val shuttleStop = async { walkingMinutes(origin, places.shuttleStop) }
-            HomeWalkMinutes(station = station.await(), shuttleStop = shuttleStop.await())
+            // 자동차 분은 iOS에 없고 사용자 요청으로 더한다(설계 R6 쟁점 F4). 계산하지 못하면 표시하지 않는다.
+            val stationDriving = async { drivingMinutes(origin, places.station) }
+            val shuttleStopDriving = async { drivingMinutes(origin, places.shuttleStop) }
+            HomeWalkMinutes(
+                station = station.await(),
+                shuttleStop = shuttleStop.await(),
+                stationDriving = stationDriving.await(),
+                shuttleStopDriving = shuttleStopDriving.await(),
+            )
         }
         onHomeWalkEstimated(festivalId, minutes)
     }
@@ -511,6 +519,11 @@ class LiveBoardViewModel(
     private suspend fun walkingMinutes(origin: LocationCoordinate, place: WalkingPlace?): Int? {
         place ?: return null
         return attempt { mapsClient.walkingDuration(origin, place) }?.minutes
+    }
+
+    private suspend fun drivingMinutes(origin: LocationCoordinate, place: WalkingPlace?): Int? {
+        place ?: return null
+        return attempt { mapsClient.drivingDuration(origin, place) }?.minutes
     }
 
     // MARK: - Inner

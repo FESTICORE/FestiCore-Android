@@ -141,7 +141,7 @@ class LiveBoardHomeWalkTest {
     }
 
     @Test
-    fun `Android 지도 구현처럼 도보 계산이 늘 실패하면 서버 역 도보 분을 보이고 정류장은 비운다`() = runTest {
+    fun `도보 · 자동차 계산이 모두 실패하면 서버 역 도보 분을 보이고 정류장은 비운다`() = runTest {
         val location = FakeLocationClient(authorization = { LocationAuthorization.Authorized }, currentLocation = { origin })
         val maps = FakeMapsClient(walkingDuration = { _, _ -> throw LocationClientError.RouteUnavailable })
         viewModel(location, maps).test(this, initialState = homeState()) {
@@ -248,7 +248,48 @@ class LiveBoardHomeWalkTest {
         }
     }
 
+    @Test
+    fun `자동차 시간도 계산되면 도보와 함께 둔다`() = runTest {
+        val location = FakeLocationClient(authorization = { LocationAuthorization.Authorized }, currentLocation = { origin })
+        val maps =
+            FakeMapsClient(
+                walkingDuration = { _, place -> if (place.name == STATION_NAME) WalkingDuration(430.0) else WalkingDuration(150.0) },
+                drivingDuration = { _, place ->
+                    if (place.name ==
+                        STATION_NAME
+                    ) {
+                        WalkingDuration(200.0)
+                    } else {
+                        throw LocationClientError.RouteUnavailable
+                    }
+                },
+            )
+        viewModel(location, maps).test(this, initialState = homeState()) {
+            containerHost.onHomeRideAppeared()
+            expectState { copy(homeWalk = HomeWalkState.Estimating(FESTIVAL_ID, last = null)) }
+            expectState {
+                copy(homeWalk = HomeWalkState.Estimated(FESTIVAL_ID, HomeWalkMinutes(station = 8, shuttleStop = 3, stationDriving = 4)))
+            }
+        }
+    }
+
     // MARK: - 카드 문구와 출발 판단
+
+    @Test
+    fun `자동차 분이 있으면 도보 옆에 차로 분을 붙이고 출발편 판단은 도보로 한다`() {
+        val minutes = HomeWalkMinutes(station = 8, shuttleStop = 3, stationDriving = 4, shuttleStopDriving = 2)
+        val ride = LiveBoardScreenModel(homeState().copy(homeWalk = HomeWalkState.Estimated(FESTIVAL_ID, minutes))).homeRide(at("23:00"))
+        assertEquals("막차까지 52분", ride?.remain)
+        assertEquals("마지막 셔틀 23:40 · 정문 셔틀 정류장 (도보 3분 · 차로 2분)", ride?.shuttle)
+        assertEquals("막차 23:52 · 서현역 (도보 8분 · 차로 4분)", ride?.train)
+    }
+
+    @Test
+    fun `도보 분 없이 자동차 분만 있으면 차로 분만 보인다`() {
+        val minutes = HomeWalkMinutes(station = 8, shuttleStop = null, shuttleStopDriving = 2)
+        val ride = LiveBoardScreenModel(homeState().copy(homeWalk = HomeWalkState.Estimated(FESTIVAL_ID, minutes))).homeRide(at("23:00"))
+        assertEquals("마지막 셔틀 23:40 · 정문 셔틀 정류장 (차로 2분)", ride?.shuttle)
+    }
 
     @Test
     fun `지도 계산값으로 역 · 정류장 도보 분을 보인다`() {

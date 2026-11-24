@@ -277,6 +277,11 @@ internal class FakeLocationClient(
 internal class FakeMapsClient(
     private val walkingDuration: (suspend (LocationCoordinate, WalkingPlace) -> WalkingDuration)? = null,
     private val openWalkingDirections: (suspend (WalkingPlace) -> Boolean)? = null,
+    /** 넘기지 않으면 키가 없는 것처럼 자동차 시간을 계산하지 못한다. */
+    private val drivingDuration: suspend (
+        LocationCoordinate,
+        WalkingPlace,
+    ) -> WalkingDuration = { _, _ -> throw LocationClientError.RouteUnavailable },
 ) : MapsClient {
     val unexpected = mutableListOf<String>()
     val opened = mutableListOf<WalkingPlace>()
@@ -288,6 +293,9 @@ internal class FakeMapsClient(
         }
         return handler(origin, place)
     }
+
+    override suspend fun drivingDuration(origin: LocationCoordinate, place: WalkingPlace): WalkingDuration =
+        drivingDuration.invoke(origin, place)
 
     override suspend fun openWalkingDirections(place: WalkingPlace): Boolean {
         opened += place

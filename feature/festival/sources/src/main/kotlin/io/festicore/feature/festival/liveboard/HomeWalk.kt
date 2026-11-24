@@ -17,7 +17,7 @@ sealed interface HomeWalkState {
         val last: HomeWalkMinutes?,
     ) : HomeWalkState
 
-    /** 지도로 계산한 도보 분. 계산하지 못한 목적지는 null이다. */
+    /** 지도로 계산한 도보(· 자동차) 분. 계산하지 못한 목적지는 null이다. */
     data class Estimated(
         val festivalId: String,
         val minutes: HomeWalkMinutes,
@@ -77,6 +77,8 @@ internal val LiveBoardState.homeWalkMinutes: HomeWalkMinutes
         return HomeWalkMinutes(
             station = estimated?.station ?: directions.transitWalkMinutes,
             shuttleStop = estimated?.shuttleStop,
+            stationDriving = estimated?.stationDriving,
+            shuttleStopDriving = estimated?.shuttleStopDriving,
         )
     }
 

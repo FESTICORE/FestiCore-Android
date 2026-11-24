@@ -2,7 +2,7 @@ package io.festicore.core.location.entity
 
 import kotlin.math.ceil
 
-/** 지도가 계산한 도보 소요 시간. iOS `WalkingDuration`. */
+/** 도보(· 자동차) 소요 시간. iOS는 Apple 지도, Android는 Google Routes API · 직선거리 어림으로 구한다. iOS `WalkingDuration`. */
 data class WalkingDuration(val seconds: Double) {
     /**
      * 화면에 보일 분. 막차를 놓치지 않도록 남는 초는 1분으로 올리고 최소 1분이다.

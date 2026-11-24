@@ -6,10 +6,15 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.math.ceil
 
-/** 귀가 카드 역 · 셔틀 정류장까지 도보 분. iOS `FestivalFeature.HomeWalkMinutes`. */
+/**
+ * 귀가 카드 역 · 셔틀 정류장까지 도보 분. iOS `FestivalFeature.HomeWalkMinutes`.
+ * 자동차 분([stationDriving] · [shuttleStopDriving])은 iOS에 없고 사용자 요청으로 더한다(설계 R6 쟁점 F4). 출발편 판단에는 쓰지 않는다.
+ */
 data class HomeWalkMinutes(
     val station: Int? = null,
     val shuttleStop: Int? = null,
+    val stationDriving: Int? = null,
+    val shuttleStopDriving: Int? = null,
 )
 
 /**

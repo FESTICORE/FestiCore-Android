@@ -56,7 +56,7 @@ private val appModule = module {
 
 /** core · service · domain · feature 목록과 app 정의를 합친다. 정의는 각 모듈의 di/에 두고, core · service · feature 목록은 각 assembly 모듈이 가진다. */
 val appModules: List<Module> =
-    coreModules +
+    coreModules(routesApiKey = BuildConfig.GOOGLE_ROUTES_API_KEY) +
         serviceModules(baseUrl = BuildConfig.BASE_URL) +
         listOf(
             domainAuthModule(googleServerClientId = BuildConfig.GOOGLE_SERVER_CLIENT_ID),
