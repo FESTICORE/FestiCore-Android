@@ -71,7 +71,7 @@ data class MainTabCoordinatorState(
 /**
  * 메인 탭 선택과 딥링크 탭 분기(iOS `MainTabCoordinator` `select` · `handleDeeplink`, 설계 P7).
  * 축제 목록 · 축제 · 크루 초대 경로는 라이브 탭에서, 깃발 경로는 깃발 탭에서 연다(iOS `MTC:379-394`).
- * 공연(`Set`)은 타임테이블 탭이 연결되는 C1에서 붙인다. 그때까지는 꺼낸 뒤 디버그 로그만 남긴다.
+ * 공연(`Set`, 공연 10분 전 푸시)은 푸시 · 기기 등록(P0)에서 붙인다. 그때까지는 꺼낸 뒤 디버그 로그만 남긴다.
  */
 class MainTabCoordinator :
     ViewModel(),
@@ -101,8 +101,9 @@ class MainTabCoordinator :
             is FestiCoreDeeplink.Festival ->
                 reduce { state.copy(selectedTab = FCTabBarTab.Live, liveRequest = LiveTabRequest.Festival(deeplink.id)) }
 
-            // 라우팅 보류: C1에서 축제 열기 → 타임테이블 탭 → 공연 상세로 잇는다(iOS `MainTabCoordinator.swift:371-377`).
-            is FestiCoreDeeplink.Set -> FestiCoreLogger.debug("공연 딥링크는 타임테이블 연결(C1) 전이라 열지 않음", LogCategory.NAVIGATION)
+            // 라우팅 보류: P0에서 축제 열기 → 타임테이블 탭 → 공연 상세로 잇는다(iOS `MainTabCoordinator.swift:371-377`).
+            // 지금은 타임테이블 탭만 골라도 라이브 탭이 그려지지 않아 보드가 축제를 열지 못한다.
+            is FestiCoreDeeplink.Set -> FestiCoreLogger.debug("공연 딥링크는 푸시(P0) 전이라 열지 않음", LogCategory.NAVIGATION)
 
             is FestiCoreDeeplink.Flag ->
                 reduce { state.copy(selectedTab = FCTabBarTab.Flag, flagRequest = deeplink.id) }

@@ -80,6 +80,7 @@ sealed interface FCSetSheetState {
  * @param source 아래 출처 줄(iOS `source(_:)`). null이면 숨긴다.
  * @param onStageClick 무대 줄을 누를 수 있게 한다(iOS `stageAction(_:)`).
  * @param isScheduleDisabled 내 일정 토글을 잠시 끈다(iOS `scheduleDisabled(_:)`, 불러오는 중 등).
+ * @param scheduleHelper 내 일정 토글 아래 안내. null이면 그 줄을 숨긴다(Android 푸시 전 알림 약속 숨김).
  */
 @Composable
 fun FCSetSheet(
@@ -96,7 +97,7 @@ fun FCSetSheet(
     source: String? = null,
     onStageClick: (() -> Unit)? = null,
     scheduleTitle: String = "내 일정에 넣기",
-    scheduleHelper: String = "공연 10분 전에 알려 드려요",
+    scheduleHelper: String? = "공연 10분 전에 알려 드려요",
     endedTitle: String = "공연 종료",
     endedHelper: String = "이미 종료된 공연이에요",
     isScheduleDisabled: Boolean = false,
@@ -334,7 +335,7 @@ private fun MemoBox(memo: String) {
 @Composable
 private fun ScheduleRow(
     title: String,
-    helper: String,
+    helper: String?,
     isScheduled: Boolean,
     isDisabled: Boolean,
     onIsScheduledChange: (Boolean) -> Unit,
@@ -348,10 +349,12 @@ private fun ScheduleRow(
                 text = title,
                 style = FestiCoreTextStyle.baseCalloutBold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
             )
-            BasicText(
-                text = helper,
-                style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
-            )
+            if (helper != null) {
+                BasicText(
+                    text = helper,
+                    style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
+                )
+            }
         }
         FCToggle(
             isOn = isScheduled,

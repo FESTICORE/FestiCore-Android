@@ -5,6 +5,11 @@ import androidx.navigation3.runtime.NavKey
 import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.feature.festival.flag.FlagBoard
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
@@ -67,19 +72,32 @@ sealed interface FestivalCoordinatorSideEffect {
  * 보드 크루 존 칩은 존 지도를, 종 아이콘 · 새 알림 배너는 알림함을 쌓는다(이미 있으면 무시).
  * 보드 "크루 만들기"는 만들기를, 크루 카드는 크루 화면을 쌓는다. 초대 코드는 참여 확인을 쌓는다(spec `crew.md`).
  * 계정이 바뀌면 계정의 팔로우 · 크루를 보여 주는 존 지도 · 크루 · 만들기와 이전 계정의 알림함을 스택에서 뺀다(iOS `clearAccountData`, 설계 E9).
+ * 스택에 보드가 없어지면 [clearBoardSelection]으로 보드 공유 선택을 비운다. 타임테이블은 "축제를 선택해 주세요"로 돌아간다
+ * (iOS `syncTimetable`은 라이브 스택에 보드가 없으면 축제 없음, 설계 T1 `clear`).
  */
-class FestivalCoordinator(private val currentUserProvider: CurrentUserProvider) :
-    ViewModel(),
+class FestivalCoordinator(
+    private val currentUserProvider: CurrentUserProvider,
+    private val clearBoardSelection: () -> Unit = {},
+) : ViewModel(),
     OrbitContainerHost<FestivalCoordinatorState, FestivalCoordinatorState, FestivalCoordinatorSideEffect> {
     /** 이 흐름을 만든 계정. 여기서 바뀔 때만 정리한다(구독 시작이 늦어도 놓치지 않게 만들 때 읽는다). */
     private var lastUserId = currentUserProvider.currentUserId.value
 
-    override val container =
-        orbitContainer<FestivalCoordinatorState, FestivalCoordinatorSideEffect>(FestivalCoordinatorState()) {
-            currentUserProvider.currentUserId.collect { userId ->
-                if (userId == lastUserId) return@collect
-                lastUserId = userId
-                onAccountChanged()
+    override val container: OrbitContainer<FestivalCoordinatorState, FestivalCoordinatorState, FestivalCoordinatorSideEffect> =
+        orbitContainer(FestivalCoordinatorState()) {
+            coroutineScope {
+                launch {
+                    container.stateFlow.map { state ->
+                        state.routes.any { it is FestivalRoute.LiveBoard }
+                    }.distinctUntilChanged().collect { hasBoard ->
+                        if (!hasBoard) clearBoardSelection()
+                    }
+                }
+                currentUserProvider.currentUserId.collect { userId ->
+                    if (userId == lastUserId) return@collect
+                    lastUserId = userId
+                    onAccountChanged()
+                }
             }
         }
 

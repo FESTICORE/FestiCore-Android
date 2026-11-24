@@ -27,7 +27,7 @@ iOS 대응: `Projects/Feature/Timetable/Sources/SchedulePick/{Reducer/SchedulePi
 ## 화면 (`SchedulePickContent`)
 
 - 배경 `backgroundElevated`, 위 상태 표시줄 여백. `FCStepHeader(step = 1)` + "나중에 할게요" → `Later`.
-- 세로 스크롤, 여백 16 · 간격 20: 머리("Step 1. 내 일정 고르기" `baseCaption1Medium` `labelAssistive` / "보고 싶은 무대를 골라 주세요" `baseTitle2Bold` `labelNormal` 머리글 / "고른 무대는 시작 10분 전에 알려 드려요.\n나중에 타임테이블에서 언제든 바꿀 수 있어요." `baseSubheadlineRegular` `labelNeutral`, 간격 8), `FCSegmented`(날짜 수 제한 없음), 목록.
+- 세로 스크롤, 여백 16 · 간격 20: 머리("Step 1. 내 일정 고르기" `baseCaption1Medium` `labelAssistive` / "보고 싶은 무대를 골라 주세요" `baseTitle2Bold` `labelNormal` 머리글 / "고른 무대는 시작 10분 전에 알려 드려요.\n나중에 타임테이블에서 언제든 바꿀 수 있어요."(P0 전 임시 숨김: `TimetablePushGate`가 꺼져 있으면 첫 줄을 빼고 "나중에 타임테이블에서 언제든 바꿀 수 있어요."만) `baseSubheadlineRegular` `labelNeutral`, 간격 8), `FCSegmented`(날짜 수 제한 없음), 목록.
 - 목록(간격 8, 오른쪽 정렬): "{N}개 선택"(`baseFootnoteBold`), 고른 날 공연 시작순 `FCSetSelectRow(artist, 무대(없으면 "무대 미정"), HH:mm, HH:mm, isSelected, overlapText)`, 행 사이 1 `lineNormal`, 묶음 `r16` 클립 + 1 `lineNormal` 테두리. 시각은 자정을 넘기면 다음 날 시각.
 - 빈 날: "이 날은 아직 공연 시간이 없어요."(`baseSubheadlineRegular` `labelAssistive`, 가운데, 위아래 24). 안내: `baseCaption1Regular` `statusNegative`, 왼쪽.
 - 아래 바: 위 1 `lineNormal`, `FCButton("건너뛰기", Ghost)` + `FCButton(저장 중 "저장하는 중" / "다음 · {N}개 선택", 가득, isEnabled = canSubmit)`, 간격 8, 좌우 16 · 위 12 · 아래 8, 배경 `materialGlass`(아래 내비게이션 바 영역까지).

@@ -7,14 +7,16 @@ modules: [feature/timetable, ui/sharedui, domain/festival, domain/auth]
 
 > 라이브 보드에서 고른 축제의 팩을 날짜별 무대 × 시간 격자로 보여 주고, 블록을 누르면 공연 상세 시트를 띄운다.
 
-iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Main/Reducer/TimetableFeature+Schedule.swift` 동기화 포함), `UI/FestiCoreSharedUI/Sources/Sheet/FCSetSheet.swift`, `App/Sources/Navigation/MainTab/MainTabCoordinator+Sync.swift`(입력 쪽). 설계: `.claude/docs/specs/2026-11-22-timetable-android-design.md`(G1 · S1 · S2 · S3 결과 반영). 고르기 화면은 `schedule-pick-screen.md`.
+iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Main/Reducer/TimetableFeature+Schedule.swift` 동기화 포함), `UI/FestiCoreSharedUI/Sources/Sheet/FCSetSheet.swift`, `App/Sources/Navigation/MainTab/MainTabCoordinator+Sync.swift`(입력 쪽), `App/Sources/Navigation/Timetable/TimetableCoordinator{,View}.swift`(탭 흐름). 설계: `.claude/docs/specs/2026-11-22-timetable-android-design.md`(G1 · S1 · S2 · S3 · 탭 연결 #198 결과 반영). 고르기 화면은 `schedule-pick-screen.md`.
 
 ## 개요
 
 - `TimetableViewModel`(iOS `TimetableFeature`)이 격자 · 공개 전 · 시트 상태를 모두 가진다(설계 T7). 시트 내용 · 겹침은 상태가 바뀔 때마다 ViewModel이 다시 계산해 넣는다.
 - 입력은 앱 범위 공유 상태 `FestivalBoardSelectionUseCase.selection`(보드가 쓴다, 설계 T1)이고, 팩 → 날짜 변환은 `FestivalPackTimetableMapper`(`domain/timetable/.spec/timetable-mapping.md`)가 한다.
 - 내 일정은 서버와 맞춘다(`FestivalScheduleUseCase` 읽기 · 저장 · 저장 알림). 계정은 `CurrentUserProvider.currentUserId`로 본다.
-- 이번 범위 밖: "알림 받기" 처리(A1), Coordinator · 탭 연결 · `onTimetableAppeared` 호출 · app Koin 등록(C1), 준비 안내 연결(PrepGuide).
+- 탭 흐름은 `TimetableCoordinator` · `TimetableFlow`(아래 "탭 흐름")가 맡고, app `MainTabScreen` 타임테이블 자리에 그린다(#198).
+- 범위 밖: "알림 받기" 처리(A1, 푸시 P0 뒤), 공연 딥링크 · 10분 전 푸시(P0), 준비 안내 연결(PrepGuide).
+- **P0 전 임시 숨김**: `TimetablePushGate.IS_PUSH_READY = false`인 동안 공연 시트 기본 도움말 "공연 10분 전에 알려 드려요"(줄 자체를 숨김)와 공개 전 카드 "알림 받기" 버튼을 숨긴다. P0 · A1이 들어오면 이 값 하나만 `true`로 바꾼다. 공개 전 카드 제목 "시간표가 공개되면 알려 드릴게요"는 iOS 문구 그대로 둔다.
 
 ## 동작 규칙
 
@@ -61,14 +63,14 @@ iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Ma
 
 - 블록을 누르면 그 공연 내용으로 연다(없는 ID면 닫힘). 다른 공연을 열면 토스트를 멈춘다.
 - 내용: 아티스트, 무대(없으면 "무대 미정"), `timeRangeWithDuration`, 진행 상태, 내 일정 여부, 첫 겹침, 변경 전 시각 · 변경 문구, 사진, 메모, 출처.
-- 시트 상태 우선순위: 끝남 → 겹침 → 변경 → 기본. 도움말: 읽는 중 "내 일정을 불러오는 중이에요"(토글 꺼짐) / 한도 "내 일정은 최대 60개까지 저장할 수 있어요" / 기본 "공연 10분 전에 알려 드려요".
+- 시트 상태 우선순위: 끝남 → 겹침 → 변경 → 기본. 도움말: 읽는 중 "내 일정을 불러오는 중이에요"(토글 꺼짐) / 한도 "내 일정은 최대 60개까지 저장할 수 있어요" / 기본 "공연 10분 전에 알려 드려요"(P0 전 임시 숨김 — 줄 없음).
 - 토글: 동기화 `Loading`이면 무시. 빼면 한도 안내 끔. 넣을 때 끝난 공연은 거절, 이미 60개면 한도 안내만 켬. 바꾼 뒤 겹침이 있으면 격자 경고를 켠다. 넣으면 "내 일정에 추가됐어요" 토스트 2초(다시 넣으면 처음부터), 빼거나 시트를 닫거나 다른 공연 · 축제로 바뀌면 바로 숨긴다. 동기화 `Ready`일 때만 서버에 저장한다(`LocalOnly` · `Idle`은 이 기기 표시만).
 - 닫으면 한도 안내를 끈다. 시트는 `FCSheet`(창 위라 탭 바까지 덮음), 토스트는 시트 위 accessory(아래에서 올라오며 0.25초).
 
 ### 공연 검색 · 변경 목록 (`TimetableSetListViewModel`)
 
 - 검색: 앞뒤 공백을 뺀 검색어가 비었거나 아티스트 · 무대 이름에 대소문자 무시로 포함. 변경: `previousStart != null`. 공연이 없는 날은 뺀다.
-- 결과에 있는 공연을 누르면 `SetSelected(id)`, 뒤로는 `Close`. 날짜는 열 때 타임테이블이 가진 값을 받는다.
+- 결과에 있는 공연을 누르면 `SetSelected(id)`, 뒤로는 `Close`. 날짜는 열 때 타임테이블이 가진 값을 받고, 같은 축제 팩이 바뀌면 `onDaysChanged`로 검색어는 두고 날짜만 바꾼다(iOS `syncTimetable`).
 
 ### 내 일정 동기화 (iOS `TimetableFeature+Schedule`)
 
@@ -88,6 +90,17 @@ iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Ma
 - "내 일정 N개": 고르기가 열려 있지 않고 `canPickSchedule`(축제 있음 ∧ 공개 ∧ `Ready` ∧ 저장 중 아님)일 때만 `isPickOpen` + `SchedulePick(TimetableRoute.SchedulePick(축제, 지금 내 일정 정렬, lastClientAt 밀리초))`.
 - 결과(`onSchedulePickResult`, Coordinator가 넘긴 대기 값 · 시스템 뒤로는 `Skipped`): 열려 있지 않으면 버린다(닫힌 고르기의 늦은 결과). 닫고, `Saved`이고 같은 축제면 내 일정 = 결과 ∩ 팩(바뀌었으면 경고 다시 계산), `Ready`, 한도 · 불확실 · 저장 중 · 대기 해제, 진행 중 저장 취소, `lastClientAt = max(지금, 마지막 + 1ms)`, 저장 알림. `Skipped` · `Later`는 닫기만.
 - 화면(`TimetableScreen`)은 `SchedulePick` → `onSchedulePick(route)`, `CloseSchedulePick` → `onCloseSchedulePick()`, `schedulePickResult`가 오면 ViewModel에 넘기고 `onSchedulePickResultConsumed()`.
+
+### 탭 흐름 (`TimetableCoordinator` · `TimetableFlow`, iOS `TimetableCoordinator`)
+
+- 스택: `[Timetable]` 위에 `SetList(mode)` · `SchedulePick`을 쌓는다. 전환은 `TimetableTransitions`(350ms `FastOutSlowInEasing`, 다른 탭과 같음). 화면은 자기 `BackHandler`를 두지 않는다.
+- 검색 아이콘 · 변경 배너 → `SetList(Search | Changes)` push. 고르기나 목록이 이미 있으면 무시한다(iOS `guard destination == nil`).
+- 목록 경로는 연 축제(`SetList(mode, festivalId)`)를 가진다. 목록에서 공연 고름 → 목록 pop + `pendingSet(목록 축제, 공연)` → 흐름이 지금 타임테이블 축제와 같을 때만 `TimetableViewModel.onSetClicked(id)`, 다르면 버리고 비운다(축제가 바뀐 직후 이전 목록에서 고른 공연이 다른 축제 시트로 열리지 않게). 목록 뒤로 · 시스템 뒤로 = pop.
+- `SchedulePick` side effect → push, `CloseSchedulePick` → 결과 없이 pop. 고르기 화면 결과 → pop + `pendingPickResult`(고르기가 없으면 버림). 시스템 뒤로로 고르기를 pop하면 `Skipped`.
+- 타임테이블 축제가 처음 받은 값에서 바뀌면 검색 · 변경 목록을 닫는다(iOS `sameFestival ? … : nil`).
+- 탭 바: `routes.size > 1 ∨ 공연 시트 있음`이면 숨긴다(iOS `MTC:101-104`). 자리 예약 없음.
+- 수명: Coordinator · `TimetableViewModel`은 app 메인 탭 범위(`HomeWithCovers`)에 두어 탭을 바꿔도 남는다. 탭을 고를 때마다 흐름이 다시 그려져 `onTimetableAppeared`를 부른다(iOS `appearing: true`).
+- 보드와: 보드가 공유 선택을 쓰고, 보드 경로가 스택에서 빠지면(ViewModel `onCleared`) 자기가 쓴 값일 때만 비운다(→ `NoFestival`). "다시 시도"는 `requestRetry` → 보드가 보이지 않아도 온라인 상세를 다시 읽는다(iOS `onlineDetailOnAppear`, 실패 표시는 iOS처럼 보드가 보일 때만). 저장 알림은 `notifyMyScheduleSaved` → 보드 `savedSchedules`.
 
 ## 엣지 케이스
 
@@ -109,5 +122,5 @@ iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Ma
 | 모듈                          | 계층    | 변경 내용                                                                                                     |
 | ----------------------------- | ------- | ------------------------------------------------------------------------------------------------------------- |
 | `feature/timetable/interface` | feature | `TimetableRoute`(`Timetable` · `SetList(mode)` · `SchedulePick`) · `TimetableSetListMode` · `SchedulePickResult` |
-| `feature/timetable/sources`   | feature | `main/`(Contract · ViewModel · Screen/Content · Board · 공개 전 · 프리뷰) · `setdetail/` · `setlist/` · `schedulepick/` · `di/` |
+| `feature/timetable/sources`   | feature | `TimetableCoordinator` · `TimetableFlow` · `TimetableTransitions` · `main/`(Contract · ViewModel · Screen/Content · Board · 공개 전 · 프리뷰) · `setdetail/` · `setlist/` · `schedulepick/` · `di/` |
 | `ui/sharedui`                 | ui      | `FCSetSheet` · `FCToastItems.scheduleAdded` · 프리뷰                                                          |

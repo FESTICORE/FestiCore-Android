@@ -76,6 +76,8 @@ class LiveBoardViewModel(
                 launch {
                     container.stateFlow.map { it.toBoardSelection() }.distinctUntilChanged().collect(boardSelectionUseCase::update)
                 }
+                // 타임테이블 "다시 시도"(iOS `MTCSc:156-163` → 보드 `onlineDetailOnAppear`).
+                launch { boardSelectionUseCase.retryRequests.collect { onTimetableRetryRequested(it) } }
                 launch { scheduleUseCase.savedSchedules.collect { onMyScheduleSaved(it) } }
                 currentUserProvider.currentUserId.collect { onSessionChanged(hasSession = it != null, userId = it) }
             }
@@ -170,6 +172,16 @@ class LiveBoardViewModel(
 
     /** 시간표 실패 카드의 "다시 시도"(iOS `onlineDetailOnAppear`). */
     fun onRetryOnlineDetail() = intent { loadOnlineDetail(force = true) }
+
+    /**
+     * 타임테이블 탭의 "다시 시도"(iOS `onlineDetailOnAppear`). 보드가 보이지 않아도 지금 축제면 온라인 상세를 다시 읽는다.
+     * 실패는 iOS처럼 보드가 보일 때만 표시한다(`onOnlineDetailFailed`).
+     */
+    private fun onTimetableRetryRequested(festivalId: String) = intent {
+        if (festivalId != state.festivalId) return@intent
+        reduce { state.copy(onlineDetailLoading = true, onlineDetailFailed = false) }
+        launchOnlineDetail(festivalId)
+    }
 
     fun onHideFollowGuideTapped() = intent { reduce { state.copy(isFollowGuideDialogPresented = true) } }
 

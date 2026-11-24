@@ -536,6 +536,29 @@ class LiveBoardViewModelTest {
         }
     }
 
+    /** iOS `MTCSc:156-163`: 타임테이블 "다시 시도"는 보드가 보이지 않아도 온라인 상세를 다시 받는다. 다른 축제 요청은 버린다. */
+    @Test
+    fun `타임테이블 다시 시도는 보드가 보이지 않아도 상세를 다시 받는다`() = runTest {
+        var fail = true
+        val detail = FestivalPackDocument(id = "fst")
+        val selection = FakeBoardSelectionUseCase()
+        val liveBoard = FakeLiveBoardUseCase(detail = { if (fail) throw FestivalLiveBoardError.Unavailable() else detail })
+        viewModel(liveBoard, selection = selection).test(this) {
+            runOnCreate()
+            containerHost.onAppear()
+            awaitBoard { it.onlineDetailFailed }
+            containerHost.onDisappear()
+            awaitBoard { !it.isVisible }
+            fail = false
+            selection.retries.emit("fst_b")
+            selection.retries.emit("fst")
+            val loaded = awaitBoard { it.onlineDetail == detail }
+            assertFalse(loaded.isVisible)
+            assertFalse(loaded.onlineDetailFailed)
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
     @Test
     fun `다른 축제 문서가 오면 상세 실패로 본다`() = runTest {
         viewModel(FakeLiveBoardUseCase(detail = { FestivalPackDocument(id = "other") })).test(this) {

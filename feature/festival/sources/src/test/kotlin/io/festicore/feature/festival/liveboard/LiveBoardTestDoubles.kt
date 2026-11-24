@@ -116,7 +116,10 @@ internal class FakeScheduleUseCase(var schedule: suspend (String) -> FestivalSch
 /** 보드 선택 공유 상태 가짜 구현. 보드가 쓴 값을 그대로 담는다. */
 internal class FakeBoardSelectionUseCase : FestivalBoardSelectionUseCase {
     override val selection = MutableStateFlow<FestivalBoardSelection?>(null)
-    override val retryRequests: Flow<String> = emptyFlow()
+
+    /** 타임테이블 "다시 시도". 테스트가 보낸다. */
+    val retries = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    override val retryRequests: Flow<String> = retries
 
     override fun update(selection: FestivalBoardSelection) {
         this.selection.value = selection

@@ -10,9 +10,15 @@ sealed interface TimetableRoute : NavKey {
     @Serializable
     data object Timetable : TimetableRoute
 
-    /** 공연 검색 · 시간표 변경 목록(iOS `setList`). 날짜는 열 때 타임테이블이 가진 값을 넘긴다. */
+    /**
+     * 공연 검색 · 시간표 변경 목록(iOS `setList`). 날짜는 열 때 타임테이블이 가진 값을 넘긴다.
+     * [festivalId]는 목록을 연 축제다. 고른 공연은 그 축제가 아직 타임테이블 축제일 때만 연다.
+     */
     @Serializable
-    data class SetList(val mode: TimetableSetListMode) : TimetableRoute
+    data class SetList(
+        val mode: TimetableSetListMode,
+        val festivalId: String?,
+    ) : TimetableRoute
 
     /**
      * 내 일정 고르기(iOS `destination.schedulePick`, 설계 T8). 날짜는 화면이 공유 팩에서 다시 계산한다.

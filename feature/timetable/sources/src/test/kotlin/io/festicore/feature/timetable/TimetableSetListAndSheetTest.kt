@@ -52,6 +52,19 @@ class TimetableSetListAndSheetTest {
         }
     }
 
+    /** iOS `syncTimetable`: 같은 축제 팩이 바뀌면 목록은 검색어를 두고 날짜만 새로 받는다. */
+    @Test
+    fun `팩이 바뀌면 검색어를 두고 날짜만 바꾼다`() = runTest {
+        val days = sample(SampleVariant.Changed).days
+        TimetableSetListViewModel(TimetableSetListMode.Search, emptyList()).test(this) {
+            containerHost.onQueryChanged("라임")
+            expectState { copy(query = "라임") }
+            containerHost.onDaysChanged(days)
+            expectState { copy(days = days) }
+            assertEquals(listOf("lime"), containerHost.container.stateFlow.value.results.flatMap { it.sets }.map { it.id })
+        }
+    }
+
     private fun content(
         status: TimetableSetDetail.Status = TimetableSetDetail.Status.Upcoming(30),
         overlap: TimetableSetOverlap? = null,
@@ -83,6 +96,6 @@ class TimetableSetListAndSheetTest {
     fun scheduleHelperExplainsLoadingAndLimit() {
         assertEquals("내 일정을 불러오는 중이에요", scheduleHelper(content(isScheduleLoading = true, isScheduleLimitReached = true)))
         assertEquals("내 일정은 최대 60개까지 저장할 수 있어요", scheduleHelper(content(isScheduleLimitReached = true)))
-        assertEquals("공연 10분 전에 알려 드려요", scheduleHelper(content()))
+        assertEquals("공연 10분 전에 알려 드려요", scheduleHelper(content(), isPushReady = true))
     }
 }
