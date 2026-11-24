@@ -12,7 +12,7 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
 
 ## 개요
 
-화면은 `BearerUseCase`만 본다. 저장소는 `BearerRepositoryImpl`(`FlagRequest`, 세션은 `AuthSession.currentSessionId`, 기기 ID는 `DeviceInstallationService`). 축제 이름 · 존 · 공연은 받은 팩 바이트(`PackSyncService.cachedPack`)를 기수 전용으로 따로 읽는다. 로컬 저장은 없다. 사진 업로드(BD2) · 상태 대기열(BD3)은 아직 없다.
+화면은 `BearerUseCase`만 본다. 저장소는 `BearerRepositoryImpl`(`FlagRequest`, 세션은 `AuthSession.currentSessionId`, 기기 ID는 `DeviceInstallationService`). 축제 이름 · 존 · 공연은 받은 팩 바이트(`PackSyncService.cachedPack`)를 기수 전용으로 따로 읽는다. 로컬 저장은 없다. 사진 업로드는 `bearer-photo.md`, 상태 대기열(BD3)은 아직 없다.
 
 ## 동작 규칙
 

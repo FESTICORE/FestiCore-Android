@@ -5,6 +5,7 @@ import io.festicore.domain.bearer.bearer.BearerRepository
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerError
+import io.festicore.domain.bearer.entity.BearerFlagPhoto
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
@@ -24,6 +25,7 @@ import io.festicore.domain.bearer.sources.model.dto.BearerFlagsDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFollowedFlagDetailDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFollowsDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerInviteDataDto
+import io.festicore.domain.bearer.sources.model.dto.BearerPhotoResponseDto
 import io.festicore.domain.bearer.sources.model.dto.BearerPinnedFlagDataDto
 import io.festicore.domain.bearer.sources.model.mapper.BearerImageUrl
 import io.festicore.domain.bearer.sources.model.mapper.bearerError
@@ -101,6 +103,16 @@ internal class BearerRepositoryImpl(
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile {
         val sessionId = sessionId()
         return mapErrors { api.updateProfile<BearerFlagProfileDto>(flagId, change.toBody(), sessionId).toDomain(imageUrl) }
+    }
+
+    override suspend fun uploadPhoto(
+        flagId: String,
+        jpeg: ByteArray,
+        onProgress: (Double) -> Unit,
+    ): BearerFlagPhoto {
+        val sessionId = sessionId()
+        val response = mapErrors { api.uploadPhoto<BearerPhotoResponseDto>(flagId, jpeg, sessionId, onProgress) }
+        return BearerFlagPhoto(imageUrl.resolve(response.photoUrl), imageUrl.resolve(response.thumbUrl))
     }
 
     override suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus {

@@ -1,8 +1,10 @@
 package io.festicore.service.apiendpoint.flag
 
 import io.festicore.core.network.FestiCoreJson
+import io.festicore.core.network.endpoint.FestiCoreUploadPart
 import io.festicore.core.network.endpoint.festiCoreExchange
 import io.festicore.core.network.endpoint.festiCoreRequest
+import io.festicore.core.network.endpoint.festiCoreUpload
 import io.festicore.core.network.error.NetworkError
 import io.festicore.core.network.response.ErrorBody
 import io.festicore.service.api.base.AuthSessionError
@@ -222,6 +224,23 @@ class FlagRequest(@PublishedApi internal val client: HttpClient) {
         }
     }
 
+    /**
+     * `POST api/v1/flags/{id}/photo` multipart 파트 하나 `photo`(`photo.jpg`, `image/jpeg`). Bearer 대상, 재시도 0, 제한 시간 60초.
+     * [onProgress]는 보낸 비율(0~1). iOS `FlagPhotoUploadRequest`.
+     */
+    suspend inline fun <reified T> uploadPhoto(
+        flagId: String,
+        jpeg: ByteArray,
+        expectedSessionId: String,
+        noinline onProgress: (Double) -> Unit,
+    ): T = unwrapAuth {
+        client.festiCoreUpload(
+            path = FlagApi.photo(flagId),
+            part = FestiCoreUploadPart(PHOTO_PART, PHOTO_FILE_NAME, PHOTO_CONTENT_TYPE, jpeg),
+            onProgress = onProgress,
+        ) { bearerAuthorization(expectedSessionId) }
+    }
+
     private fun String.errorBodyOrNull(): ErrorBody? = try {
         FestiCoreJson.decodeFromString(ErrorBody.serializer(), this)
     } catch (_: IllegalArgumentException) { // SerializationException 포함
@@ -238,6 +257,9 @@ class FlagRequest(@PublishedApi internal val client: HttpClient) {
     @PublishedApi internal companion object {
         const val DEVICE_ID_HEADER = "X-Device-Id"
         const val FESTIVAL_ID_QUERY = "festivalId"
+        const val PHOTO_PART = "photo"
+        const val PHOTO_FILE_NAME = "photo.jpg"
+        const val PHOTO_CONTENT_TYPE = "image/jpeg"
     }
 }
 

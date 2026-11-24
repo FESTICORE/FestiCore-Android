@@ -22,4 +22,5 @@ dependencies {
     testImplementation(libs.lib("junit"))
     testImplementation(libs.lib("kotlinx-coroutines-test"))
     testImplementation(libs.lib("ktor-client-mock"))
+    testImplementation(libs.lib("robolectric"))
 }

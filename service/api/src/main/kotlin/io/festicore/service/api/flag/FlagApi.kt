@@ -34,6 +34,9 @@ object FlagApi {
     /** 기수 상태 변경. iOS `FlagAPI.status`. */
     fun status(flagId: String) = "$FLAGS/$flagId/status"
 
+    /** 깃발 사진 업로드. iOS `FlagAPI.photo`. */
+    fun photo(flagId: String) = "$FLAGS/$flagId/photo"
+
     /** 공동 기수 초대 코드 발급. iOS `FlagAPI.inviteCoBearer`. */
     fun coBearerInvite(flagId: String) = "$FLAGS/$flagId/co-bearers/invite"
 

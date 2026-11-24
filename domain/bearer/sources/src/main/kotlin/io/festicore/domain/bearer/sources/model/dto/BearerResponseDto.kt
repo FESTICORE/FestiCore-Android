@@ -126,3 +126,10 @@ internal data class BearerErrorBodyDto(
         val remainingAttempts: Int? = null,
     )
 }
+
+/** 사진 업로드 응답. 주소는 서버 상대 경로다. iOS `BearerPhotoResponseDTO`. */
+@Serializable
+internal data class BearerPhotoResponseDto(
+    val photoUrl: String? = null,
+    val thumbUrl: String? = null,
+)
