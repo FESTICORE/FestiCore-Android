@@ -21,6 +21,9 @@ import io.festicore.domain.usernotification.entity.UserNotificationBadge
 import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
 import io.festicore.feature.festival.festivallist.FestivalListPresentation
 import io.festicore.feature.festival.liveboard.crewgather.CrewGatherInput
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
@@ -53,6 +56,7 @@ class LiveBoardViewModel(
     private val currentUserProvider: CurrentUserProvider,
     private val notificationBadgeUseCase: UserNotificationBadgeUseCase,
     private val boardSelectionUseCase: FestivalBoardSelectionUseCase,
+    private val analyticsUseCase: AnalyticsUseCase,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -94,6 +98,7 @@ class LiveBoardViewModel(
 
     /** 보드가 화면에 들어왔다(iOS `onAppear` · `liveBoardOnAppear` · `onlineDetailOnAppear`). */
     fun onAppear() = intent {
+        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.LiveBoard))
         val hidden = guideHidden(state.festivalId)
         reduce { state.copy(isVisible = true, isFollowedFlagGuideHidden = hidden) }
         if (!state.hasStarted) {

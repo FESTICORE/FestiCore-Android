@@ -6,9 +6,12 @@ import io.festicore.domain.festival.entity.FestivalFlagFollowError
 import io.festicore.domain.festival.entity.FestivalFlagFollowResult
 import io.festicore.domain.festival.entity.FestivalFlagReportError
 import io.festicore.domain.festival.entity.FestivalFlagReportReason
+import io.festicore.feature.festival.RecordingAnalyticsUseCase
 import io.festicore.feature.festival.flagdetail.FlagDetailFixtures.NOW
 import io.festicore.feature.festival.liveboard.FakeFlagUseCase
 import io.festicore.feature.festival.liveboard.TestSleeper
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.FlagFollowData
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.awaitCancellation
@@ -24,6 +27,8 @@ import org.orbitmvi.orbit.test.test
  * flag_follow 분석 확인은 Android feature에 분석 경로가 없어 뺐다.
  */
 class FlagDetailViewModelTest {
+    private val analytics = RecordingAnalyticsUseCase()
+
     private fun viewModel(
         detailUseCase: FakeFlagDetailUseCase = FakeFlagDetailUseCase(),
         flagUseCase: FakeFlagUseCase = FakeFlagUseCase(setFollowing = { _, _ -> throw FestivalFlagFollowError.Unavailable() }),
@@ -34,6 +39,7 @@ class FlagDetailViewModelTest {
         context = FlagDetailFixtures.context(),
         detailUseCase = detailUseCase,
         flagUseCase = flagUseCase,
+        analyticsUseCase = analytics,
         clock = clock,
         sleep = sleep,
     )
@@ -134,6 +140,7 @@ class FlagDetailViewModelTest {
                     )
                 }
                 assertEquals(listOf(true to "flg_1"), flagUseCase.calls)
+                assertEquals(listOf(AnalyticsEvent.FlagFollow(FlagFollowData("flg_1", true))), analytics.events)
                 expectSideEffect(FlagDetailSideEffect.FollowChanged(flagId = "flg_1", isFollowing = true, followerCount = 1_285))
                 expectState { copy(toast = FlagDetailToast.Followed("호락호락")) }
                 val loaded = awaitState()

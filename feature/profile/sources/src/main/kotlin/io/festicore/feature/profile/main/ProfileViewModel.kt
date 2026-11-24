@@ -5,12 +5,15 @@ import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.domain.festival.packdetail.FestivalPackDetailUseCase
 import io.festicore.domain.festival.receivedpack.FestivalReceivedPackUseCase
 import io.festicore.feature.profile.AccountState
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import kotlin.coroutines.cancellation.CancellationException
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 /**
- * 마이 화면. iOS `ProfileFeature`(기수 · 내 깃발 · 검색 · 분석 제외).
+ * 마이 화면. iOS `ProfileFeature`(기수 · 내 깃발 · 검색 제외).
  * 하위 화면(팩 상세 · 설정 홈)은 SideEffect로 요청하고 Coordinator가 연다. 계정 상태는 앱이 [onAccountChanged]로 알린다.
  *
  * @param initialAccount 화면을 만들 때의 계정 상태. 로그인 상태에서 로그인 카드가 잠깐 보이지 않게 한다.
@@ -19,6 +22,7 @@ class ProfileViewModel(
     initialAccount: AccountState,
     private val receivedPackUseCase: FestivalReceivedPackUseCase,
     private val packDetailUseCase: FestivalPackDetailUseCase,
+    private val analyticsUseCase: AnalyticsUseCase,
 ) : ViewModel(),
     OrbitContainerHost<ProfileState, ProfileState, ProfileSideEffect> {
     override val container = orbitContainer<ProfileState, ProfileSideEffect>(ProfileState(account = initialAccount))
@@ -33,6 +37,7 @@ class ProfileViewModel(
     }
 
     fun onAppear() = intent {
+        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.Profile))
         if (state.packLoad == ProfilePackLoad.Loading) return@intent
         // 이미 보여 준 목록은 다시 읽는 동안 그대로 둔다.
         if (state.packLoad != ProfilePackLoad.Loaded) reduce { state.copy(packLoad = ProfilePackLoad.Loading) }

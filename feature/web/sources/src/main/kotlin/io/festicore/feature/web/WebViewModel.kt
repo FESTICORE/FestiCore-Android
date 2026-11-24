@@ -1,12 +1,17 @@
 package io.festicore.feature.web
 
 import androidx.lifecycle.ViewModel
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 /** iOS `WebFeature`. 로드 시도마다 [WebState.loadId]를 올리고, 지금 시도의 결과만 반영한다. */
-class WebViewModel(page: WebPage) :
-    ViewModel(),
+class WebViewModel(
+    page: WebPage,
+    private val analyticsUseCase: AnalyticsUseCase,
+) : ViewModel(),
     OrbitContainerHost<WebState, WebState, WebSideEffect> {
     override val container = orbitContainer<WebState, WebSideEffect>(WebState(page))
 
@@ -14,6 +19,7 @@ class WebViewModel(page: WebPage) :
     fun onAppear() = intent {
         if (state.loadId != 0) return@intent
         reduce { state.copy(loadId = 1, phase = WebPhase.Loading) }
+        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.Web))
     }
 
     fun onCloseTapped() = intent { postSideEffect(WebSideEffect.BackToRoot) }

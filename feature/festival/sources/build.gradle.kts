@@ -12,6 +12,7 @@ android {
 dependencies {
     val libs = catalog
     api(project(":feature:festival:interface"))
+    implementation(project(":service:analytics:interface"))
     implementation(project(":domain:festival:interface"))
     implementation(project(":domain:auth:interface"))
     implementation(project(":domain:usernotification:interface"))

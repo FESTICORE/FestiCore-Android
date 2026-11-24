@@ -17,6 +17,11 @@ import io.festicore.feature.timetable.SchedulePickResult
 import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailContent
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailState
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.event.AnalyticsTimetableAction
+import io.festicore.service.analytics.event.TimetableActionData
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import java.time.Clock
 import java.time.Duration as JavaDuration
 import java.time.Instant
@@ -47,6 +52,7 @@ class TimetableViewModel(
     private val currentUserProvider: CurrentUserProvider,
     private val mapper: FestivalPackTimetableMapper,
     private val overlapCalculator: TimetableOverlapCalculator,
+    private val analyticsUseCase: AnalyticsUseCase,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -71,6 +77,7 @@ class TimetableViewModel(
 
     /** 화면이 보이기 시작했다(iOS `clockStarted`). 현재 시각을 반영하고 1초마다 다시 읽는다. */
     fun onClockStarted() = intent {
+        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.Timetable))
         update { it.withClock(clock.instant()) }
         val job =
             intent {
@@ -96,6 +103,10 @@ class TimetableViewModel(
     /** 날짜 세그먼트 · 칩 · 좌우 스와이프(iOS `daySelected`). 범위 밖은 무시한다. */
     fun onDaySelected(index: Int) = intent {
         if (index !in state.days.indices) return@intent
+        val festivalId = state.festivalId
+        if (index != state.selectedDayIndex && festivalId != null) {
+            analyticsUseCase.track(AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.DaySelect, festivalId)))
+        }
         update { current ->
             val warning = if (index != current.selectedDayIndex) false else current.shouldShowOverlapWarning
             val selected = current.copy(selectedDayIndex = index, shouldShowOverlapWarning = warning)
@@ -105,6 +116,9 @@ class TimetableViewModel(
 
     fun onMineOnlyToggled() = intent {
         update { it.copy(showsMineOnly = !it.showsMineOnly) }
+        state.festivalId?.let { festivalId ->
+            analyticsUseCase.track(AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.MineOnlyToggle, festivalId)))
+        }
     }
 
     /** 블록을 눌렀다(iOS `setTapped`). 없는 공연이면 시트를 닫는다. 다른 공연을 열면 토스트를 멈춘다. */
@@ -195,6 +209,10 @@ class TimetableViewModel(
                 }
                 state = state.copy(mySetIds = state.mySetIds + id)
                 effects += ScheduleEffect.ShowToast(id)
+            }
+            state.festivalId?.let { festivalId ->
+                val data = TimetableActionData(AnalyticsTimetableAction.ScheduleToggle, festivalId, setId = id)
+                effects += ScheduleEffect.Track(AnalyticsEvent.TimetableAction(data))
             }
             state = state.withOverlapWarning()
             if (state.scheduleSync == TimetableScheduleSync.Ready) saveSchedule()
@@ -511,6 +529,8 @@ class TimetableViewModel(
 
         data class ShowToast(val setId: String) : ScheduleEffect
 
+        data class Track(val event: AnalyticsEvent) : ScheduleEffect
+
         data class OpenPick(val route: TimetableRoute.SchedulePick) : ScheduleEffect
 
         data object ClosePick : ScheduleEffect
@@ -539,6 +559,7 @@ class TimetableViewModel(
                 is ScheduleEffect.Save -> replaceSchedule(effect.festivalId, effect.save)
                 is ScheduleEffect.Notify -> scheduleUseCase.notifyMyScheduleSaved(effect.saved)
                 is ScheduleEffect.ShowToast -> showScheduleToast(effect.setId)
+                is ScheduleEffect.Track -> analyticsUseCase.track(effect.event)
                 is ScheduleEffect.OpenPick -> postSideEffect(TimetableSideEffect.SchedulePick(effect.route))
                 ScheduleEffect.ClosePick -> postSideEffect(TimetableSideEffect.CloseSchedulePick)
                 ScheduleEffect.CancelLoad -> loadJob.getAndSet(null)?.cancel()

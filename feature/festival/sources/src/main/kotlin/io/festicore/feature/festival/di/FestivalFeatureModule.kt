@@ -24,7 +24,7 @@ val festivalFeatureModule = module {
     viewModelOf(::NotificationInboxViewModel)
     viewModelOf(::FlagCoordinator)
     // 선택 축제는 부모가 onFestivalChanged로 알린다(iOS `festivalChanged`).
-    viewModel { FlagViewModel(liveBoardUseCase = get(), flagUseCase = get()) }
+    viewModel { FlagViewModel(liveBoardUseCase = get(), flagUseCase = get(), analyticsUseCase = get()) }
     // 인자: 깃발 ID, 처음 표시 문맥(FlagDetailContext). 이후 문맥은 부모가 onContextChanged로 알린다(iOS `contextChanged`).
     viewModel { params ->
         FlagDetailViewModel(
@@ -32,6 +32,7 @@ val festivalFeatureModule = module {
             context = params[1],
             detailUseCase = get(),
             flagUseCase = get(),
+            analyticsUseCase = get(),
         )
     }
     // 인자: 축제 ID, 목록이 가진 카탈로그(iOS가 목록 상태를 복사해 push하는 것과 같은 자리).
@@ -47,6 +48,7 @@ val festivalFeatureModule = module {
             currentUserProvider = get(),
             notificationBadgeUseCase = get(),
             boardSelectionUseCase = get(),
+            analyticsUseCase = get(),
         )
     }
     // 인자: 축제 ID, 처음 고를 존 ID(경로 값, null 가능). 둘 다 문자열이라 순서로 꺼낸다.

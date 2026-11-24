@@ -6,12 +6,17 @@ import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.FakeAuthRepository
 import io.festicore.feature.auth.FakeGoogleLoginUseCase
 import io.festicore.feature.auth.LaunchLoginResult
+import io.festicore.feature.auth.RecordingAnalyticsUseCase
 import io.festicore.feature.auth.TERMS_V1
 import io.festicore.feature.auth.TERMS_V2
 import io.festicore.feature.auth.eligibleProfile
 import io.festicore.feature.auth.loginResult
 import io.festicore.feature.auth.newUserProfile
 import io.festicore.feature.auth.user
+import io.festicore.service.analytics.event.AnalyticsButton
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsProvider
+import io.festicore.service.analytics.event.AnalyticsScreen
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -22,7 +27,8 @@ class LaunchLoginViewModelTest {
     private fun viewModel(
         login: suspend () -> io.festicore.domain.auth.entity.AuthLoginResult = { loginResult() },
         repository: FakeAuthRepository = FakeAuthRepository(),
-    ) = LaunchLoginViewModel(FakeGoogleLoginUseCase(login), repository)
+        analytics: RecordingAnalyticsUseCase = RecordingAnalyticsUseCase(),
+    ) = LaunchLoginViewModel(FakeGoogleLoginUseCase(login), repository, analytics)
 
     private val signingIn = LaunchLoginState(isSigningIn = true, attemptId = 1)
 
@@ -229,7 +235,7 @@ class LaunchLoginViewModelTest {
     fun `로그인 중에는 다시 누르기와 건너뛰기를 무시하고 진행 중 시도의 결과만 반영한다`() = runTest {
         val pending = CompletableDeferred<io.festicore.domain.auth.entity.AuthLoginResult>()
         val useCase = FakeGoogleLoginUseCase { pending.await() }
-        LaunchLoginViewModel(useCase, FakeAuthRepository()).test(this) {
+        LaunchLoginViewModel(useCase, FakeAuthRepository(), RecordingAnalyticsUseCase()).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
 
@@ -241,5 +247,53 @@ class LaunchLoginViewModelTest {
             )
         }
         assertEquals(1, useCase.callCount)
+    }
+
+    @Test
+    fun `로그인 탭을 남기고 신규 계정이면 사용자 ID 연결 뒤 sign_up을 남긴다`() = runTest {
+        val analytics = RecordingAnalyticsUseCase()
+        viewModel(analytics = analytics).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+            )
+        }
+        assertEquals(
+            listOf(
+                AnalyticsEvent.UiAction(AnalyticsButton.LoginGoogle, AnalyticsScreen.Login),
+                AnalyticsEvent.SignUp(AnalyticsProvider.Google),
+            ),
+            analytics.events,
+        )
+        // 사용자 ID · 로그인 방법만 보낸다. 닉네임 · 이메일은 보내지 않는다.
+        assertEquals(listOf("u1" to "google"), analytics.identified)
+    }
+
+    @Test
+    fun `기존 계정이면 sign_up 없이 사용자만 연결하고 바로 로그인은 탭을 남기지 않는다`() = runTest {
+        val analytics = RecordingAnalyticsUseCase()
+        val login = { loginResult().copy(newUser = false) }
+        viewModel(login = login, analytics = analytics).test(this) {
+            containerHost.onSignInRequested()
+            expectState(signingIn)
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+            )
+        }
+        assertEquals(emptyList<AnalyticsEvent>(), analytics.events)
+        assertEquals(listOf("u1" to "google"), analytics.identified)
+    }
+
+    @Test
+    fun `로그인이 실패하면 사용자를 연결하지 않는다`() = runTest {
+        val analytics = RecordingAnalyticsUseCase()
+        viewModel(login = { throw AuthDomainError.UserCancelled() }, analytics = analytics).test(this) {
+            containerHost.onSignInTapped()
+            expectState(signingIn)
+            expectState(signingIn.copy(isSigningIn = false))
+            expectSideEffect(LaunchLoginSideEffect.SignInFailed(showsMessage = false))
+        }
+        assertEquals(emptyList<Pair<String, String?>>(), analytics.identified)
     }
 }

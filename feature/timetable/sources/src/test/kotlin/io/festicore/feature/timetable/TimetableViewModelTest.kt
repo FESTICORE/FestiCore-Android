@@ -15,6 +15,10 @@ import io.festicore.feature.timetable.main.TimetableViewModel
 import io.festicore.feature.timetable.main.dayOffsetForSwipe
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailContent
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailState
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
+import io.festicore.service.analytics.event.AnalyticsTimetableAction
+import io.festicore.service.analytics.event.TimetableActionData
 import java.time.Instant
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
@@ -29,7 +33,7 @@ import org.orbitmvi.orbit.test.test
 
 /**
  * 타임테이블 ViewModel. iOS `TimetableFeatureTests`의 화면 · 시계 · 팩 동기화 사례와 `TimetableScheduleTests`의 시트 · 토스트 사례를 같은 이름으로 옮긴다.
- * 분석 이벤트 사례는 분석 모듈이 없어 뺀다(설계 T10). 서버 읽기 · 저장 사례는 `TimetableScheduleSyncTest`에 있다.
+ * 분석 이벤트 사례(`clockStarted` screen_view · `mineOnlyAndDayChangesTrackAnalyticsEvents`)도 같은 이름으로 옮긴다. 서버 읽기 · 저장 사례는 `TimetableScheduleSyncTest`에 있다.
  */
 class TimetableViewModelTest {
     private val clock = MutableClock(BEFORE_FESTIVAL)
@@ -37,9 +41,18 @@ class TimetableViewModelTest {
     private val boardSelection = FakeBoardSelectionUseCase()
     private val mapper = FakeMapper()
     private val schedule = FakeScheduleUseCase()
+    private val analytics = RecordingAnalyticsUseCase()
 
-    private fun viewModel() =
-        TimetableViewModel(boardSelection, schedule, FakeCurrentUserProvider(), mapper, FakeOverlapCalculator(), clock, sleeper::sleep)
+    private fun viewModel() = TimetableViewModel(
+        boardSelection,
+        schedule,
+        FakeCurrentUserProvider(),
+        mapper,
+        FakeOverlapCalculator(),
+        analytics,
+        clock,
+        sleeper::sleep,
+    )
 
     private fun minute(value: Int, day: Int = 0): Instant = FIRST_DAY.plusSeconds(day * 86_400L + value * 60L)
 
@@ -84,6 +97,26 @@ class TimetableViewModelTest {
             sleeper.release(TimetableViewModel.CLOCK_INTERVAL)
             expectNoItems()
         }
+        // 축제가 없으면 날짜 선택은 남기지 않는다.
+        assertEquals(listOf(AnalyticsEvent.ScreenView(AnalyticsScreen.Timetable)), analytics.events)
+    }
+
+    @Test
+    fun mineOnlyAndDayChangesTrackAnalyticsEvents() = runTest {
+        viewModel().test(this, initialState = sample().copy(festivalId = "fst")) {
+            containerHost.onMineOnlyToggled()
+            expectState { copy(showsMineOnly = true) }
+            containerHost.onDaySelected(0).join()
+            containerHost.onDaySelected(1)
+            expectState { copy(selectedDayIndex = 1, overlaps = emptyList()) }
+        }
+        assertEquals(
+            listOf(
+                AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.MineOnlyToggle, "fst")),
+                AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.DaySelect, "fst")),
+            ),
+            analytics.events,
+        )
     }
 
     @Test

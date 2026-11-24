@@ -14,6 +14,7 @@ import io.festicore.feature.profile.ProfileCoordinator
 import io.festicore.feature.profile.ProfileRoute
 import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.rememberProfileFlowEntries
+import io.festicore.service.analytics.usecase.PreviewAnalyticsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -64,7 +65,7 @@ class HiddenProfileTabSyncTest {
         val signedIn = AccountState(hasSession = true)
         val account = MutableStateFlow(signedIn)
         val coordinator = ProfileCoordinator(FakeCurrentUserProvider())
-        val profileViewModel = ProfileViewModel(signedIn, NoPacks, NoPackDetail)
+        val profileViewModel = ProfileViewModel(signedIn, NoPacks, NoPackDetail, PreviewAnalyticsUseCase)
         composeRule.setContent {
             rememberProfileFlowEntries(
                 account = account,

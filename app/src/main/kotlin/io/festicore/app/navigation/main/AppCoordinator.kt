@@ -94,6 +94,8 @@ class AppCoordinator(
     private val consumePendingDeeplink: suspend () -> FestiCoreDeeplink?,
     /** 페스티벌이 끝나고 30일이 지난 팩을 지운다(iOS `deleteExpiredPacks`, 설계 쟁점 M8). */
     private val deleteExpiredPacks: suspend () -> Unit,
+    /** 계정을 비울 때 분석 식별자 · 슈퍼 프로퍼티를 초기화한다(iOS `AccountCoordinator` `analyticsUseCase.reset()`). */
+    private val resetAnalytics: () -> Unit,
     private val accountCoordinator: AccountCoordinator = AccountCoordinator(authRepository),
 ) : ViewModel(),
     OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, AppCoordinatorSideEffect> {
@@ -348,6 +350,8 @@ class AppCoordinator(
                     AccountCoordinator.SESSION_EXPIRED_DURING_WITHDRAW.takeIf {
                         result == AccountOperationResult.SessionLost && operation == AccountOperation.Withdraw
                     }
+                // 계정 분리 — 다음 사용자와 섞이지 않게 분석 식별자와 슈퍼 프로퍼티를 초기화한다(iOS `AcC:205,213`).
+                resetAnalytics()
                 updateCurrentUserId(null)
                 accountState.value = AccountState(message = message)
                 if (state.signUp != null && !state.launchLogin) closeCover()

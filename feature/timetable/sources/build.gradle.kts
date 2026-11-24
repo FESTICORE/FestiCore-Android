@@ -8,6 +8,7 @@ plugins {
 dependencies {
     val libs = catalog
     api(project(":feature:timetable:interface"))
+    implementation(project(":service:analytics:interface"))
     implementation(project(":domain:timetable:interface"))
     implementation(project(":domain:festival:interface"))
     implementation(project(":domain:auth:interface"))

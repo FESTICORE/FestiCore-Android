@@ -17,6 +17,7 @@ import io.festicore.domain.timetable.sources.di.domainTimetableModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
 import io.festicore.feature.featureassembly.featureModules
 import io.festicore.feature.profile.appearance.AppearanceModeSettings
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.expiry.SessionExpiryEvents
 import io.festicore.service.serviceassembly.serviceModules
@@ -46,6 +47,7 @@ private val appModule = module {
             deeplinkReceived = get<AppDeeplinkBridge>().received,
             consumePendingDeeplink = get<AppDeeplinkBridge>()::consumePending,
             deleteExpiredPacks = { get<FestivalPackUseCase>().deleteExpiredPacks() },
+            resetAnalytics = get<AnalyticsUseCase>()::reset,
         )
     }
     viewModelOf(::MainTabCoordinator)

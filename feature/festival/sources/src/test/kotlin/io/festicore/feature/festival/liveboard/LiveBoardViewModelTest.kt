@@ -14,8 +14,11 @@ import io.festicore.domain.festival.entity.PackSyncResult
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
 import io.festicore.domain.usernotification.entity.UserNotificationBadge
 import io.festicore.domain.usernotification.entity.UserNotificationItem
+import io.festicore.feature.festival.RecordingAnalyticsUseCase
 import io.festicore.feature.festival.festivallist.FakeCatalogUseCase
 import io.festicore.feature.festival.festivallist.FakeCurrentUserProvider
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
 import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
@@ -34,6 +37,8 @@ import org.orbitmvi.orbit.test.test
  * `FestivalFeatureStateTests`(보드 계산 값)의 보드 사례를 옮긴다. 북마크 · 원격 푸시 · Live Activity 사례는 해당 문서 몫이라 뺀다.
  */
 class LiveBoardViewModelTest {
+    private val analytics = RecordingAnalyticsUseCase()
+
     private val item =
         FestivalCatalogItem(id = "fst", name = "원더리벳 2026", firstDate = "2026-10-20", lastDate = "2026-10-20", packVersion = 1)
     private val other =
@@ -75,6 +80,7 @@ class LiveBoardViewModelTest {
         currentUserProvider = user,
         notificationBadgeUseCase = badge,
         boardSelectionUseCase = selection,
+        analyticsUseCase = analytics,
         clock = clock,
         sleep = sleeper::sleep,
     )
@@ -97,6 +103,7 @@ class LiveBoardViewModelTest {
             cancelAndIgnoreRemainingItems()
         }
         assertTrue(FestivalLiveBoardUseCase.OFFICIAL_NEWS_INTERVAL in sleeper.requested)
+        assertEquals(listOf(AnalyticsEvent.ScreenView(AnalyticsScreen.LiveBoard)), analytics.events)
     }
 
     @Test

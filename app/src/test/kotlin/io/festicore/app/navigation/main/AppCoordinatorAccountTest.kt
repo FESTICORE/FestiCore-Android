@@ -90,6 +90,9 @@ class AppCoordinatorAccountTest {
         }
     }
 
+    /** 분석 reset을 부른 횟수(iOS `analyticsUseCase.reset()`). */
+    private var analyticsResetCount = 0
+
     private fun coordinator(
         auth: FakeAuth,
         users: CurrentUserStore = CurrentUserStore(),
@@ -105,6 +108,7 @@ class AppCoordinatorAccountTest {
         emptyFlow(),
         { null },
         {},
+        { analyticsResetCount++ },
         AccountCoordinator(
             authRepository = auth,
             unbindDevice = {
@@ -148,11 +152,14 @@ class AppCoordinatorAccountTest {
             // 요청 중에는 계정을 그대로 두고 처리 중만 표시한다.
             assertEquals(signedIn.copy(isLoading = true), containerHost.account.value)
 
+            assertEquals(0, analyticsResetCount)
+
             pending.complete(Unit)
             scope.settle()
             assertEquals(AccountState(), containerHost.account.value)
         }
         assertNull(users.currentUserId.value)
+        assertEquals(1, analyticsResetCount)
     }
 
     @Test
@@ -210,6 +217,8 @@ class AppCoordinatorAccountTest {
             containerHost.onLogoutRequested()
             scope.settle()
             assertEquals(signedIn.copy(message = "로그아웃에 실패했습니다. 다시 시도해 주세요."), containerHost.account.value)
+            // 실패하면 계정이 그대로라 분석 식별자도 그대로 둔다.
+            assertEquals(0, analyticsResetCount)
 
             auth.signOutResult = { auth.sessionId = null }
             containerHost.onLogoutRequested()
@@ -236,6 +245,7 @@ class AppCoordinatorAccountTest {
             assertEquals(AccountState(message = AccountCoordinator.SESSION_EXPIRED_DURING_WITHDRAW), containerHost.account.value)
         }
         assertNull(users.currentUserId.value)
+        assertEquals(1, analyticsResetCount)
         // 로그인을 잃었으면 기기 연결을 복원하지 않는다.
         assertEquals(listOf("unbind", "withdraw"), auth.calls)
     }

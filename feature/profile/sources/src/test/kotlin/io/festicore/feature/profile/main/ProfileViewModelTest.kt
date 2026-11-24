@@ -9,6 +9,9 @@ import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.domain.festival.packdetail.FestivalPackDetailUseCase
 import io.festicore.domain.festival.receivedpack.FestivalReceivedPackUseCase
 import io.festicore.feature.profile.AccountState
+import io.festicore.feature.profile.RecordingAnalyticsUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
 import java.io.IOException
 import java.time.Instant
 import kotlinx.coroutines.test.runTest
@@ -67,7 +70,8 @@ class ProfileViewModelTest {
         packs: FakeReceivedPackUseCase = FakeReceivedPackUseCase(),
         detail: FakePackDetailUseCase = FakePackDetailUseCase(),
         account: AccountState = AccountState(),
-    ) = ProfileViewModel(initialAccount = account, receivedPackUseCase = packs, packDetailUseCase = detail)
+        analytics: RecordingAnalyticsUseCase = RecordingAnalyticsUseCase(),
+    ) = ProfileViewModel(initialAccount = account, receivedPackUseCase = packs, packDetailUseCase = detail, analyticsUseCase = analytics)
 
     private val signedIn = AccountState(hasSession = true)
 
@@ -100,6 +104,19 @@ class ProfileViewModelTest {
             expectState { copy(packs = refreshed) }
         }
         assertEquals(listOf("fst_a" to 12), detail.changeRequests)
+    }
+
+    @Test
+    fun appearTracksProfileScreenViewEachTime() = runTest {
+        val analytics = RecordingAnalyticsUseCase()
+        viewModel(analytics = analytics).test(this) {
+            containerHost.onAppear()
+            expectState { copy(packLoad = ProfilePackLoad.Loading) }
+            expectState { copy(packLoad = ProfilePackLoad.Loaded) }
+            containerHost.onAppear().join()
+        }
+        // iOS `ProfileFeature.onAppear`는 나타날 때마다 남긴다.
+        assertEquals(List(2) { AnalyticsEvent.ScreenView(AnalyticsScreen.Profile) }, analytics.events)
     }
 
     @Test

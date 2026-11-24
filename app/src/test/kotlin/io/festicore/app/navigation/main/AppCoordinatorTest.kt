@@ -113,6 +113,7 @@ class AppCoordinatorTest {
         deeplinks?.received ?: emptyFlow(),
         { deeplinks?.consume() },
         { packCleanupCount++ },
+        {},
     )
 
     /** 대기 딥링크 하나와 새 딥링크 신호(앱의 `AppDeeplinkBridge` 대신). */
@@ -302,6 +303,7 @@ class AppCoordinatorTest {
             {},
             emptyFlow(),
             { null },
+            {},
             {},
         ).test(this) {
             runOnCreate()

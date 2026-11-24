@@ -2,22 +2,32 @@ package io.festicore.feature.festival.flag
 
 import io.festicore.domain.festival.entity.FestivalLiveBoardError
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.feature.festival.RecordingAnalyticsUseCase
 import io.festicore.feature.festival.liveboard.FakeFlagUseCase
 import io.festicore.feature.festival.liveboard.FakeLiveBoardUseCase
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.AnalyticsScreen
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
 /** iOS `FestivalFlagFeatureTests`. screen_view 분석 확인은 Android feature에 분석 경로가 없어 뺐다. */
 class FlagViewModelTest {
+    private val analytics = RecordingAnalyticsUseCase()
+
     private fun viewModel(
         liveBoard: FakeLiveBoardUseCase = FakeLiveBoardUseCase(liveBoard = { awaitCancellation() }),
         festivalId: String? = "festival",
-    ) = FlagViewModel(liveBoardUseCase = liveBoard, flagUseCase = FakeFlagUseCase(), festivalId = festivalId, sleep = {
-        awaitCancellation()
-    })
+    ) = FlagViewModel(
+        liveBoardUseCase = liveBoard,
+        flagUseCase = FakeFlagUseCase(),
+        analyticsUseCase = analytics,
+        festivalId = festivalId,
+        sleep = { awaitCancellation() },
+    )
 
     private fun snapshot(festivalId: String, followed: List<String> = emptyList()) = FestivalLiveBoardSnapshot(
         festivalId = festivalId,
@@ -35,6 +45,7 @@ class FlagViewModelTest {
             expectState { copy(viewState = FlagViewState.Loading) }
             expectState { copy(snapshot = snapshot, viewState = FlagViewState.Loaded) }
         }
+        assertEquals(listOf(AnalyticsEvent.ScreenView(AnalyticsScreen.FestivalFlag)), analytics.events)
     }
 
     @Test

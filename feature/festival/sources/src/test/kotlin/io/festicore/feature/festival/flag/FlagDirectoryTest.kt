@@ -4,12 +4,15 @@ import io.festicore.domain.festival.entity.FestivalFlagFollowError
 import io.festicore.domain.festival.entity.FestivalFlagFollowResult
 import io.festicore.domain.festival.entity.FestivalLiveBoardError
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.feature.festival.RecordingAnalyticsUseCase
 import io.festicore.feature.festival.flag.FlagFixtures.board
 import io.festicore.feature.festival.flag.FlagFixtures.flag
 import io.festicore.feature.festival.flag.FlagFixtures.loadedState
 import io.festicore.feature.festival.liveboard.FakeFlagUseCase
 import io.festicore.feature.festival.liveboard.FakeLiveBoardUseCase
 import io.festicore.feature.festival.liveboard.TestSleeper
+import io.festicore.service.analytics.event.AnalyticsEvent
+import io.festicore.service.analytics.event.FlagFollowData
 import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
@@ -21,11 +24,19 @@ import org.orbitmvi.orbit.test.test
 
 /** iOS `FestivalFlagDirectoryTests`. 순수 함수는 [FlagDirectory] · [FlagPresentation], 흐름은 [FlagViewModel]로 옮겼다. flagFollow 분석 확인은 뺐다. */
 class FlagDirectoryTest {
+    private val analytics = RecordingAnalyticsUseCase()
+
     private fun viewModel(
         follow: FakeFlagUseCase = FakeFlagUseCase(),
         liveBoard: FakeLiveBoardUseCase = FakeLiveBoardUseCase(liveBoard = { awaitCancellation() }),
         sleeper: TestSleeper = TestSleeper(),
-    ) = FlagViewModel(liveBoardUseCase = liveBoard, flagUseCase = follow, festivalId = "festival", sleep = sleeper::sleep)
+    ) = FlagViewModel(
+        liveBoardUseCase = liveBoard,
+        flagUseCase = follow,
+        analyticsUseCase = analytics,
+        festivalId = "festival",
+        sleep = sleeper::sleep,
+    )
 
     /** 차례로 돌려주는 조회. null이면 형식 오류, [firstError]가 있으면 첫 번째 대신 던진다(iOS `SequenceLiveBoardService`). */
     private fun sequence(snapshots: List<FestivalLiveBoardSnapshot?>, firstError: Exception? = null): FakeLiveBoardUseCase {
@@ -178,6 +189,8 @@ class FlagDirectoryTest {
             assertEquals("팔로워 11", row.followersText)
             assertEquals(listOf(true to "a"), follow.calls)
         }
+        // iOS `FestivalFlagDirectory.followResponse` 성공: 요청한 깃발 ID와 응답 팔로우 여부.
+        assertEquals(listOf(AnalyticsEvent.FlagFollow(FlagFollowData("a", true))), analytics.events)
     }
 
     @Test
