@@ -1,6 +1,7 @@
 package io.festicore.domain.bearer.sources.bearer
 
 import io.festicore.domain.bearer.bearer.BearerRepository
+import io.festicore.domain.bearer.bearer.BearerStatusOutbox
 import io.festicore.domain.bearer.bearer.BearerUseCase
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
@@ -10,6 +11,7 @@ import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
 import io.festicore.domain.bearer.entity.BearerInvite
+import io.festicore.domain.bearer.entity.BearerOutboxEvent
 import io.festicore.domain.bearer.entity.BearerOwnedFlag
 import io.festicore.domain.bearer.entity.BearerPhotoUploadEvent
 import io.festicore.domain.bearer.entity.BearerPinnedFlag
@@ -33,6 +35,8 @@ import kotlinx.coroutines.withContext
 /**
  * 기수 UseCase(iOS `BearerUseCaseImpl`). 코드 형식 확인 · 멱등키 · 누른 시각을 만들고 나머지는 저장소에 맡긴다.
  * [newUuid] · [clock]은 테스트 결정성을 위해 주입한다(iOS `@Dependency(\.uuid)` · `\.date`).
+ * 앱에서는 [clock]에 서버 시각 추정 시계(`BearerServerClock`)를 넣어 누른 시각이 기기 시계 오차를 따르지 않게 한다.
+ * 상태 변경 대기열은 [outbox]에 맡긴다.
  * 사진 인코딩은 CPU 작업이라 [encodeContext]에서 한다.
  */
 internal class BearerUseCaseImpl(
@@ -42,6 +46,7 @@ internal class BearerUseCaseImpl(
     private val clock: Clock = Clock.systemUTC(),
     private val photoEncoder: BearerPhotoEncoder = BearerPhotoEncoder(),
     private val encodeContext: CoroutineContext = Dispatchers.Default,
+    private val outbox: BearerStatusOutbox,
 ) : BearerUseCase {
     override suspend fun claim(festivalId: String, code: String): BearerClaim {
         val normalized = code.uppercase(Locale.ROOT)
@@ -85,6 +90,18 @@ internal class BearerUseCaseImpl(
         BearerStatusRequest(change, idempotencyKey = newUuid().lowercase(Locale.ROOT), clientAt = clock.instant())
 
     override suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus = repository.sendStatus(flagId, request)
+
+    override suspend fun enqueueStatus(
+        flagId: String,
+        ownerUserId: String,
+        request: BearerStatusRequest,
+    ) = outbox.enqueue(flagId, ownerUserId, request)
+
+    override suspend fun pendingStatus(flagId: String): List<BearerStatusRequest> = outbox.pending(flagId)
+
+    override fun statusEvents(flagId: String): Flow<BearerOutboxEvent> = outbox.events(flagId)
+
+    override suspend fun retryPendingStatus() = outbox.resume()
 
     override suspend fun inviteCoBearer(flagId: String): BearerInvite = repository.inviteCoBearer(flagId)
 

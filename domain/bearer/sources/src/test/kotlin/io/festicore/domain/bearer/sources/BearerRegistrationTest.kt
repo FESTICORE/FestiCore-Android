@@ -81,7 +81,10 @@ class BearerRegistrationTest {
     @Test
     fun registerRequestKey() {
         var next = 0
-        val useCase = BearerUseCaseImpl(ClaimRecordingRepository(), StubPackSyncService(null), newUuid = { "uuid-${next++}" })
+        val useCase =
+            BearerUseCaseImpl(ClaimRecordingRepository(), StubPackSyncService(null), newUuid = {
+                "uuid-${next++}"
+            }, outbox = UnusedOutbox())
 
         val first = useCase.makeRegisterRequest("fst_1", REQUEST.change)
         val second = useCase.makeRegisterRequest("fst_1", REQUEST.change)

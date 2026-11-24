@@ -32,6 +32,7 @@ import io.festicore.domain.bearer.sources.model.mapper.bearerError
 import io.festicore.domain.bearer.sources.model.mapper.toBearerError
 import io.festicore.domain.bearer.sources.model.mapper.toBody
 import io.festicore.domain.bearer.sources.model.mapper.toDomain
+import io.festicore.domain.bearer.sources.outbox.BearerServerClock
 import io.festicore.service.apiendpoint.flag.BearerClaimBody
 import io.festicore.service.apiendpoint.flag.FlagRequest
 import kotlin.coroutines.cancellation.CancellationException
@@ -43,12 +44,14 @@ import kotlinx.serialization.SerializationException
 /**
  * 기수 API 저장소(iOS `BearerRepositoryImpl`). 모든 요청을 현재 세션에 묶어 보내고 재시도하지 않는다.
  * 세션이 없으면 요청하지 않고 [BearerError.NotAuthenticated]. 실패는 [BearerError]로 바꾼다.
+ * 보드 · 상태 응답의 `Date` 헤더로 [serverClock]을 맞춘다(iOS에 없음, 설계 "시계 오차").
  */
 internal class BearerRepositoryImpl(
     private val api: FlagRequest,
     private val currentSessionId: suspend () -> String?,
     private val installationDeviceId: suspend () -> String,
     private val imageUrl: BearerImageUrl,
+    private val serverClock: BearerServerClock = BearerServerClock(),
 ) : BearerRepository {
     override suspend fun claim(festivalId: String, code: String): BearerClaim {
         val sessionId = sessionId()
@@ -97,7 +100,7 @@ internal class BearerRepositoryImpl(
 
     override suspend fun fetchBoard(flagId: String): BearerBoard {
         val sessionId = sessionId()
-        return mapErrors { api.bearer<BearerBoardDataDto>(flagId, sessionId).toDomain(imageUrl) }
+        return mapErrors { api.bearer<BearerBoardDataDto>(flagId, sessionId, serverClock::record).toDomain(imageUrl) }
     }
 
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile {
@@ -115,11 +118,22 @@ internal class BearerRepositoryImpl(
         return BearerFlagPhoto(imageUrl.resolve(response.photoUrl), imageUrl.resolve(response.thumbUrl))
     }
 
-    override suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus {
-        val sessionId = sessionId()
-        return mapErrors {
-            api.status<BearerFlagStatusDto>(flagId, request.toBody(), request.idempotencyKey, sessionId).toDomain()
-        }
+    override suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus =
+        sendStatus(flagId, request, sessionId())
+
+    /** 대기열이 고른 세션 [expectedSessionId]로만 보낸다. 그 사이 세션이 바뀌면 인증 플러그인이 막아 [BearerError.NotAuthenticated]. */
+    suspend fun sendStatus(
+        flagId: String,
+        request: BearerStatusRequest,
+        expectedSessionId: String,
+    ): BearerFlagStatus = mapErrors {
+        api.status<BearerFlagStatusDto>(
+            flagId,
+            request.toBody(),
+            request.idempotencyKey,
+            expectedSessionId,
+            serverClock::record,
+        ).toDomain()
     }
 
     override suspend fun inviteCoBearer(flagId: String): BearerInvite {

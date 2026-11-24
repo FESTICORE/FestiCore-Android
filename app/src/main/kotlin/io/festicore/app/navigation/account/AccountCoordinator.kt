@@ -29,14 +29,18 @@ enum class AccountOperationResult {
  * 기기 연결 해제 · 복원은 푸시 · 기기 등록(P0) 전까지 아무 일도 하지 않는다(설계 쟁점 M3). 해제가 실패해도 계정 요청은 계속한다(`ADS:30-41`).
  * 세대 · 화면 상태는 [AppCoordinator]가 정한다. 이 클래스는 작업 하나를 끝까지 실행하고 결과만 돌려준다.
  * Live Activity 종료는 Android 진행 중 알림 단계에서 진행 중 알림 취소로 잇는다.
+ * 탈퇴가 성공하면 시작할 때의 사용자([currentUserId]) 기기 기록을 [removeWithdrawnUserData]로 지운다(기수 상태 대기열, iOS에 없음).
  */
 class AccountCoordinator(
     private val authRepository: AuthRepository,
     private val unbindDevice: suspend () -> Unit = {},
     private val linkDevice: suspend () -> Unit = {},
+    private val currentUserId: () -> String? = { null },
+    private val removeWithdrawnUserData: suspend (userId: String) -> Unit = {},
 ) {
     /** 작업을 실행한다. 코루틴이 취소되면 다음 요청을 보내지 않고 취소를 그대로 던진다. */
     suspend fun run(operation: AccountOperation): AccountOperationResult {
+        val userId = currentUserId()
         try {
             unbindDevice()
         } catch (e: CancellationException) {
@@ -49,7 +53,11 @@ class AccountCoordinator(
         try {
             when (operation) {
                 AccountOperation.SignOut -> authRepository.signOut()
-                AccountOperation.Withdraw -> authRepository.withdraw()
+
+                AccountOperation.Withdraw -> {
+                    authRepository.withdraw()
+                    userId?.let { removeUserData(it) }
+                }
             }
             return AccountOperationResult.Succeeded
         } catch (e: CancellationException) {
@@ -73,6 +81,17 @@ class AccountCoordinator(
     } catch (e: Exception) {
         FestiCoreLogger.error("계정 작업 실패 뒤 로그인 상태를 확인할 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.AUTH)
         false
+    }
+
+    private suspend fun removeUserData(userId: String) {
+        try {
+            removeWithdrawnUserData(userId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // 탈퇴는 끝났다. 남은 기록은 만료 규칙(하루)으로 사라진다.
+            FestiCoreLogger.error("탈퇴한 사용자 기기 기록 삭제 실패: ${e::class.simpleName}", FestiCoreLogCategory.APP)
+        }
     }
 
     private suspend fun restoreDevice() {

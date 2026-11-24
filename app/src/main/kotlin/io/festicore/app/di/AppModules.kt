@@ -3,14 +3,18 @@ package io.festicore.app.di
 import io.festicore.app.BuildConfig
 import io.festicore.app.application.MainActivityProvider
 import io.festicore.app.application.StoredAppearanceModeSettings
+import io.festicore.app.application.networkReconnects
 import io.festicore.app.deeplink.AppDeeplinkBridge
+import io.festicore.app.navigation.account.AccountCoordinator
 import io.festicore.app.navigation.main.AppCoordinator
 import io.festicore.app.navigation.maintab.MainTabCoordinator
 import io.festicore.core.coreassembly.coreModules
 import io.festicore.core.location.client.LocationActivityProvider
+import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.domain.auth.sources.auth.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.auth.sources.google.ActivityProvider
+import io.festicore.domain.bearer.bearer.BearerStatusOutbox
 import io.festicore.domain.bearer.sources.di.domainBearerModule
 import io.festicore.domain.festival.pack.FestivalPackUseCase
 import io.festicore.domain.festival.sources.di.domainFestivalModule
@@ -26,6 +30,7 @@ import io.festicore.service.serviceassembly.serviceModules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -50,6 +55,12 @@ private val appModule = module {
             consumePendingDeeplink = get<AppDeeplinkBridge>()::consumePending,
             deleteExpiredPacks = { get<FestivalPackUseCase>().deleteExpiredPacks() },
             resetAnalytics = get<AnalyticsUseCase>()::reset,
+            accountCoordinator =
+                AccountCoordinator(
+                    authRepository = get(),
+                    currentUserId = { get<CurrentUserProvider>().currentUserId.value },
+                    removeWithdrawnUserData = get<BearerStatusOutbox>()::removeAll,
+                ),
         )
     }
     viewModelOf(::MainTabCoordinator)
@@ -64,7 +75,11 @@ val appModules: List<Module> =
             domainFestivalModule,
             domainUserNotificationModule,
             domainNoticeModule,
-            domainBearerModule(baseUrl = BuildConfig.BASE_URL),
+            domainBearerModule(
+                baseUrl = BuildConfig.BASE_URL,
+                filesDir = { androidContext().filesDir },
+                reconnected = { androidContext().networkReconnects() },
+            ),
             domainTimetableModule,
         ) +
         featureModules(legalBaseUrl = BuildConfig.LEGAL_BASE_URL) +

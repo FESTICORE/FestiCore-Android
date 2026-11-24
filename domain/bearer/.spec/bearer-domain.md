@@ -12,7 +12,7 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
 
 ## 개요
 
-화면은 `BearerUseCase`만 본다. 저장소는 `BearerRepositoryImpl`(`FlagRequest`, 세션은 `AuthSession.currentSessionId`, 기기 ID는 `DeviceInstallationService`). 축제 이름 · 존 · 공연은 받은 팩 바이트(`PackSyncService.cachedPack`)를 기수 전용으로 따로 읽는다. 로컬 저장은 없다. 사진 업로드는 `bearer-photo.md`, 상태 대기열(BD3)은 아직 없다.
+화면은 `BearerUseCase`만 본다. 저장소는 `BearerRepositoryImpl`(`FlagRequest`, 세션은 `AuthSession.currentSessionId`, 기기 ID는 `DeviceInstallationService`). 축제 이름 · 존 · 공연은 받은 팩 바이트(`PackSyncService.cachedPack`)를 기수 전용으로 따로 읽는다. 로컬 저장은 없다. 사진 업로드는 `bearer-photo.md`, 상태 대기열은 `bearer-status-outbox.md`.
 
 ## 동작 규칙
 
@@ -55,7 +55,7 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
 
 - 쓰기 · 인증 계약은 백엔드 코드(`flags.controller.ts`)와 iOS 요청 정의를 대조한 값이다. stage에는 인증 없는 GET만 보냈다(설계 "서버 계약").
 - 대표 깃발 · 팔로우 목록은 도메인 API만 두고 화면에서는 아직 부르지 않는다(쟁점 B7).
-- `makeStatusRequest`의 `clientAt`은 지금 기기 시각(`Clock`)이다. 서버 시각 보정은 대기열(BD3)에서 더한다.
+- `makeStatusRequest`의 `clientAt`은 주입 `Clock`의 지금이다. 앱은 서버 시각 추정 시계(`BearerServerClock`, `bearer-status-outbox.md`)를 넣는다.
 
 ## 작업 모듈
 

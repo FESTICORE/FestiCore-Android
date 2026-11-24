@@ -14,6 +14,8 @@ dependencies {
     implementation(project(":service:device:interface"))
     implementation(project(":service:pack:interface"))
     implementation(project(":core:utility"))
+    implementation(project(":core:logger"))
+    implementation(project(":domain:auth:interface"))
 
     implementation(platform(libs.lib("koin-bom")))
     implementation(libs.lib("koin-core"))

@@ -7,6 +7,7 @@ import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
 import io.festicore.domain.bearer.entity.BearerInvite
+import io.festicore.domain.bearer.entity.BearerOutboxEvent
 import io.festicore.domain.bearer.entity.BearerOwnedFlag
 import io.festicore.domain.bearer.entity.BearerPhotoUploadEvent
 import io.festicore.domain.bearer.entity.BearerPinnedFlag
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * 기수 화면(코드 인증 · 깃발 등록 · 깃발 프로필 · 기수 보드)이 하는 일. iOS `BearerUseCaseInterface`.
- * 상태 대기열은 BD3에서 더한다.
+ * 상태 변경은 [enqueueStatus]로 대기열([BearerStatusOutbox])에 넣어 보낸다.
  */
 interface BearerUseCase {
     /** 코드를 대문자로 맞추고 서버 형식(I · O · 0 · 1 제외 6자리)이 아니면 보내지 않고 `BearerError.InvalidRequest`. */
@@ -49,10 +50,22 @@ interface BearerUseCase {
      */
     fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent>
 
-    /** 누른 시각과 새 멱등키로 전송 한 건을 만든다. */
+    /** 누른 시각(서버 시각 추정값, 모르면 기기 시각)과 새 멱등키로 전송 한 건을 만든다. */
     fun makeStatusRequest(change: BearerStatusChange): BearerStatusRequest
 
     suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus
+
+    suspend fun enqueueStatus(
+        flagId: String,
+        ownerUserId: String,
+        request: BearerStatusRequest,
+    )
+
+    suspend fun pendingStatus(flagId: String): List<BearerStatusRequest>
+
+    fun statusEvents(flagId: String): Flow<BearerOutboxEvent>
+
+    suspend fun retryPendingStatus()
 
     suspend fun inviteCoBearer(flagId: String): BearerInvite
 
