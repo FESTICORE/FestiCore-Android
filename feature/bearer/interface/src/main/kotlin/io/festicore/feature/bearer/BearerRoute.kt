@@ -9,6 +9,14 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed interface BearerRoute : NavKey {
+    /** 기수 여부(iOS `roleChoice`, Figma S14 C). 가입 직후에만 연다(쟁점 B1, BC2). */
+    @Serializable
+    data object RoleChoice : BearerRoute
+
+    /** 코드 없는 깃발 등록(iOS `register`, Figma S14 D · E). [preferredFestivalId]는 라이브 탭에서 연 축제로, 목록에 있으면 먼저 고른다. */
+    @Serializable
+    data class Register(val preferredFestivalId: String? = null) : BearerRoute
+
     /** 기수 인증 코드(iOS `claim`, Figma S13 F~I). [festivalId] 축제의 코드를 받는다. */
     @Serializable
     data class Claim(val festivalId: String) : BearerRoute

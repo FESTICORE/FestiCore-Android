@@ -42,12 +42,15 @@ internal class FakeBearerUseCase(
     private val onUpdateProfile: (suspend (flagId: String, change: BearerProfileChange) -> BearerFlagProfile)? = null,
     private val onUploadPhoto: ((flagId: String, imageData: ByteArray) -> Flow<BearerPhotoUploadEvent>)? = null,
     private val onInviteCoBearer: (suspend (flagId: String) -> BearerInvite)? = null,
+    private val onMakeRegisterRequest: ((festivalId: String, change: BearerProfileChange) -> BearerRegisterRequest)? = null,
+    private val onRegister: (suspend (request: BearerRegisterRequest) -> BearerClaim)? = null,
 ) : BearerUseCase {
     override suspend fun claim(festivalId: String, code: String): BearerClaim = onClaim(festivalId, code)
 
-    override fun makeRegisterRequest(festivalId: String, change: BearerProfileChange): BearerRegisterRequest = unused()
+    override fun makeRegisterRequest(festivalId: String, change: BearerProfileChange): BearerRegisterRequest =
+        (onMakeRegisterRequest ?: unused())(festivalId, change)
 
-    override suspend fun register(request: BearerRegisterRequest): BearerClaim = unused()
+    override suspend fun register(request: BearerRegisterRequest): BearerClaim = (onRegister ?: unused())(request)
 
     override suspend fun fetchBearerFlags(festivalId: String?): List<BearerOwnedFlag> = unused()
 

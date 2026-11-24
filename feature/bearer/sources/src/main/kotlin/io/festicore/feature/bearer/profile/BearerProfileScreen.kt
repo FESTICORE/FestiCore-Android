@@ -457,7 +457,7 @@ private fun PreviewCard(state: BearerProfileState, profile: BearerFlagProfile) {
 
 /** Figma S10 Bottom Bar: 버튼 사이 4, 위 12 · 아래 8. iOS는 흐림 위에 `materialGlass`를 얹지만 Compose 표준 흐림이 없어 단색만 쓴다(설계 적응 표). */
 @Composable
-private fun ActionBar(content: @Composable ColumnScope.() -> Unit) {
+internal fun ActionBar(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier =
             Modifier
@@ -473,7 +473,7 @@ private fun ActionBar(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SectionLabel(title: String, count: String?) {
+internal fun SectionLabel(title: String, count: String?) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         BasicText(
             text = title,
@@ -496,7 +496,7 @@ private fun SectionLabel(title: String, count: String?) {
 
 /** Figma 안내 줄: 13pt, 줄 상자 18 */
 @Composable
-private fun Helper(text: String) {
+internal fun Helper(text: String) {
     BasicText(
         text = text,
         style = FestiCoreTextStyle.baseFootnoteRegular.textStyle.copy(color = FestiCoreSemanticColor.labelAssistive.color),
@@ -546,7 +546,7 @@ private fun photoState(state: BearerProfileState): FCPhotoPickerState {
  * 디코딩 전 · 읽지 못하는 바이트는 null이라 iOS 이미지 없음과 같은 자리 표시(빈 칸 · 기본 썸네일)를 그린다.
  */
 @Composable
-private fun rememberImageBitmap(data: ByteArray?, side: Dp): ImageBitmap? {
+internal fun rememberImageBitmap(data: ByteArray?, side: Dp): ImageBitmap? {
     val sidePx = with(LocalDensity.current) { side.roundToPx() }
     val bitmap by produceState<ImageBitmap?>(initialValue = null, data, sidePx) {
         value = data?.let { bytes -> withContext(Dispatchers.Default) { decodeSampled(bytes, sidePx)?.asImageBitmap() } }
