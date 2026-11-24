@@ -2,6 +2,7 @@ package io.festicore.domain.bearer.bearer
 
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
+import io.festicore.domain.bearer.entity.BearerFlagPhoto
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
@@ -14,7 +15,7 @@ import io.festicore.domain.bearer.entity.BearerStatusRequest
 
 /**
  * 기수 API 저장소. 모든 요청은 로그인 세션에 묶여 보내고, 세션이 없으면 보내지 않고 `BearerError.NotAuthenticated`.
- * 실패는 `BearerError`. iOS `BearerRepositoryInterface`(사진 업로드는 BD2).
+ * 실패는 `BearerError`. iOS `BearerRepositoryInterface`.
  */
 interface BearerRepository {
     /** [code]는 UseCase가 대문자로 맞추고 형식을 확인한 값이다. */
@@ -35,6 +36,13 @@ interface BearerRepository {
     suspend fun fetchBoard(flagId: String): BearerBoard
 
     suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile
+
+    /** 규격을 맞춘 [jpeg]를 올린다. [onProgress]는 보낸 비율이다(1을 넘을 수 있어 UseCase가 0~1로 자른다). */
+    suspend fun uploadPhoto(
+        flagId: String,
+        jpeg: ByteArray,
+        onProgress: (Double) -> Unit,
+    ): BearerFlagPhoto
 
     suspend fun sendStatus(flagId: String, request: BearerStatusRequest): BearerFlagStatus
 

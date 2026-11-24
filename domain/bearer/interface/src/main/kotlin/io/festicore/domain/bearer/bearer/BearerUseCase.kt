@@ -8,15 +8,17 @@ import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
 import io.festicore.domain.bearer.entity.BearerInvite
 import io.festicore.domain.bearer.entity.BearerOwnedFlag
+import io.festicore.domain.bearer.entity.BearerPhotoUploadEvent
 import io.festicore.domain.bearer.entity.BearerPinnedFlag
 import io.festicore.domain.bearer.entity.BearerProfileChange
 import io.festicore.domain.bearer.entity.BearerRegisterRequest
 import io.festicore.domain.bearer.entity.BearerStatusChange
 import io.festicore.domain.bearer.entity.BearerStatusRequest
+import kotlinx.coroutines.flow.Flow
 
 /**
  * 기수 화면(코드 인증 · 깃발 등록 · 깃발 프로필 · 기수 보드)이 하는 일. iOS `BearerUseCaseInterface`.
- * 사진 업로드는 BD2, 상태 대기열은 BD3에서 더한다.
+ * 상태 대기열은 BD3에서 더한다.
  */
 interface BearerUseCase {
     /** 코드를 대문자로 맞추고 서버 형식(I · O · 0 · 1 제외 6자리)이 아니면 보내지 않고 `BearerError.InvalidRequest`. */
@@ -40,6 +42,12 @@ interface BearerUseCase {
     suspend fun fetchBoard(flagId: String): BearerBoard
 
     suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile
+
+    /**
+     * 사진을 서버 규격(JPEG · 5MB 이하 · 짧은 변 256px 이상 · 긴 변 2048px)으로 다시 인코딩해 올린다.
+     * 픽셀만 새로 쓰므로 EXIF · GPS 등 메타데이터는 나가지 않는다. 진행률(0~1)을 알린 뒤 완료로 끝나고, 실패는 `BearerError`로 끝난다.
+     */
+    fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent>
 
     /** 누른 시각과 새 멱등키로 전송 한 건을 만든다. */
     fun makeStatusRequest(change: BearerStatusChange): BearerStatusRequest

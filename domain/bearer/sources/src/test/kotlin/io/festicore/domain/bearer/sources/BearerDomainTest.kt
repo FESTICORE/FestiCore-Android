@@ -23,6 +23,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -30,7 +31,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** iOS `BearerDomainTests` 기수 API 도메인 9건(같은 이름). 사진 업로드 1건은 BD2. 응답은 iOS 테스트와 같은 가짜 값이다. */
+/** iOS `BearerDomainTests` 기수 API 도메인 9건 + 사진 업로드 1건(같은 이름). 응답은 iOS 테스트와 같은 가짜 값이다. */
 class BearerDomainTest {
     @Test
     fun fetchBoard() = runTest {
@@ -133,6 +134,48 @@ class BearerDomainTest {
         assertEquals(BearerError.InvalidCode(null), failure { makeRepository(unknown).claim("fst_1", "ABC234") })
         val locked = RecordingClient(423, """{"code":"BEARER_CODE_LOCKED","data":{"retryAfter":582},"message":"x"}""")
         assertEquals(BearerError.CodeLocked(582), failure { makeRepository(locked).claim("fst_1", "ABC234") })
+    }
+
+    @Test
+    fun uploadPhoto() = runTest {
+        val client = RecordingClient(
+            json = """
+                {"code":"SUCCESS","message":"OK","data":{"photoUrl":"/api/v1/flags/flg_1/photo","thumbUrl":"/api/v1/flags/flg_1/thumbnail"}}
+            """.trimIndent(),
+        )
+        val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte())
+
+        val photo = makeRepository(client).uploadPhoto("flg_1", jpeg) {}
+
+        val sent = client.last
+        assertEquals("api/v1/flags/flg_1/photo", sent.path)
+        assertEquals(HttpMethod.Post, sent.method)
+        assertTrue(sent.isSessionBound)
+        val parts = client.lastMultipartParts()
+        assertEquals(1, parts.size)
+        assertTrue(parts[0].headers, parts[0].headers.contains("Content-Disposition: form-data; name=\"photo\"; filename=\"photo.jpg\""))
+        assertTrue(parts[0].headers, parts[0].headers.contains("Content-Type: image/jpeg"))
+        assertArrayEquals(jpeg, parts[0].body)
+        assertEquals("https://festicore.test/api/v1/flags/flg_1/photo", photo.photoUrl)
+        assertEquals("https://festicore.test/api/v1/flags/flg_1/thumbnail", photo.thumbnailUrl)
+    }
+
+    @Test
+    fun uploadPhotoFailures() = runTest {
+        val tooLarge = RecordingClient(413, """{"code":"PAYLOAD_TOO_LARGE","message":"x"}""")
+        assertEquals(BearerError.PhotoTooLarge(), failure { makeRepository(tooLarge).uploadPhoto("flg_1", byteArrayOf(1)) {} })
+
+        val offline = RecordingClient(offline = true)
+        assertEquals(BearerError.Offline(), failure { makeRepository(offline).uploadPhoto("flg_1", byteArrayOf(1)) {} })
+
+        val loggedOut = RecordingClient()
+        assertEquals(
+            BearerError.NotAuthenticated(),
+            failure {
+                makeRepository(loggedOut, loggedIn = false).uploadPhoto("flg_1", byteArrayOf(1)) {}
+            },
+        )
+        assertTrue(loggedOut.sent.isEmpty())
     }
 
     @Test

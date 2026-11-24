@@ -11,6 +11,7 @@ import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
 import io.festicore.domain.bearer.entity.BearerInvite
 import io.festicore.domain.bearer.entity.BearerOwnedFlag
+import io.festicore.domain.bearer.entity.BearerPhotoUploadEvent
 import io.festicore.domain.bearer.entity.BearerPinnedFlag
 import io.festicore.domain.bearer.entity.BearerProfileChange
 import io.festicore.domain.bearer.entity.BearerRegisterRequest
@@ -18,20 +19,29 @@ import io.festicore.domain.bearer.entity.BearerStatusChange
 import io.festicore.domain.bearer.entity.BearerStatusRequest
 import io.festicore.domain.bearer.sources.model.dto.BearerPackDto
 import io.festicore.domain.bearer.sources.model.mapper.toDomain
+import io.festicore.domain.bearer.sources.photo.BearerPhotoEncoder
 import io.festicore.service.pack.PackSyncService
 import java.time.Clock
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.withContext
 
 /**
  * 기수 UseCase(iOS `BearerUseCaseImpl`). 코드 형식 확인 · 멱등키 · 누른 시각을 만들고 나머지는 저장소에 맡긴다.
  * [newUuid] · [clock]은 테스트 결정성을 위해 주입한다(iOS `@Dependency(\.uuid)` · `\.date`).
+ * 사진 인코딩은 CPU 작업이라 [encodeContext]에서 한다.
  */
 internal class BearerUseCaseImpl(
     private val repository: BearerRepository,
     private val packSyncService: PackSyncService,
     private val newUuid: () -> String = { UUID.randomUUID().toString() },
     private val clock: Clock = Clock.systemUTC(),
+    private val photoEncoder: BearerPhotoEncoder = BearerPhotoEncoder(),
+    private val encodeContext: CoroutineContext = Dispatchers.Default,
 ) : BearerUseCase {
     override suspend fun claim(festivalId: String, code: String): BearerClaim {
         val normalized = code.uppercase(Locale.ROOT)
@@ -61,6 +71,15 @@ internal class BearerUseCaseImpl(
 
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile =
         repository.updateProfile(flagId, change)
+
+    override fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent> = channelFlow {
+        val jpeg = withContext(encodeContext) { photoEncoder.encode(imageData) }
+        // 진행률은 콜백에서 오므로 trySend로 넣는다. 버퍼가 차면 중간 진행률만 빠진다.
+        val photo = repository.uploadPhoto(flagId, jpeg) { fraction ->
+            trySend(BearerPhotoUploadEvent.Progress(fraction.coerceIn(0.0, 1.0)))
+        }
+        send(BearerPhotoUploadEvent.Completed(photo))
+    }
 
     override fun makeStatusRequest(change: BearerStatusChange) =
         BearerStatusRequest(change, idempotencyKey = newUuid().lowercase(Locale.ROOT), clientAt = clock.instant())

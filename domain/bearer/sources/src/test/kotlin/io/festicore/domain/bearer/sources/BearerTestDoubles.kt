@@ -12,9 +12,12 @@ import io.festicore.service.pack.PackSyncResult
 import io.festicore.service.pack.PackSyncService
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.request.HttpRequestData
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import java.io.IOException
@@ -37,10 +40,16 @@ internal class RecordingClient(
     val sent = mutableListOf<HttpRequestData>()
     val last: HttpRequestData get() = sent.last()
 
+    /** multipart 본문은 응답 뒤에 다시 읽을 수 없어 보낼 때 바이트로 남긴다. */
+    val multipartBodies = mutableListOf<ByteArray>()
+
     val client = createFestiCoreHttpClient(
         baseUrl = BASE_URL,
         engine = MockEngine { request ->
             sent += request
+            if (request.body.contentType?.match(ContentType.MultiPart.FormData) == true) {
+                multipartBodies += (request.body as OutgoingContent).toByteArray()
+            }
             if (offline) throw IOException("연결 없음")
             val (code, body) = routes[request.url.encodedPath.removePrefix("/")] ?: if (routes.isEmpty()) status to json else 500 to ""
             respond(body, HttpStatusCode.fromValue(code), headersOf(HttpHeaders.ContentType, "application/json"))
@@ -68,6 +77,23 @@ internal val HttpRequestData.isSessionBound: Boolean
     get() = attributes.getOrNull(BearerAuthorizationKey) == BearerAuthorization(SESSION_ID)
 
 internal val HttpRequestData.jsonBody: JsonObject get() = Json.parseToJsonElement((body as TextContent).text).jsonObject
+
+/** multipart 파트 하나의 헤더 원문과 본문 */
+internal class MultipartPart(
+    val headers: String,
+    val body: ByteArray,
+)
+
+/** 마지막으로 보낸 multipart 본문을 경계로 나눠 파트별 헤더 · 본문을 돌려준다. */
+internal fun RecordingClient.lastMultipartParts(): List<MultipartPart> {
+    val boundary = last.body.contentType?.parameter("boundary") ?: error("multipart가 아니다")
+    val text = String(multipartBodies.last(), Charsets.ISO_8859_1)
+    return text.split("--$boundary").drop(1).dropLast(1).map { raw ->
+        val part = raw.removePrefix("\r\n").removeSuffix("\r\n")
+        val (headers, content) = part.split("\r\n\r\n", limit = 2)
+        MultipartPart(headers, content.toByteArray(Charsets.ISO_8859_1))
+    }
+}
 
 internal class StubPackSyncService(private val pack: CachedFestivalPack?) : PackSyncService {
     override suspend fun cachedPack(festivalId: String) = pack
