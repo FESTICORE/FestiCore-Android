@@ -15,9 +15,12 @@ import io.festicore.domain.festival.sources.model.dto.FestivalPackZoneDto
 import io.festicore.domain.festival.sources.model.dto.FestivalScheduleDto
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
-import io.festicore.service.apiendpoint.festival.FestivalLiveResponse
-import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.apiendpoint.festival.FestivalScheduleReplaceBody
+import io.festicore.service.festivalcatalog.endpoint.FestivalDetailRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalLiveBoardRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalLiveResponse
+import io.festicore.service.festivalcatalog.endpoint.FestivalOfficialNewsRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalScheduleRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -39,20 +42,32 @@ class FestivalLiveBoardRequestTest {
     private val requests = mutableListOf<HttpRequestData>()
     private val deviceId = "3f2b8c1e-0d4a-4c6b-9e7f-1a2b3c4d5e6f"
 
+    private fun client(
+        body: String,
+        status: HttpStatusCode,
+        headers: Array<out Pair<String, String>>,
+    ) = createFestiCoreHttpClient(
+        baseUrl = "https://example.test/",
+        engine = MockEngine { request ->
+            requests += request
+            val all = listOf(HttpHeaders.ContentType to "application/json") + headers
+            respond(body, status, headersOf(*all.map { it.first to listOf(it.second) }.toTypedArray()))
+        },
+    )
+
     private fun api(
         body: String,
         status: HttpStatusCode = HttpStatusCode.OK,
         vararg headers: Pair<String, String>,
-    ) = FestivalRequest(
-        createFestiCoreHttpClient(
-            baseUrl = "https://example.test/",
-            engine = MockEngine { request ->
-                requests += request
-                val all = listOf(HttpHeaders.ContentType to "application/json") + headers
-                respond(body, status, headersOf(*all.map { it.first to listOf(it.second) }.toTypedArray()))
-            },
-        ),
-    )
+    ) = FestivalLiveBoardRequest(client(body, status, headers))
+
+    private fun detailApi(body: String, status: HttpStatusCode = HttpStatusCode.OK) =
+        FestivalDetailRequest(client(body, status, emptyArray()))
+
+    private fun newsApi(body: String) = FestivalOfficialNewsRequest(client(body, HttpStatusCode.OK, emptyArray()))
+
+    private fun scheduleApi(body: String, status: HttpStatusCode = HttpStatusCode.OK) =
+        FestivalScheduleRequest(client(body, status, emptyArray()))
 
     private fun resource(name: String): String = checkNotNull(javaClass.getResource("/$name")).readText()
 
@@ -69,7 +84,7 @@ class FestivalLiveBoardRequestTest {
 
     @Test
     fun `stage 상세를 읽고 iOS가 읽지 않는 키는 무시한다`() = runTest {
-        val detail = api(resource("festival-detail-stage.json")).detail<FestivalPackDocumentDto>("fst_00e0f4f1d8065a93")
+        val detail = detailApi(resource("festival-detail-stage.json")).detail<FestivalPackDocumentDto>("fst_00e0f4f1d8065a93")
 
         assertEquals("/api/v1/festivals/fst_00e0f4f1d8065a93", requests.single().url.encodedPath)
         assertFalse(requests.single().headers.contains(HttpHeaders.Authorization))
@@ -123,7 +138,7 @@ class FestivalLiveBoardRequestTest {
     @Test
     fun `팩 문서의 공연 원소가 틀리면 문서 전체가 해석 실패다`() = runTest {
         val error = failure {
-            api(success("""{"id":"fst_a","sets":[{"id":"s1","artist":1}]}""")).detail<FestivalPackDocumentDto>("fst_a")
+            detailApi(success("""{"id":"fst_a","sets":[{"id":"s1","artist":1}]}""")).detail<FestivalPackDocumentDto>("fst_a")
         }
 
         assertTrue(error is NetworkError.Decoding)
@@ -228,7 +243,7 @@ class FestivalLiveBoardRequestTest {
 
     @Test
     fun `stage 공식 인스타그램을 읽는다`() = runTest {
-        val news = api(resource("festival-instagram-stage.json")).instagram<FestivalOfficialNewsDto>("fst_00e0f4f1d8065a93")
+        val news = newsApi(resource("festival-instagram-stage.json")).instagram<FestivalOfficialNewsDto>("fst_00e0f4f1d8065a93")
 
         assertEquals("/api/v1/festivals/fst_00e0f4f1d8065a93/instagram", requests.single().url.encodedPath)
         assertFalse(news.available)
@@ -239,7 +254,7 @@ class FestivalLiveBoardRequestTest {
 
     @Test
     fun `내 일정은 Bearer 대상 GET이다`() = runTest {
-        val schedule = api(success("""{"setIds":["set_a","set_b"]}""")).mySchedule<FestivalScheduleDto>("fst_a")
+        val schedule = scheduleApi(success("""{"setIds":["set_a","set_b"]}""")).mySchedule<FestivalScheduleDto>("fst_a")
 
         val request = requests.single()
         assertEquals("/api/v1/me/schedule/fst_a", request.url.encodedPath)
@@ -251,7 +266,7 @@ class FestivalLiveBoardRequestTest {
     fun `내 일정 저장은 세션에 묶인 Bearer PUT이고 본문은 setIds · clientAt이다`() = runTest {
         val body = FestivalScheduleReplaceBody(listOf("set_1"), "2026-08-07T10:00:00.250+09:00")
 
-        val schedule = api(
+        val schedule = scheduleApi(
             success("""{"setIds":["set_1"]}"""),
         ).replaceMySchedule<FestivalScheduleDto>("fst_a", body, expectedSessionId = "session-1")
 
@@ -268,7 +283,7 @@ class FestivalLiveBoardRequestTest {
     fun `내 일정 저장 409는 상태 코드와 본문 code를 그대로 던진다`() = runTest {
         val error =
             failure {
-                api("""{"code":"STATUS_STALE","data":null,"message":"stale"}""", HttpStatusCode.Conflict)
+                scheduleApi("""{"code":"STATUS_STALE","data":null,"message":"stale"}""", HttpStatusCode.Conflict)
                     .replaceMySchedule<FestivalScheduleDto>(
                         "fst_a",
                         FestivalScheduleReplaceBody(emptyList(), "2026-08-07T10:00:00.250+09:00"),

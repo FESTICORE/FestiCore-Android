@@ -12,7 +12,8 @@ import io.festicore.domain.festival.sources.model.dto.FestivalPackMapStageDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackVersionDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackZoneAreaDto
 import io.festicore.domain.festival.sources.model.dto.FestivalTicketLinkDto
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.festival.FestivalPackRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalListRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -31,15 +32,17 @@ class FestivalRequestTest {
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
     private val requests = mutableListOf<HttpRequestData>()
 
-    private fun api(body: String, status: HttpStatusCode = HttpStatusCode.OK) = FestivalRequest(
-        createFestiCoreHttpClient(
-            baseUrl = "https://example.test/",
-            engine = MockEngine { request ->
-                requests += request
-                respond(body, status, jsonHeaders)
-            },
-        ),
+    private fun client(body: String, status: HttpStatusCode) = createFestiCoreHttpClient(
+        baseUrl = "https://example.test/",
+        engine = MockEngine { request ->
+            requests += request
+            respond(body, status, jsonHeaders)
+        },
     )
+
+    private fun api(body: String, status: HttpStatusCode = HttpStatusCode.OK) = FestivalListRequest(client(body, status))
+
+    private fun packApi(body: String, status: HttpStatusCode = HttpStatusCode.OK) = FestivalPackRequest(client(body, status))
 
     private fun stagePage(): String = checkNotNull(javaClass.getResource("/festival-list-stage-page.json")).readText()
 
@@ -167,14 +170,14 @@ class FestivalRequestTest {
             """{"code":"SUCCESS","data":{"packVersion":56,"packUpdatedAt":"2026-11-12T15:01:26Z","etag":"\"b5fe\"",""" +
                 """"mapVersion":"zm-7fc315a33960"}}"""
 
-        val version = api(body).packVersion("fst_00e0f4f1d8065a93", FestivalPackVersionDto.serializer())
+        val version = packApi(body).packVersion("fst_00e0f4f1d8065a93", FestivalPackVersionDto.serializer())
 
         assertEquals(FestivalPackVersionDto(56, "zm-7fc315a33960"), version)
         assertEquals("/api/v1/festivals/fst_00e0f4f1d8065a93/pack/version", requests.single().url.encodedPath)
         assertEquals(HttpMethod.Get, requests.single().method)
         assertNull(requests.single().headers[HttpHeaders.Authorization])
         assertNull(
-            api("""{"code":"SUCCESS","data":{"packVersion":1}}""").packVersion("fst_a", FestivalPackVersionDto.serializer()).mapVersion,
+            packApi("""{"code":"SUCCESS","data":{"packVersion":1}}""").packVersion("fst_a", FestivalPackVersionDto.serializer()).mapVersion,
         )
     }
 
@@ -182,12 +185,12 @@ class FestivalRequestTest {
     fun `팩 버전 code가 SUCCESS가 아니면 InvalidResponse, 2xx가 아니면 Http다`() = runTest {
         assertTrue(
             failure {
-                api("""{"code":"FAIL","data":null}""").packVersion("fst_a", FestivalPackVersionDto.serializer())
+                packApi("""{"code":"FAIL","data":null}""").packVersion("fst_a", FestivalPackVersionDto.serializer())
             } is NetworkError.InvalidResponse,
         )
         val http =
             failure {
-                api(
+                packApi(
                     """{"code":"NOT_FOUND","message":"x"}""",
                     HttpStatusCode.NotFound,
                 ).packVersion("fst_a", FestivalPackVersionDto.serializer())

@@ -8,8 +8,8 @@ import io.festicore.domain.festival.sources.service.FestivalLiveBoardFetch
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardService
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.domain.festival.sources.service.isValidFestivalId
-import io.festicore.service.apiendpoint.festival.FestivalLiveResponse
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalLiveBoardRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalLiveResponse
 import java.time.Instant
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -28,7 +28,7 @@ import kotlinx.coroutines.sync.withLock
  * 그 밖의 실패는 [NetworkError](401 포함, 토큰 갱신은 인증 플러그인).
  */
 class NetworkFestivalLiveBoardService(
-    private val api: FestivalRequest,
+    private val api: FestivalLiveBoardRequest,
     private val deviceId: suspend () -> String,
     private val currentSessionId: suspend () -> String?,
     private val now: () -> Instant = Instant::now,

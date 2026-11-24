@@ -10,9 +10,10 @@ import io.festicore.domain.festival.sources.flag.FestivalFlagDetailUseCaseImpl
 import io.festicore.domain.festival.sources.repository.FestivalFlagDetailRepositoryImpl
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
-import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.festicore.service.festivalcatalog.NetworkFestivalCatalogService
+import io.festicore.service.festivalcatalog.endpoint.FestivalDetailRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalListRequest
 import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import io.ktor.client.engine.mock.MockEngine
@@ -51,7 +52,8 @@ class FestivalFlagDetailRepositoryTest {
         FestivalFlagDetailRepositoryImpl(
             FlagRequest(client),
             NetworkFestivalCatalogService(
-                FestivalRequest(client),
+                FestivalListRequest(client),
+                FestivalDetailRequest(client),
                 FestivalCatalogCache(File("unused.json"), FestiCoreJson),
                 FestivalImageUrlResolver("https://example.test/"),
             ),

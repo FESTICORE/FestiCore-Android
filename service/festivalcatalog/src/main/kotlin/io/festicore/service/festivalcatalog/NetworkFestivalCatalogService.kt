@@ -7,7 +7,8 @@ import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.service.FestivalCatalogService
 import io.festicore.domain.festival.sources.service.FestivalCatalogServiceError
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalDetailRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalListRequest
 import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import kotlinx.coroutines.sync.Mutex
@@ -17,7 +18,8 @@ import kotlinx.coroutines.sync.withLock
  * 축제 목록 조회 · 캐시. 실패는 [NetworkError] 또는 [FestivalCatalogServiceError]. iOS `NetworkFestivalCatalogService`.
  */
 class NetworkFestivalCatalogService(
-    private val api: FestivalRequest,
+    private val api: FestivalListRequest,
+    private val detailApi: FestivalDetailRequest,
     private val cache: FestivalCatalogCache,
     private val imageUrlResolver: FestivalImageUrlResolver,
 ) : FestivalCatalogService {
@@ -39,7 +41,7 @@ class NetworkFestivalCatalogService(
      */
     override suspend fun festivalDetail(festivalId: String): FestivalPackDocumentDto {
         if (festivalId.isEmpty() || festivalId.any { it in "/?#" }) throw FestivalLiveBoardServiceError.InvalidResponse()
-        val document = api.detail<FestivalPackDocumentDto>(festivalId)
+        val document = detailApi.detail<FestivalPackDocumentDto>(festivalId)
         if (document.id != festivalId) throw FestivalLiveBoardServiceError.InvalidResponse()
         return document
     }

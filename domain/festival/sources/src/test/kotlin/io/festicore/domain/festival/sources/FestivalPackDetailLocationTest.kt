@@ -4,7 +4,7 @@ import io.festicore.core.network.FestiCoreJson
 import io.festicore.domain.festival.entity.FestivalPackDetail
 import io.festicore.domain.festival.sources.packdetail.FestivalPackDetailUseCaseImpl
 import io.festicore.domain.festival.sources.repository.FestivalPackChangesRepositoryImpl
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.festival.FestivalPackRequest
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -58,7 +58,7 @@ class FestivalPackDetailLocationTest {
         val useCase = FestivalPackDetailUseCaseImpl(
             packRepository = service.repository(),
             catalogRepository = FakeCatalogRepository(cached = listOf(catalogItem("fst_a", "원더리벳 2026", 1))),
-            changesRepository = FestivalPackChangesRepositoryImpl(FestivalRequest(HttpClient(MockEngine { error("사용하지 않음") }))),
+            changesRepository = FestivalPackChangesRepositoryImpl(FestivalPackRequest(HttpClient(MockEngine { error("사용하지 않음") }))),
             localStore = FakePackLocalStore(),
             json = FestiCoreJson,
         )

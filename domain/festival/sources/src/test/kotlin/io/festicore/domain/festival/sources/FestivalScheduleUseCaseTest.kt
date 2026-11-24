@@ -9,8 +9,8 @@ import io.festicore.domain.festival.sources.repository.FestivalScheduleRepositor
 import io.festicore.domain.festival.sources.schedule.FestivalScheduleSavedEvents
 import io.festicore.domain.festival.sources.schedule.FestivalScheduleUseCaseImpl
 import io.festicore.domain.festival.sources.selection.FestivalBoardSelectionStore
-import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.festivalcatalog.NetworkFestivalScheduleService
+import io.festicore.service.festivalcatalog.endpoint.FestivalScheduleRequest
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -44,7 +44,7 @@ class FestivalScheduleUseCaseTest {
         FestivalScheduleUseCaseImpl(
             repository = FestivalScheduleRepositoryImpl(
                 NetworkFestivalScheduleService(
-                    FestivalRequest(
+                    FestivalScheduleRequest(
                         createFestiCoreHttpClient(
                             baseUrl = "https://example.test/",
                             engine = MockEngine { request ->

@@ -2,10 +2,13 @@ package io.festicore.domain.festival.sources
 import io.festicore.core.network.FestiCoreJson
 import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.domain.festival.sources.repository.FestivalLiveBoardRepositoryImpl
-import io.festicore.service.apiendpoint.festival.FestivalRequest
 import io.festicore.service.festivalcatalog.NetworkFestivalCatalogService
 import io.festicore.service.festivalcatalog.NetworkFestivalLiveBoardService
 import io.festicore.service.festivalcatalog.NetworkFestivalOfficialNewsService
+import io.festicore.service.festivalcatalog.endpoint.FestivalDetailRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalListRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalLiveBoardRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalOfficialNewsRequest
 import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import io.ktor.client.engine.mock.MockEngine
@@ -28,26 +31,25 @@ class FestivalLiveBoardCacheTest {
     private var notFound = false
     private val received = Instant.parse("2026-11-22T00:00:05Z")
 
-    private val api = FestivalRequest(
-        createFestiCoreHttpClient(
-            baseUrl = "https://example.test/",
-            engine = MockEngine { request ->
-                val path = request.url.encodedPath
-                val json = headersOf(HttpHeaders.ContentType, "application/json")
-                when {
-                    path.endsWith("/live") && notFound ->
-                        respond("""{"code":"FESTIVAL_NOT_FOUND","data":null,"message":"x"}""", HttpStatusCode.NotFound, json)
+    private val client = createFestiCoreHttpClient(
+        baseUrl = "https://example.test/",
+        engine = MockEngine { request ->
+            val path = request.url.encodedPath
+            val json = headersOf(HttpHeaders.ContentType, "application/json")
+            when {
+                path.endsWith("/live") && notFound ->
+                    respond("""{"code":"FESTIVAL_NOT_FOUND","data":null,"message":"x"}""", HttpStatusCode.NotFound, json)
 
-                    path.endsWith("/live") -> {
-                        liveRequests += 1
-                        respond(LIVE, headers = json)
-                    }
-
-                    else -> respond(FLAGS, headers = json)
+                path.endsWith("/live") -> {
+                    liveRequests += 1
+                    respond(LIVE, headers = json)
                 }
-            },
-        ),
+
+                else -> respond(FLAGS, headers = json)
+            }
+        },
     )
+    private val api = FestivalLiveBoardRequest(client)
     private val liveBoardService = NetworkFestivalLiveBoardService(
         api = api,
         deviceId = { "00000000-0000-4000-8000-000000000001" },
@@ -56,9 +58,10 @@ class FestivalLiveBoardCacheTest {
     )
     private val repository = FestivalLiveBoardRepositoryImpl(
         liveBoardService,
-        NetworkFestivalOfficialNewsService(api),
+        NetworkFestivalOfficialNewsService(FestivalOfficialNewsRequest(client)),
         NetworkFestivalCatalogService(
-            api,
+            FestivalListRequest(client),
+            FestivalDetailRequest(client),
             FestivalCatalogCache(File("unused.json"), FestiCoreJson),
             FestivalImageUrlResolver("https://example.test/"),
         ),

@@ -12,6 +12,11 @@ import io.festicore.service.festivalcatalog.NetworkFestivalFlagFollowService
 import io.festicore.service.festivalcatalog.NetworkFestivalLiveBoardService
 import io.festicore.service.festivalcatalog.NetworkFestivalOfficialNewsService
 import io.festicore.service.festivalcatalog.NetworkFestivalScheduleService
+import io.festicore.service.festivalcatalog.endpoint.FestivalDetailRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalListRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalLiveBoardRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalOfficialNewsRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalScheduleRequest
 import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
 import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import java.io.File
@@ -21,9 +26,14 @@ import org.koin.dsl.module
 
 /** [baseUrl]은 app이 `BuildConfig.BASE_URL`로 넘긴다(썸네일 상대 경로 결합). 캐시 파일은 앱 전용 `filesDir` 아래. */
 fun serviceFestivalCatalogModule(baseUrl: String): Module = module {
+    single { FestivalListRequest(get()) }
+    single { FestivalDetailRequest(get()) }
+    single { FestivalLiveBoardRequest(get()) }
+    single { FestivalOfficialNewsRequest(get()) }
+    single { FestivalScheduleRequest(get()) }
     single { FestivalCatalogCache(File(androidContext().filesDir, CACHE_PATH), get()) }
     single { FestivalImageUrlResolver(baseUrl) }
-    single<FestivalCatalogService> { NetworkFestivalCatalogService(get(), get(), get()) }
+    single<FestivalCatalogService> { NetworkFestivalCatalogService(get(), get(), get(), get()) }
     // 세션별 ETag · 429 대기를 들고 있으므로 하나만 둔다.
     single<FestivalLiveBoardService> {
         NetworkFestivalLiveBoardService(
