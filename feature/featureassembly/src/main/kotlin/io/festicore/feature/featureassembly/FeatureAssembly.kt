@@ -1,6 +1,7 @@
 package io.festicore.feature.featureassembly
 
 import io.festicore.feature.auth.di.authFeatureModule
+import io.festicore.feature.bearer.di.bearerFeatureModule
 import io.festicore.feature.festival.di.festivalFeatureModule
 import io.festicore.feature.onboarding.di.onboardingFeatureModule
 import io.festicore.feature.profile.di.profileFeatureModule
@@ -16,4 +17,5 @@ fun featureModules(legalBaseUrl: String): List<Module> = listOf(
     festivalFeatureModule,
     profileFeatureModule,
     timetableFeatureModule,
+    bearerFeatureModule,
 )

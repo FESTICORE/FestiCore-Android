@@ -61,7 +61,7 @@ iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swif
 
 - 키보드: `KeyboardOptions(capitalization = Characters, keyboardType = Ascii, autoCorrectEnabled = false, imeAction = Done)`. iOS `.oneTimeCode` 자동 채우기는 두지 않는다(SMS 코드가 아님).
 - 카운트다운은 ViewModel `delay(1초)` 반복 + 주입한 `Clock`(iOS `continuousClock.timer` · `\.date`). 테스트는 가상 시간.
-- 시스템 뒤로는 상단 뒤로와 같다(`BackHandler`).
+- 시스템 뒤로는 상단 뒤로와 같다(`BackHandler` → `onBackTapped`).
 
 ## 엣지 케이스
 
