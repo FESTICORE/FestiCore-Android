@@ -113,7 +113,7 @@ iOS 4단 그대로 둔다(규칙: `core/utility/.spec/deeplink.md`).
 
 ## 화면 전환 애니메이션
 
-iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트한다(`app/.../navigation/LaunchTransitions.kt`, `feature/auth/sources/.../AuthTransitions.kt`, `feature/profile/sources/.../ProfileTransitions.kt`, `feature/timetable/sources/.../TimetableTransitions.kt`). 탭 안 스택(라이브 · 깃발 · 마이 · 타임테이블)은 iOS 시스템 push라 같은 값(350ms `FastOutSlowInEasing`, 오른쪽에서 들어오고 아래 화면 1/3 이동)을 쓴다.
+iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트한다(`app/.../navigation/splash/LaunchTransitions.kt`, `feature/auth/sources/.../AuthTransitions.kt`, `feature/profile/sources/.../ProfileTransitions.kt`, `feature/timetable/sources/.../TimetableTransitions.kt`). 탭 안 스택(라이브 · 깃발 · 마이 · 타임테이블)은 iOS 시스템 push라 같은 값(350ms `FastOutSlowInEasing`, 오른쪽에서 들어오고 아래 화면 1/3 이동)을 쓴다.
 
 - 곡선: SwiftUI `easeInOut` → Compose `EaseInOut`(`CubicBezierEasing(0.42, 0, 0.58, 1)`), `spring(response:dampingFraction:)` → `spring(dampingRatio = dampingFraction, stiffness = (2π / response)²)`(질량 1 근사, `blendDuration`은 대응 없음). `move(edge:)` → `slideIn/OutHorizontally { ±it }`, `opacity` → `fadeIn/fadeOut`.
 - SwiftUI는 들어오는 화면의 등장 전환과 나가는 화면의 퇴장 전환을 따로 쓴다. 루트 `transitionSpec`도 엔트리 `metadata`로 두 화면을 알아 각각 고른다.

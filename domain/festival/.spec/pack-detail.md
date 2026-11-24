@@ -12,7 +12,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/{Interface,Sources}/{ReceivedPack,Pa
 
 ## 개요
 
-화면(S1 마이 · S5 팩 상세)은 `FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase`만 본다. 팩 읽기 · 받기 · 지우기는 기존 `FestivalPackRepository`를 거쳐 라이브 탭과 같은 `FestivalPackState`에 반영된다. 변경 요약은 `FestivalPackChangesRepository`(`FestivalRequest.packChanges`). 준비물 · 자동 받기는 `core/storage` `FestivalPackLocalStore`(DataStore). 와이파이 판단은 `FestivalWiFiStatus`(`ConnectivityManager`).
+화면(S1 마이 · S5 팩 상세)은 `FestivalReceivedPackUseCase` · `FestivalPackDetailUseCase`만 본다. 팩 읽기 · 받기 · 지우기는 기존 `FestivalPackRepository`를 거쳐 라이브 탭과 같은 `FestivalPackState`에 반영된다. 변경 요약은 `FestivalPackChangesRepository`(`FestivalPackRequest.packChanges`). 준비물 · 자동 받기는 `core/storage` `FestivalPackLocalStore`(DataStore). 와이파이 판단은 `FestivalWiFiStatus`(`ConnectivityManager`).
 
 ## 동작 규칙
 
@@ -43,7 +43,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/{Interface,Sources}/{ReceivedPack,Pa
 | ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `domain/festival`                     | domain  | 엔티티 4종 · `receivedpack/` · `packdetail/` 계약과 구현, 상세 · 변경 요약 · 준비물 DTO와 매퍼, `deleteExpiredPacks`, `FestivalPackError.RetryLater`, `CachedFestivalPack.sizeBytes` |
 | `core/storage`                        | core    | `FestivalPackLocalStore`(DataStore `festicore_festival_pack`)                                                                                                                        |
-| `service/api` · `service/apiendpoint` | service | `FestivalApi.packChanges` · `FestivalRequest.packChanges`                                                                                                                            |
+| `service/api` · `service/apiendpoint` | service | `FestivalApi.packChanges` · `FestivalPackRequest.packChanges`                                                                                                                            |
 | `app`                                 | app     | `ACCESS_NETWORK_STATE`, `AppCoordinator` 포그라운드 만료 정리                                                                                                                        |
 
 ## 영향 범위

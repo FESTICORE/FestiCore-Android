@@ -11,7 +11,7 @@ iOS 대응: `Projects/Feature/Festival/Sources/Crew/{Reducer/FestivalCrewFeature
 
 ## 개요
 
-크루 API는 `FestivalCrewUseCase`(D2)만 쓴다. 코드: `feature/festival/sources/.../crewcreate/` · `crew/` · `crewgather/` · `crewjoin/`, 경로 `FestivalRoute.CrewCreate(festivalId)` · `FestivalRoute.Crew(festivalId, crewId)` · `FestivalRoute.CrewJoin(code)`. 크루 화면이 그리는 존 · 축제 이름 · 보관 시각은 보드 선택 공유 값(`FestivalBoardSelectionUseCase`)의 문서 중 ID가 같은 것만, 첫 크루원 값은 보드의 마지막 라이브 상태(`cachedLiveBoard(festivalId).crew`, ID가 같을 때)만 쓴다(iOS는 push할 때 보드 상태를 복사한다).
+크루 API는 `FestivalCrewUseCase`(D2)만 쓴다. 코드: `feature/festival/sources/.../liveboard/crewcreate/` · `crew/`(참여 `CrewJoin*` 포함) · `liveboard/crewgather/`, 경로 `FestivalRoute.CrewCreate(festivalId)` · `FestivalRoute.Crew(festivalId, crewId)` · `FestivalRoute.CrewJoin(code)`. 크루 화면이 그리는 존 · 축제 이름 · 보관 시각은 보드 선택 공유 값(`FestivalBoardSelectionUseCase`)의 문서 중 ID가 같은 것만, 첫 크루원 값은 보드의 마지막 라이브 상태(`cachedLiveBoard(festivalId).crew`, ID가 같을 때)만 쓴다(iOS는 push할 때 보드 상태를 복사한다).
 
 ## 동작 규칙
 

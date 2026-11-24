@@ -39,7 +39,7 @@ iOS 대응: `Projects/Domain/FestivalDomain/Interface/Sources/{Entity/FestivalZo
 
 | 모듈 | 계층 | 변경 내용 |
 | --- | --- | --- |
-| `service/api` · `service/apiendpoint` | service | `FestivalApi.packVersion`(경로), `FestivalRequest.packVersion`, `FestivalPackVersionDto`, 팩 문서 지도 필드 |
+| `service/api` · `service/apiendpoint` | service | `FestivalApi.packVersion`(경로), `FestivalPackRequest.packVersion`, `FestivalPackVersionDto`, 팩 문서 지도 필드 |
 | `service/festivalcatalog` | service | `FestivalLiveBoardService.cachedFetch` |
 | `domain/festival` | domain | `FestivalZoneMap` · `FestivalZoneMapRepository` · `FestivalZoneMapUseCase`, 팩 문서 지도 필드, `FestivalPackRepository.cachedPack` · `syncPack`, `FestivalPackUseCase.syncPack`, `cachedLiveBoard`, 매퍼 · Koin |
 
