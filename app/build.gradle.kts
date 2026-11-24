@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core:utility"))
     implementation(project(":core:coreassembly"))
     implementation(project(":service:auth:interface"))
+    implementation(project(":service:config"))
     implementation(project(":service:serviceassembly"))
     implementation(project(":domain:auth:sources"))
     implementation(project(":domain:festival:sources"))

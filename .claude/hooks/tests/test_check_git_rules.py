@@ -196,6 +196,14 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(0, self.check("feature/auth/sources/src/main/kotlin/A.kt", "val a = 1\n").returncode)
         self.assertEqual(0, self.check("core/storage/sources/src/main/kotlin/A.kt", "import androidx.room.Dao\n").returncode)
 
+    def test_firebase_initialize_outside_service_config_blocked(self):
+        result = self.check("app/src/main/kotlin/A.kt", "val a = FirebaseApp.initializeApp(context, options)\n")
+        self.assertEqual(1, result.returncode)
+        self.assertIn("service:config", result.stdout)
+        self.assertEqual(0, self.check("app/src/main/kotlin/A.kt", "val a = 1\n").returncode)
+        path = "service/config/src/main/kotlin/A.kt"
+        self.assertEqual(0, self.check(path, "val a = FirebaseApp.initializeApp(context, options)\n").returncode)
+
     def test_hex_color_outside_tokens_blocked(self):
         result = self.check("feature/home/sources/src/main/kotlin/A.kt", "val c = Color(0xFF111113)\n")
         self.assertEqual(1, result.returncode)
