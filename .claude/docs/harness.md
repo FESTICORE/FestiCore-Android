@@ -91,6 +91,7 @@ python3 -m unittest discover -s .claude/hooks/tests
 | Keystore · `EncryptedSharedPreferences`                                          | `core/storage/sources`                                |
 | `SharedPreferences` · DataStore                                                  | `core/storage/sources`                                |
 | Room                                                                             | `core/storage/sources`                                |
+| `FirebaseApp.initializeApp`                                                      | `service/config`                                      |
 | feature `build.gradle.kts`에서 `*.sources` 의존                                  | `feature/featureassembly` (목록만) · app              |
 | `implementation`/`api`로 `:service:{pack,device,auth}:sources` · `:core:{network,storage}:sources` 의존 | `*assembly` · app · `service/auth/sources` · `service/pack/sources` (테스트는 `testImplementation` 허용) |
 | `service/api`에서 `HttpClient` · `festiCoreRequest` · `festiCoreExchange` · Koin | 없음 (`service/apiendpoint`)                          |

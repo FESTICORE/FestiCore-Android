@@ -14,6 +14,15 @@ fun environmentConfig(name: String): Properties = Properties().also {
     it.load(providers.fileContents(layout.projectDirectory.file("config/$name.properties")).asText.get().reader())
 }
 
+// 비밀 값은 추적하지 않는 local.properties 또는 CI 환경 변수에서 읽는다. 없으면 빈 문자열.
+val localProperties = Properties().also { properties ->
+    providers.fileContents(rootProject.layout.projectDirectory.file("local.properties")).asText.orNull?.let { properties.load(it.reader()) }
+}
+
+fun secretValue(key: String): String = providers.environmentVariable(key).orNull ?: localProperties.getProperty(key).orEmpty()
+
+fun buildConfigString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
 android {
     namespace = "io.festicore.app"
     compileSdk = AndroidConfig.COMPILE_SDK
@@ -41,6 +50,11 @@ android {
                 // 공개 값(웹 OAuth 클라이언트 ID · 약관 주소). 비밀 값은 여기에 두지 않는다.
                 buildConfigField("String", "GOOGLE_SERVER_CLIENT_ID", "\"${config.getProperty("GOOGLE_SERVER_CLIENT_ID").orEmpty()}\"")
                 buildConfigField("String", "LEGAL_BASE_URL", "\"${config.getProperty("LEGAL_BASE_URL").orEmpty()}\"")
+                // Firebase 값(FESTICORE_FIREBASE_{STAGE,PROD}_*). 비면 service/config가 Firebase를 초기화하지 않는다.
+                listOf("API_KEY", "APP_ID", "PROJECT_ID", "SENDER_ID").forEach { field ->
+                    val value = secretValue("FESTICORE_FIREBASE_${name.uppercase()}_$field")
+                    buildConfigField("String", "FIREBASE_$field", buildConfigString(value))
+                }
             }
         }
     }
