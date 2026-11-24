@@ -39,8 +39,8 @@ fun BearerEntryHost(
     val routes = remember(startRoute) { mutableStateListOf<NavKey>(startRoute) }
     var claimedProfile by remember(startRoute) { mutableStateOf<BearerFlagProfile?>(null) }
     var planSets by remember(startRoute) { mutableStateOf(emptyList<BearerSet>()) }
-    var initialPlan by remember { mutableStateOf(emptyList<String>()) }
-    var selectedPlan by remember { mutableStateOf<List<String>?>(null) }
+    var initialPlan by remember(startRoute) { mutableStateOf(emptyList<String>()) }
+    var selectedPlan by remember(startRoute) { mutableStateOf<List<String>?>(null) }
 
     fun push(next: BearerRoute) {
         routes.add(next)
