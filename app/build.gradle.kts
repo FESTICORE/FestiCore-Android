@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.lib("lifecycle-runtime-compose"))
 
     testImplementation(libs.lib("robolectric"))
+    testImplementation(testFixtures(project(":domain:bearer:interface")))
     testImplementation(libs.lib("compose-ui-test-junit4"))
     debugImplementation(libs.lib("compose-ui-test-manifest"))
 }

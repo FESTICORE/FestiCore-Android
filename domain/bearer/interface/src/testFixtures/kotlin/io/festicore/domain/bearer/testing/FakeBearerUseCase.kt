@@ -1,4 +1,4 @@
-package io.festicore.feature.profile.main
+package io.festicore.domain.bearer.testing
 
 import io.festicore.domain.bearer.bearer.BearerUseCase
 import io.festicore.domain.bearer.entity.BearerBoard
@@ -35,7 +35,7 @@ internal val SampleClaim =
 internal val SampleProfile = BearerFlagProfile(id = "flg_1", name = "새 깃발 a1b2c3", tags = listOf(BearerFlagTag.Newbie))
 
 /** 화면 테스트용 가짜 UseCase(iOS `BearerUseCaseStub`). 넘기지 않은 함수는 부르면 실패한다. 서버에 쓰지 않는다. */
-internal class FakeBearerUseCase(
+class FakeBearerUseCase(
     private val onClaim: suspend (festivalId: String, code: String) -> BearerClaim = { _, _ -> SampleClaim },
     private val onFetchFestival: (suspend (festivalId: String) -> BearerFestival)? = null,
     private val onFetchBoard: (suspend (flagId: String) -> BearerBoard)? = null,

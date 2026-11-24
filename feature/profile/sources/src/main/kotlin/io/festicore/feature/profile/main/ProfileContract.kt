@@ -17,6 +17,7 @@ data class ProfileState(
     val bearerFlags: List<BearerOwnedFlag> = emptyList(),
     val bearerFlagsLoading: Boolean = false,
     val bearerFlagsLoaded: Boolean = false,
+    val bearerFlagsLoadFailed: Boolean = false,
     val packChangedSets: Map<String, Int> = emptyMap(),
     val packLoad: ProfilePackLoad = ProfilePackLoad.Idle,
 ) {
@@ -68,4 +69,7 @@ sealed interface ProfileSideEffect {
 
     /** 세션이 있다가 없어졌다. 계정 화면이 열려 있으면 Coordinator가 설정 홈째 닫는다(iOS `PF:211-216`). */
     data object SessionLost : ProfileSideEffect
+
+    /** 기수 목록 조회 실패를 app이 개인정보 없이 기록한다. */
+    data object BearerFlagsLoadFailed : ProfileSideEffect
 }

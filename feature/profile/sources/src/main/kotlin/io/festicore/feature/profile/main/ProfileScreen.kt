@@ -92,6 +92,8 @@ fun ProfileScreen(
     onPackDetailRequested: (festivalId: String, title: String) -> Unit,
     onSessionLost: () -> Unit,
     onBearerEntryRequested: () -> Unit,
+    onBearerFlagsRetryTapped: () -> Unit,
+    onBearerFlagsLoadFailed: () -> Unit,
     onBearerFlagRequested: (flag: BearerOwnedFlag, opensBoard: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -104,6 +106,7 @@ fun ProfileScreen(
             ProfileSideEffect.SettingsRequested -> onSettingsRequested()
             is ProfileSideEffect.PackDetailRequested -> onPackDetailRequested(sideEffect.festivalId, sideEffect.title)
             ProfileSideEffect.SessionLost -> onSessionLost()
+            ProfileSideEffect.BearerFlagsLoadFailed -> onBearerFlagsLoadFailed()
             ProfileSideEffect.BearerEntryRequested -> onBearerEntryRequested()
             is ProfileSideEffect.BearerFlagRequested -> onBearerFlagRequested(sideEffect.flag, sideEffect.opensBoard)
         }
@@ -119,6 +122,7 @@ fun ProfileScreen(
         onBrowseFestivalsTapped = viewModel::onBrowseFestivalsTapped,
         onPackTapped = viewModel::onPackTapped,
         onBearerEntryTapped = viewModel::onBearerEntryTapped,
+        onBearerFlagsRetryTapped = onBearerFlagsRetryTapped,
         onBearerFlagTapped = viewModel::onBearerFlagTapped,
     )
 }
@@ -134,6 +138,7 @@ fun ProfileContent(
     onBrowseFestivalsTapped: () -> Unit = {},
     onPackTapped: (String) -> Unit = {},
     onBearerEntryTapped: () -> Unit = {},
+    onBearerFlagsRetryTapped: () -> Unit = {},
     onBearerFlagTapped: (String, Boolean) -> Unit = { _, _ -> },
 ) {
     Column(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
@@ -166,6 +171,7 @@ fun ProfileContent(
                     state = state,
                     onEntryTapped = onBearerEntryTapped,
                     onFlagTapped = onBearerFlagTapped,
+                    onRetryTapped = onBearerFlagsRetryTapped,
                 )
             }
             ReceivedPacks(
@@ -183,9 +189,18 @@ private fun BearerSection(
     state: ProfileState,
     onEntryTapped: () -> Unit,
     onFlagTapped: (String, Boolean) -> Unit,
+    onRetryTapped: () -> Unit,
 ) {
+    if (state.bearerFlagsLoadFailed) {
+        Text(
+            text = "기수 정보를 불러오지 못했어요. 다시 시도해 주세요.",
+            style = FestiCoreTextStyle.baseFootnoteRegular.textStyle,
+            color = FestiCoreSemanticColor.statusNegative.color,
+            modifier = Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onRetryTapped),
+        )
+    }
     if (state.bearerFlags.isEmpty()) {
-        FCBearerPrompt(sub = "깃발 프로필을 만들면 바로 기수로 시작해요", onClick = onEntryTapped)
+        if (!state.bearerFlagsLoadFailed) FCBearerPrompt(sub = "깃발 프로필을 만들면 바로 기수로 시작해요", onClick = onEntryTapped)
         return
     }
     val flag = state.bearerFlags.first()

@@ -3,6 +3,7 @@ package io.festicore.app.navigation.maintab
 import android.app.Application
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.domain.bearer.testing.FakeBearerUseCase
 import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDetail

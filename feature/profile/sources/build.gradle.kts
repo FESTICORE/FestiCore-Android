@@ -17,4 +17,5 @@ dependencies {
     implementation(project(":ui:designkit"))
     implementation(project(":ui:sharedui"))
     implementation(libs.lib("compose-foundation"))
+    testImplementation(testFixtures(project(":domain:bearer:interface")))
 }

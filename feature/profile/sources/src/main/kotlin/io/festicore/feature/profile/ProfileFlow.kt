@@ -83,6 +83,8 @@ fun rememberProfileFlowEntries(
     onRefreshRequested: () -> Unit,
     onNicknameUpdated: (AuthUser) -> Unit,
     onBearerEntryRequested: () -> Unit = {},
+    onBearerFlagsRetryTapped: () -> Unit = {},
+    onBearerFlagsLoadFailed: () -> Unit = {},
     onBearerFlagRequested: (BearerOwnedFlag, Boolean) -> Unit = { _, _ -> },
     bearerEntryContent: @Composable () -> Unit = {},
     legalDocument: @Composable (page: WebPage, onBack: () -> Unit) -> Unit,
@@ -113,6 +115,8 @@ fun rememberProfileFlowEntries(
                         onPackDetailRequested = coordinator::onPackDetailRequested,
                         onSessionLost = coordinator::onSessionLost,
                         onBearerEntryRequested = onBearerEntryRequested,
+                        onBearerFlagsRetryTapped = onBearerFlagsRetryTapped,
+                        onBearerFlagsLoadFailed = onBearerFlagsLoadFailed,
                         onBearerFlagRequested = onBearerFlagRequested,
                     )
                 }

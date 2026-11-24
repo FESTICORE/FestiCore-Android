@@ -31,6 +31,8 @@ import io.festicore.app.navigation.maintab.MainTabScreen
 import io.festicore.app.navigation.splash.LaunchTransitions
 import io.festicore.app.navigation.splash.RootScreen
 import io.festicore.app.navigation.splash.SplashScreen
+import io.festicore.core.logger.FestiCoreLogCategory
+import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardPreferenceUseCase
@@ -62,6 +64,7 @@ import io.festicore.feature.timetable.main.TimetableViewModel
 import io.festicore.feature.timetable.rememberTimetableFlowEntries
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -234,6 +237,10 @@ private fun HomeWithCovers(
                 profileBearerRoute = BearerRoute.Register()
                 profileCoordinator.onBearerEntryRequested()
             },
+            onBearerFlagsRetryTapped = profileViewModel::onBearerFlagsRetryTapped,
+            onBearerFlagsLoadFailed = {
+                FestiCoreLogger.error("기수 목록 조회 실패", FestiCoreLogCategory.NETWORK)
+            },
             onBearerFlagRequested = { flag, opensBoard ->
                 profileBearerRoute =
                     if (opensBoard) {
@@ -250,7 +257,16 @@ private fun HomeWithCovers(
                         viewerUserId = accountId,
                         onRegistered = { festivalId ->
                             coroutineScope.launch {
-                                runCatching { liveBoardPreferenceUseCase.saveSelectedFestivalId(festivalId) }
+                                try {
+                                    liveBoardPreferenceUseCase.saveSelectedFestivalId(festivalId)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    FestiCoreLogger.error(
+                                        "기수 등록 축제 선택 저장 실패: ${e::class.simpleName}",
+                                        FestiCoreLogCategory.STORAGE,
+                                    )
+                                }
                             }
                         },
                         onPackRequested = { festivalId ->

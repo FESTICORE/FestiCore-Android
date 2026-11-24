@@ -44,6 +44,7 @@ class ProfileViewModel(
                 account = account,
                 bearerFlags = if (hasAccount && !changedAccount) state.bearerFlags else emptyList(),
                 bearerFlagsLoaded = if (hasAccount && !changedAccount) state.bearerFlagsLoaded else false,
+                bearerFlagsLoadFailed = false,
             )
         }
         if (shouldFetchBearerFlags) fetchBearerFlags()
@@ -78,6 +79,8 @@ class ProfileViewModel(
 
     /** 기수 흐름을 닫으면 새로 등록 · 인증한 깃발을 다시 읽는다(iOS `bearerEntryClosed`). */
     fun onBearerEntryClosed() = intent { fetchBearerFlags() }
+
+    fun onBearerFlagsRetryTapped() = intent { fetchBearerFlags() }
 
     fun onBearerFlagTapped(flagId: String, opensBoard: Boolean) = intent {
         val flag = state.bearerFlags.firstOrNull { it.id == flagId } ?: return@intent
@@ -128,17 +131,18 @@ class ProfileViewModel(
 
     private suspend fun fetchBearerFlags() = subIntent {
         if (state.bearerFlagsLoading) return@subIntent
-        reduce { state.copy(bearerFlagsLoading = true) }
+        reduce { state.copy(bearerFlagsLoading = true, bearerFlagsLoadFailed = false) }
         val flags =
             try {
                 bearerUseCase.fetchBearerFlags(null).filterNot { it.isHidden }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                reduce { state.copy(bearerFlagsLoading = false, bearerFlagsLoaded = true) }
+                reduce { state.copy(bearerFlagsLoading = false, bearerFlagsLoaded = true, bearerFlagsLoadFailed = true) }
+                postSideEffect(ProfileSideEffect.BearerFlagsLoadFailed)
                 return@subIntent
             }
-        reduce { state.copy(bearerFlags = flags, bearerFlagsLoading = false, bearerFlagsLoaded = true) }
+        reduce { state.copy(bearerFlags = flags, bearerFlagsLoading = false, bearerFlagsLoaded = true, bearerFlagsLoadFailed = false) }
     }
 
     private suspend fun fetchPackChanges(festivalId: String, fromVersion: Int) = subIntent {
