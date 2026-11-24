@@ -8,7 +8,7 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.google.GoogleSignInClient
-import io.festicore.domain.auth.sources.ActivityProvider
+import io.festicore.domain.auth.sources.google.ActivityProvider
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 

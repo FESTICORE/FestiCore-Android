@@ -1,10 +1,13 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.sources.service.FestivalCatalogServiceError
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalDetailRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalListRequest
+import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
+import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
@@ -37,13 +40,21 @@ class FestivalCatalogServiceTest {
 
     /** [pages]: 요청한 after(첫 쪽은 null) → (축제 ID 목록, 다음 커서). 없는 커서는 500. */
     private fun service(pages: suspend (String?) -> Pair<List<String>, String?>?) = NetworkFestivalCatalogService(
-        api = FestivalRequest(
+        api = FestivalListRequest(
             createFestiCoreHttpClient(
                 baseUrl = "https://example.test/",
                 engine = MockEngine { request ->
                     requests += request
                     val page = pages(request.url.parameters["after"]) ?: return@MockEngine respondError(HttpStatusCode.InternalServerError)
                     respond(pageJson(page.first, page.second), headers = headersOf(HttpHeaders.ContentType, "application/json"))
+                },
+            ),
+        ),
+        detailApi = FestivalDetailRequest(
+            createFestiCoreHttpClient(
+                baseUrl = "https://example.test/",
+                engine = MockEngine {
+                    respondError(HttpStatusCode.InternalServerError)
                 },
             ),
         ),

@@ -1,8 +1,8 @@
 package io.festicore.domain.festival.sources
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDocument
@@ -11,7 +11,7 @@ import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.model.mapper.toDomain
 import io.festicore.domain.festival.sources.packdetail.FestivalPackDetailUseCaseImpl
 import io.festicore.domain.festival.sources.repository.FestivalPackChangesRepositoryImpl
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.festival.FestivalPackRequest
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackSyncError
 import io.festicore.service.pack.PackSyncResult
@@ -46,7 +46,7 @@ class FestivalPackDetailUseCaseTest {
         packRepository = service.repository(),
         catalogRepository = catalog,
         changesRepository = FestivalPackChangesRepositoryImpl(
-            FestivalRequest(
+            FestivalPackRequest(
                 createFestiCoreHttpClient(
                     baseUrl = "https://festicore.test/",
                     engine = MockEngine { request ->

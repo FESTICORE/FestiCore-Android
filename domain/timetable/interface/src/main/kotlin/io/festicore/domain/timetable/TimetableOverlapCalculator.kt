@@ -1,5 +1,10 @@
 package io.festicore.domain.timetable
 
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableSetOverlap
+
 /** 내 일정 겹침 계산. iOS `TimetableFeature.State.overlaps` · `overlaps(of:in:)` · `SchedulePickFeature.State.overlap(of:)`. */
 interface TimetableOverlapCalculator {
     /** [day]의 공연이 낀 내 일정끼리의 겹침 구간([day] 0시부터의 분). 자정을 넘겨 다음 날 공연과 겹치는 구간도 포함한다. */

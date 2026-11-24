@@ -1,6 +1,6 @@
 package io.festicore.service.pack.di
 
-import io.festicore.core.network.createFestiCoreWebSocketClient
+import io.festicore.core.network.websocket.createFestiCoreWebSocketClient
 import io.festicore.service.pack.NetworkPackSyncService
 import io.festicore.service.pack.PackCache
 import io.festicore.service.pack.PackSyncService

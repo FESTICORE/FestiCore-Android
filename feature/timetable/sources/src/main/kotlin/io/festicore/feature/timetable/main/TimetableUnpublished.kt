@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.timetable.TimetableLineupDay
+import io.festicore.domain.timetable.entity.TimetableLineupDay
 import io.festicore.feature.timetable.TimetablePushGate
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButtonStyle

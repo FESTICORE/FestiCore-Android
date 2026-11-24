@@ -1,8 +1,8 @@
 package io.festicore.service.pack
 
-import io.festicore.core.network.FestiCoreWebSocket
-import io.festicore.core.network.FestiCoreWebSocketClient
-import io.festicore.core.network.WebSocketError
+import io.festicore.core.network.websocket.FestiCoreWebSocket
+import io.festicore.core.network.websocket.FestiCoreWebSocketClient
+import io.festicore.core.network.websocket.WebSocketError
 import io.festicore.service.api.festival.FestivalApi
 import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException

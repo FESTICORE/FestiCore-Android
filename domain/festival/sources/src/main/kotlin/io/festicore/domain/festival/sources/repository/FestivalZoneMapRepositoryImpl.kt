@@ -3,10 +3,10 @@ package io.festicore.domain.festival.sources.repository
 import io.festicore.domain.festival.sources.model.dto.FestivalPackVersionDto
 import io.festicore.domain.festival.sources.model.mapper.mapLiveBoardErrors
 import io.festicore.domain.festival.zonemap.FestivalZoneMapRepository
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.festival.FestivalPackRequest
 
 /** 현재 발행 팩의 지도 버전 조회. 인증 없음, 재시도 없음. 실패는 [io.festicore.domain.festival.entity.FestivalLiveBoardError]. iOS `FestivalZoneMapRepositoryImpl`. */
-internal class FestivalZoneMapRepositoryImpl(private val api: FestivalRequest) : FestivalZoneMapRepository {
+internal class FestivalZoneMapRepositoryImpl(private val api: FestivalPackRequest) : FestivalZoneMapRepository {
     override suspend fun latestMapVersion(festivalId: String): String? =
         mapLiveBoardErrors { api.packVersion(festivalId, FestivalPackVersionDto.serializer()).mapVersion }
 }

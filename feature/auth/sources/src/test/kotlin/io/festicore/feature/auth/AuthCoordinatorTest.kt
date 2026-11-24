@@ -1,5 +1,6 @@
 package io.festicore.feature.auth
 
+import io.festicore.feature.auth.signup.LegalDocument
 import io.festicore.feature.web.WebPage
 import kotlinx.coroutines.test.runTest
 import org.junit.Test

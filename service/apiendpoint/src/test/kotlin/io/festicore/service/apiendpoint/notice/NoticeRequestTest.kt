@@ -1,6 +1,6 @@
 package io.festicore.service.apiendpoint.notice
 
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.service.api.base.BearerAuthorizationKey
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond

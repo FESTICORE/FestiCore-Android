@@ -1,7 +1,7 @@
 package io.festicore.service.apiendpoint.notice
 
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.festiCoreRequest
+import io.festicore.core.network.endpoint.festiCoreRequest
+import io.festicore.core.network.error.NetworkError
 import io.festicore.service.api.notice.NoticeApi
 import io.ktor.client.HttpClient
 import io.ktor.client.request.url

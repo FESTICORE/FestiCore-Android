@@ -2,6 +2,7 @@ package io.festicore.feature.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
+import io.festicore.feature.auth.signup.LegalDocument
 import io.festicore.feature.web.WebPage
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer

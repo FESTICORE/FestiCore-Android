@@ -8,7 +8,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 - 클라이언트는 `createFestiCoreHttpClient(baseUrl, engine, json, configure)`로 만든다. `baseUrl`은 app이 `BuildConfig.BASE_URL`(끝이 `/`)로 넘기고, 요청 경로는 앞 `/` 없이 쓴다(`api/v1/me`). 인증 플러그인은 `configure`로 붙인다.
 - 요청은 `HttpClient.festiCoreRequest<T> { ... }`로 보낸다. 서버 응답 래퍼 `{code, message, data}`에서 `code == "SUCCESS"`일 때 `data`를 돌려준다.
 - 실패는 `NetworkError`를 던진다.
-- 상태 코드 · 헤더를 직접 봐야 하는 요청(ETag · 304 · 429)은 `HttpClient.festiCoreExchange(block, handle)`로 보내고 `handle`에서 응답을 읽는다. 전송 · 해석 실패는 같은 `NetworkError`로 바뀐다(예: `FestivalRequest.live`).
+- 상태 코드 · 헤더를 직접 봐야 하는 요청(ETag · 304 · 429)은 `HttpClient.festiCoreExchange(block, handle)`로 보내고 `handle`에서 응답을 읽는다. 전송 · 해석 실패는 같은 `NetworkError`로 바뀐다(예: `FestivalLiveBoardRequest.live`).
 
 | 상황                              | 오류                                                              |
 | --------------------------------- | ----------------------------------------------------------------- |

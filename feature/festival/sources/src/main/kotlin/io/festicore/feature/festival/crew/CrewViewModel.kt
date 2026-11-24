@@ -11,7 +11,7 @@ import io.festicore.domain.festival.entity.FestivalCrewInviteCode
 import io.festicore.domain.festival.entity.FestivalCrewState
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
 import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
-import io.festicore.feature.festival.crewgather.CrewGatherInput
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherInput
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration

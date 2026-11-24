@@ -1,8 +1,8 @@
 package io.festicore.service.pack
 
 import android.app.Application
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.WebSocketError
+import io.festicore.core.network.error.NetworkError
+import io.festicore.core.network.websocket.WebSocketError
 import java.io.File
 import java.io.IOException
 import kotlin.time.Duration.Companion.seconds

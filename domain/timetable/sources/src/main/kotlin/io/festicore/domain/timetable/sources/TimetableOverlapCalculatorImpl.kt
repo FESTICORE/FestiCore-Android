@@ -1,12 +1,12 @@
 package io.festicore.domain.timetable.sources
 
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableInterval
-import io.festicore.domain.timetable.TimetableOverlap
 import io.festicore.domain.timetable.TimetableOverlapCalculator
 import io.festicore.domain.timetable.TimetablePickOverlap
-import io.festicore.domain.timetable.TimetableSet
-import io.festicore.domain.timetable.TimetableSetOverlap
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableInterval
+import io.festicore.domain.timetable.entity.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableSetOverlap
 import java.time.Duration
 import kotlin.math.roundToLong
 

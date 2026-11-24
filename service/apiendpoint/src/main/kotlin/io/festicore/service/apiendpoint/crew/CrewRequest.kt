@@ -1,7 +1,7 @@
 package io.festicore.service.apiendpoint.crew
 
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.festiCoreRequest
+import io.festicore.core.network.endpoint.festiCoreRequest
+import io.festicore.core.network.error.NetworkError
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.api.base.bearerAuthorization
 import io.festicore.service.api.crew.CrewApi

@@ -33,7 +33,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
-import io.festicore.domain.timetable.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableDay
 import io.festicore.feature.timetable.SchedulePickResult
 import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailSheet

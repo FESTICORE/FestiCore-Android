@@ -1,7 +1,7 @@
 package io.festicore.domain.festival.sources.request
 
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.sources.model.dto.FlagDetailDto
 import io.festicore.domain.festival.sources.model.dto.FlagFollowDto
 import io.festicore.domain.festival.sources.model.dto.FlagReportDto

@@ -4,7 +4,7 @@ import io.festicore.domain.auth.auth.AuthRepository
 import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.domain.auth.google.GoogleLoginUseCase
 import io.festicore.domain.auth.google.GoogleSignInClient
-import io.festicore.domain.auth.sources.CurrentUserStore
+import io.festicore.domain.auth.sources.auth.CurrentUserStore
 import io.festicore.domain.auth.sources.google.CredentialManagerGoogleSignInClient
 import io.festicore.domain.auth.sources.google.GoogleLoginUseCaseImpl
 import io.festicore.domain.auth.sources.repository.AuthRepositoryImpl

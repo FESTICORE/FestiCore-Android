@@ -1,8 +1,8 @@
 package io.festicore.feature.timetable.schedulepick
 
-import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetablePickOverlap
-import io.festicore.domain.timetable.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableSet
 import io.festicore.feature.timetable.SchedulePickResult
 import java.time.Instant
 

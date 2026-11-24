@@ -1,6 +1,8 @@
 package io.festicore.domain.timetable
 
 import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableLineupDay
 /**
  * 팩 문서 → 시간표. 규칙은 `domain/timetable/.spec/timetable-mapping.md`.
  * iOS `App/Sources/Navigation/MainTab/FestivalPackTimetableMapper.swift`(Android는 app에 로직을 두지 않아 domain으로 옮겼다, 설계 T3).

@@ -1,6 +1,6 @@
 package io.festicore.service.auth.di
 
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.service.apiendpoint.auth.AuthRequest
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.auth.AuthSessionImpl

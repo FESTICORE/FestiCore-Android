@@ -1,17 +1,17 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.sources.model.dto.FestivalOfficialNewsDto
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.domain.festival.sources.service.FestivalOfficialNewsService
 import io.festicore.domain.festival.sources.service.isValidFestivalId
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.festivalcatalog.endpoint.FestivalOfficialNewsRequest
 
 /**
  * 축제 공식 인스타그램 최근 게시물(서버가 5분마다 받아 둔 것). 인증 없음. iOS `NetworkFestivalOfficialNewsService`.
  * 해석 실패 · 다른 축제 응답은 [FestivalLiveBoardServiceError.InvalidResponse], 그 밖은 [NetworkError].
  */
-class NetworkFestivalOfficialNewsService(private val api: FestivalRequest) : FestivalOfficialNewsService {
+class NetworkFestivalOfficialNewsService(private val api: FestivalOfficialNewsRequest) : FestivalOfficialNewsService {
     override suspend fun officialNews(festivalId: String): FestivalOfficialNewsDto {
         if (!festivalId.isValidFestivalId()) throw FestivalLiveBoardServiceError.InvalidFestivalId()
         val news = try {

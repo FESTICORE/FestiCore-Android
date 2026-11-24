@@ -1,7 +1,7 @@
 package io.festicore.service.pack
 
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.WebSocketError
+import io.festicore.core.network.error.NetworkError
+import io.festicore.core.network.websocket.WebSocketError
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 
@@ -72,43 +72,4 @@ interface PackSyncService {
 
     /** 변경을 계속 따라간다. 연결이 끊기면 `Reconnecting`을 알리고 저장된 ETag로 다시 요청한다. 전송 실패가 아닌 오류는 흐름을 끝낸다. */
     fun updates(festivalId: String): Flow<PackSyncResult>
-}
-
-/** 팩 동기화 실패 이유. iOS `PackSyncError`. */
-sealed class PackSyncError(message: String? = null) : Exception(message) {
-    /** 앱 서버 주소가 없거나 wss로 바꿀 수 없다. */
-    class Unconfigured : PackSyncError()
-
-    class InvalidFestivalId : PackSyncError()
-
-    class InvalidMessage : PackSyncError()
-
-    class InvalidPack : PackSyncError()
-
-    class InvalidChunk : PackSyncError()
-
-    /** 응답 대기(15초) 시간 초과. */
-    class Timeout : PackSyncError()
-
-    class PackTooLarge : PackSyncError()
-
-    /** 응답을 기다리는 동안 팩이 지워졌다. */
-    class PackDeleted : PackSyncError()
-
-    /** `pack.error`의 `code`(예: `PACK_BUSY` · `FESTIVAL_NOT_FOUND`). */
-    class Server(val code: String) : PackSyncError(code)
-
-    companion object {
-        /** 연결 · 전송 실패나 응답 시간 초과인지. 감시 재접속과 도메인의 오프라인 판단이 함께 쓴다. iOS `isTransportFailure`. */
-        fun isTransportFailure(error: Throwable): Boolean = when (error) {
-            is Timeout,
-            is WebSocketError.Closed,
-            is WebSocketError.HandshakeRejected,
-            is NetworkError.Offline,
-            is NetworkError.Timeout,
-            -> true
-
-            else -> false
-        }
-    }
 }

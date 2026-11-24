@@ -12,15 +12,15 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.feature.festival.common.FestivalTransitions
+import io.festicore.feature.festival.crew.CrewJoinScreen
 import io.festicore.feature.festival.crew.CrewScreen
-import io.festicore.feature.festival.crewcreate.CrewCreateScreen
-import io.festicore.feature.festival.crewjoin.CrewJoinScreen
 import io.festicore.feature.festival.festivallist.FestivalListScreen
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.festivallist.ListForegroundEffect
 import io.festicore.feature.festival.flag.FlagBoard
 import io.festicore.feature.festival.liveboard.LiveBoardScreen
 import io.festicore.feature.festival.liveboard.LiveBoardViewModel
+import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateScreen
 import io.festicore.feature.festival.notificationinbox.NotificationInboxScreen
 import io.festicore.feature.festival.zonemap.ZoneMapScreen
 import kotlinx.coroutines.flow.distinctUntilChanged

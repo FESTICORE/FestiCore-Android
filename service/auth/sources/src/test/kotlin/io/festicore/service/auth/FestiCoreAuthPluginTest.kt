@@ -1,6 +1,6 @@
 package io.festicore.service.auth
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.error.NetworkError
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.apiendpoint.auth.AuthLoginBody
 import io.festicore.service.apiendpoint.auth.AuthRequest

@@ -1,8 +1,8 @@
 package io.festicore.feature.timetable.main
 
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableLineupDay
-import io.festicore.domain.timetable.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableLineupDay
+import io.festicore.domain.timetable.entity.TimetableOverlap
 import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailState
 import java.time.Instant

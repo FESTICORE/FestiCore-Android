@@ -1,7 +1,7 @@
 package io.festicore.feature.timetable.setlist
 
 import androidx.lifecycle.ViewModel
-import io.festicore.domain.timetable.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableDay
 import io.festicore.feature.timetable.TimetableSetListMode
 import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost

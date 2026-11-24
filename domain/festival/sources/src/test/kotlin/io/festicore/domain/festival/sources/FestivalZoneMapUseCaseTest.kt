@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.domain.festival.catalog.FestivalCatalogRepository
 import io.festicore.domain.festival.entity.FestivalCatalogItem
 import io.festicore.domain.festival.entity.FestivalCatalogPage
@@ -10,7 +10,7 @@ import io.festicore.domain.festival.sources.pack.FestivalPackUseCaseImpl
 import io.festicore.domain.festival.sources.repository.FestivalPackRepositoryImpl
 import io.festicore.domain.festival.sources.repository.FestivalZoneMapRepositoryImpl
 import io.festicore.domain.festival.sources.zonemap.FestivalZoneMapUseCaseImpl
-import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.apiendpoint.festival.FestivalPackRequest
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackDownloadEvent as ServiceEvent
 import io.festicore.service.pack.PackSyncResult as ServiceResult
@@ -37,7 +37,7 @@ class FestivalZoneMapUseCaseTest {
     private var versionBody =
         """{"code":"SUCCESS","data":{"packVersion":9,"packUpdatedAt":"2026-11-08T00:00:00Z","etag":"\"cdm7-v9\"",""" +
             """"mapVersion":"zm-new"}}"""
-    private val api = FestivalRequest(
+    private val api = FestivalPackRequest(
         createFestiCoreHttpClient(
             baseUrl = "https://example.test/",
             engine = MockEngine { request ->

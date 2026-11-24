@@ -9,10 +9,10 @@ import io.festicore.domain.festival.entity.FestivalScheduleSaved
 import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
 import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableLineupDay
 import io.festicore.domain.timetable.TimetableOverlapCalculator
-import io.festicore.domain.timetable.TimetableSetDetail
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableLineupDay
+import io.festicore.domain.timetable.entity.TimetableSetDetail
 import io.festicore.feature.timetable.SchedulePickResult
 import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailContent

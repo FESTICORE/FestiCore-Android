@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.receivedpack.FestivalWiFiStatus
 import io.festicore.domain.festival.sources.receivedpack.FestivalReceivedPackUseCaseImpl
 import java.io.IOException

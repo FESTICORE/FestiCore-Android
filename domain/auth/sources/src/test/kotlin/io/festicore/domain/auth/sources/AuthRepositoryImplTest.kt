@@ -1,5 +1,5 @@
 package io.festicore.domain.auth.sources
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.core.storage.secure.SecureStorage
 import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.sources.repository.AuthRepositoryImpl

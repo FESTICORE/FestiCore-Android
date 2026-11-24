@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.entity.FestivalCrewError
 import io.festicore.service.api.base.AuthSessionError
 import kotlin.coroutines.cancellation.CancellationException

@@ -2,13 +2,13 @@ package io.festicore.feature.timetable.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableLineupArtist
-import io.festicore.domain.timetable.TimetableLineupDay
-import io.festicore.domain.timetable.TimetableOverlap
 import io.festicore.domain.timetable.TimetablePickOverlap
-import io.festicore.domain.timetable.TimetableSet
-import io.festicore.domain.timetable.TimetableStage
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableLineupArtist
+import io.festicore.domain.timetable.entity.TimetableLineupDay
+import io.festicore.domain.timetable.entity.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableStage
 import io.festicore.feature.timetable.TimetableSetListMode
 import io.festicore.feature.timetable.schedulepick.SchedulePickContent
 import io.festicore.feature.timetable.schedulepick.SchedulePickState

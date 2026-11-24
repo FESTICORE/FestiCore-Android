@@ -21,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import io.festicore.feature.web.policy.WebNavigationPolicy
 
 /**
  * `android.webkit.WebView` 래퍼(iOS `WebRepresentableView`). 로드 시도([loadId])마다 웹뷰와 클라이언트를 새로 만들어,
