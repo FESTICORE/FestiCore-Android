@@ -14,6 +14,13 @@ sealed interface FestivalRoute : NavKey {
     @Serializable
     data class LiveBoard(val festivalId: String) : FestivalRoute
 
+    /** 기수 보드(iOS `BearerRoute.Board`). 라이브 보드의 기수 행에서 연다. */
+    @Serializable
+    data class BearerBoard(
+        val festivalId: String,
+        val flagId: String,
+    ) : FestivalRoute
+
     /** S06 존 지도(iOS `zoneMap`). 보드 크루 카드의 존 칩에서 연다. [zoneId]는 처음 고를 존. 라이브 상태는 화면이 다시 읽는다(설계 E3). */
     @Serializable
     data class ZoneMap(

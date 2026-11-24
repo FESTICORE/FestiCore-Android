@@ -1,5 +1,6 @@
 package io.festicore.feature.profile.main
 
+import io.festicore.domain.bearer.entity.BearerOwnedFlag
 import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.feature.profile.AccountState
 
@@ -13,6 +14,9 @@ import io.festicore.feature.profile.AccountState
 data class ProfileState(
     val account: AccountState = AccountState(),
     val packs: List<FestivalReceivedPack> = emptyList(),
+    val bearerFlags: List<BearerOwnedFlag> = emptyList(),
+    val bearerFlagsLoading: Boolean = false,
+    val bearerFlagsLoaded: Boolean = false,
     val packChangedSets: Map<String, Int> = emptyMap(),
     val packLoad: ProfilePackLoad = ProfilePackLoad.Idle,
 ) {
@@ -51,6 +55,15 @@ sealed interface ProfileSideEffect {
     data class PackDetailRequested(
         val festivalId: String,
         val title: String,
+    ) : ProfileSideEffect
+
+    /** 새 깃발 등록 흐름을 연다. */
+    data object BearerEntryRequested : ProfileSideEffect
+
+    /** 내 깃발의 프로필 또는 보드를 연다. */
+    data class BearerFlagRequested(
+        val flag: BearerOwnedFlag,
+        val opensBoard: Boolean,
     ) : ProfileSideEffect
 
     /** 세션이 있다가 없어졌다. 계정 화면이 열려 있으면 Coordinator가 설정 홈째 닫는다(iOS `PF:211-216`). */

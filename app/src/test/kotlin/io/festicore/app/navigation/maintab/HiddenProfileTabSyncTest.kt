@@ -65,7 +65,14 @@ class HiddenProfileTabSyncTest {
         val signedIn = AccountState(hasSession = true)
         val account = MutableStateFlow(signedIn)
         val coordinator = ProfileCoordinator(FakeCurrentUserProvider())
-        val profileViewModel = ProfileViewModel(signedIn, NoPacks, NoPackDetail, PreviewAnalyticsUseCase)
+        val profileViewModel =
+            ProfileViewModel(
+                signedIn,
+                NoPacks,
+                NoPackDetail,
+                PreviewAnalyticsUseCase,
+                FakeBearerUseCase(onFetchBearerFlags = { emptyList() }),
+            )
         composeRule.setContent {
             rememberProfileFlowEntries(
                 account = account,

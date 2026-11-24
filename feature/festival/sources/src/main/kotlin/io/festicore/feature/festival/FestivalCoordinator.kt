@@ -47,7 +47,8 @@ data class FestivalCoordinatorState(
                 // 크루 · 만들기 · 참여 확인은 아래 고정 영역이 있어 탭 바 없이 보인다(iOS `isCrewOnTop`).
                 top is FestivalRoute.Crew ||
                 top is FestivalRoute.CrewCreate ||
-                top is FestivalRoute.CrewJoin
+                top is FestivalRoute.CrewJoin ||
+                top is FestivalRoute.BearerBoard
         }
 }
 
@@ -164,8 +165,15 @@ class FestivalCoordinator(
             is LiveBoardBoundary.PackDirections ->
                 postSideEffect(FestivalCoordinatorSideEffect.PackDirectionsRequested(boundary.festivalId, boundary.title))
 
-            is LiveBoardBoundary.Bearer -> reduce { state.copy(lastBoundary = boundary) }
+            is LiveBoardBoundary.Bearer -> onBearerBoardRequested(boundary.festivalId, boundary.flagId)
         }
+    }
+
+    /** 라이브 보드에서 기수 행을 눌렀다. 같은 보드는 중복으로 쌓지 않는다. */
+    fun onBearerBoardRequested(festivalId: String, flagId: String) = intent {
+        val route = FestivalRoute.BearerBoard(festivalId, flagId)
+        if (route in state.routes) return@intent
+        reduce { state.copy(routes = state.routes + route) }
     }
 
     /** 만들기 · 크루 화면의 뒤로 · 닫기(iOS `crewCreate(.delegate(.closeRequested))` · `crew(.delegate(.backRequested))`). */
@@ -296,7 +304,8 @@ class FestivalCoordinator(
                         it is FestivalRoute.ZoneMap ||
                             it is FestivalRoute.NotificationInbox ||
                             it is FestivalRoute.Crew ||
-                            it is FestivalRoute.CrewCreate
+                            it is FestivalRoute.CrewCreate ||
+                            it is FestivalRoute.BearerBoard
                     },
                 pendingBoardFestivalId = null,
             )

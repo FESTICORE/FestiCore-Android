@@ -13,6 +13,7 @@ import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.festicore.domain.auth.entity.AuthUser
+import io.festicore.domain.bearer.entity.BearerOwnedFlag
 import io.festicore.feature.profile.account.AccountSettingsScreen
 import io.festicore.feature.profile.appearance.AppearanceSettingsScreen
 import io.festicore.feature.profile.main.ProfileScreen
@@ -81,6 +82,9 @@ fun rememberProfileFlowEntries(
     onWithdrawRequested: () -> Unit,
     onRefreshRequested: () -> Unit,
     onNicknameUpdated: (AuthUser) -> Unit,
+    onBearerEntryRequested: () -> Unit = {},
+    onBearerFlagRequested: (BearerOwnedFlag, Boolean) -> Unit = { _, _ -> },
+    bearerEntryContent: @Composable () -> Unit = {},
     legalDocument: @Composable (page: WebPage, onBack: () -> Unit) -> Unit,
     coordinator: ProfileCoordinator = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel { parametersOf(account.value) },
@@ -108,6 +112,8 @@ fun rememberProfileFlowEntries(
                         onSettingsRequested = coordinator::onSettingsRequested,
                         onPackDetailRequested = coordinator::onPackDetailRequested,
                         onSessionLost = coordinator::onSessionLost,
+                        onBearerEntryRequested = onBearerEntryRequested,
+                        onBearerFlagRequested = onBearerFlagRequested,
                     )
                 }
                 entry<ProfileRoute.PackDetail> { key ->
@@ -164,6 +170,7 @@ fun rememberProfileFlowEntries(
                     )
                 }
                 entry<ProfileRoute.LegalDocument> { key -> legalDocument(key.page, coordinator::goBack) }
+                entry<ProfileRoute.BearerEntry> { bearerEntryContent() }
             },
     )
 }

@@ -71,7 +71,14 @@ class ProfileViewModelTest {
         detail: FakePackDetailUseCase = FakePackDetailUseCase(),
         account: AccountState = AccountState(),
         analytics: RecordingAnalyticsUseCase = RecordingAnalyticsUseCase(),
-    ) = ProfileViewModel(initialAccount = account, receivedPackUseCase = packs, packDetailUseCase = detail, analyticsUseCase = analytics)
+        bearerUseCase: FakeBearerUseCase = FakeBearerUseCase(onFetchBearerFlags = { emptyList() }),
+    ) = ProfileViewModel(
+        initialAccount = account,
+        receivedPackUseCase = packs,
+        packDetailUseCase = detail,
+        analyticsUseCase = analytics,
+        bearerUseCase = bearerUseCase,
+    )
 
     private val signedIn = AccountState(hasSession = true)
 

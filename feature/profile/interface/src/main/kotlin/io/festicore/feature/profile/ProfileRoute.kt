@@ -15,6 +15,10 @@ sealed interface ProfileRoute : NavKey {
     @Serializable
     data object Profile : ProfileRoute
 
+    /** app이 제공하는 기수 흐름 슬롯. feature끼리 직접 의존하지 않는다. */
+    @Serializable
+    data object BearerEntry : ProfileRoute
+
     /** 팩 상세(iOS `packDetail`). 받은 팩 행 · 라이브 보드 "가는 길"에서 연다. 탭 바를 보인다. */
     @Serializable
     data class PackDetail(

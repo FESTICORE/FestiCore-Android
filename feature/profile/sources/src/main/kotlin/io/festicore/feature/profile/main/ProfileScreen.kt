@@ -35,9 +35,12 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import io.festicore.domain.bearer.entity.BearerFlagLifecycle
+import io.festicore.domain.bearer.entity.BearerOwnedFlag
 import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.feature.profile.AccountState
 import io.festicore.ui.designkit.R
+import io.festicore.ui.designkit.component.action.FCBearerPrompt
 import io.festicore.ui.designkit.component.action.FCButton
 import io.festicore.ui.designkit.component.action.FCButtonSize
 import io.festicore.ui.designkit.component.action.FCButtonStyle
@@ -46,6 +49,7 @@ import io.festicore.ui.designkit.component.action.FCLoginButtonProvider
 import io.festicore.ui.designkit.component.card.FCCardAction
 import io.festicore.ui.designkit.component.card.FCEmptyCard
 import io.festicore.ui.designkit.component.layout.fcScrollBottomInset
+import io.festicore.ui.designkit.component.list.FCListRow
 import io.festicore.ui.designkit.component.list.FCPackRow
 import io.festicore.ui.designkit.component.navigation.FCTopBar
 import io.festicore.ui.designkit.component.navigation.FCTopBarStyle
@@ -87,6 +91,8 @@ fun ProfileScreen(
     onSettingsRequested: () -> Unit,
     onPackDetailRequested: (festivalId: String, title: String) -> Unit,
     onSessionLost: () -> Unit,
+    onBearerEntryRequested: () -> Unit,
+    onBearerFlagRequested: (flag: BearerOwnedFlag, opensBoard: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.collectAsState()
@@ -98,6 +104,8 @@ fun ProfileScreen(
             ProfileSideEffect.SettingsRequested -> onSettingsRequested()
             is ProfileSideEffect.PackDetailRequested -> onPackDetailRequested(sideEffect.festivalId, sideEffect.title)
             ProfileSideEffect.SessionLost -> onSessionLost()
+            ProfileSideEffect.BearerEntryRequested -> onBearerEntryRequested()
+            is ProfileSideEffect.BearerFlagRequested -> onBearerFlagRequested(sideEffect.flag, sideEffect.opensBoard)
         }
     }
     LaunchedEffect(viewModel, account) { viewModel.onAccountChanged(account) }
@@ -110,6 +118,8 @@ fun ProfileScreen(
         onPacksRetryTapped = viewModel::onPacksRetryTapped,
         onBrowseFestivalsTapped = viewModel::onBrowseFestivalsTapped,
         onPackTapped = viewModel::onPackTapped,
+        onBearerEntryTapped = viewModel::onBearerEntryTapped,
+        onBearerFlagTapped = viewModel::onBearerFlagTapped,
     )
 }
 
@@ -123,6 +133,8 @@ fun ProfileContent(
     onPacksRetryTapped: () -> Unit = {},
     onBrowseFestivalsTapped: () -> Unit = {},
     onPackTapped: (String) -> Unit = {},
+    onBearerEntryTapped: () -> Unit = {},
+    onBearerFlagTapped: (String, Boolean) -> Unit = { _, _ -> },
 ) {
     Column(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
         TopBar(onSettingsTapped = onSettingsTapped)
@@ -149,7 +161,13 @@ fun ProfileContent(
             verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP24),
         ) {
             if (state.showsLoginPrompt) LoginPrompt(onGoogleLoginTapped = onGoogleLoginTapped)
-            // 기수 카드 · 내 깃발 카드는 기수 흐름을 옮길 때까지 숨긴다(설계 쟁점 M7).
+            if ((state.account.hasSession || state.account.profile != null) && state.bearerFlagsLoaded) {
+                BearerSection(
+                    state = state,
+                    onEntryTapped = onBearerEntryTapped,
+                    onFlagTapped = onBearerFlagTapped,
+                )
+            }
             ReceivedPacks(
                 state = state,
                 onPacksRetryTapped = onPacksRetryTapped,
@@ -159,6 +177,57 @@ fun ProfileContent(
         }
     }
 }
+
+@Composable
+private fun BearerSection(
+    state: ProfileState,
+    onEntryTapped: () -> Unit,
+    onFlagTapped: (String, Boolean) -> Unit,
+) {
+    if (state.bearerFlags.isEmpty()) {
+        FCBearerPrompt(sub = "깃발 프로필을 만들면 바로 기수로 시작해요", onClick = onEntryTapped)
+        return
+    }
+    val flag = state.bearerFlags.first()
+    val festivalName = state.packs.firstOrNull { it.id == flag.festivalId }?.name
+    val lifecycle = flag.lifecycle?.profileTitle
+    val meta = listOfNotNull(festivalName, "팔로워 ${flag.profile.followerCount}", lifecycle).joinToString(" · ")
+    Column(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(FestiCoreRadius.r16))
+            .background(FestiCoreSemanticColor.backgroundElevated.color),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = FestiCoreSpacing.paddingP16, vertical = FestiCoreSpacing.paddingP12),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionTitle("내 깃발")
+            Spacer(modifier = Modifier.weight(1f))
+            Text("기수", style = FestiCoreTextStyle.baseFootnoteRegular.textStyle, color = FestiCoreSemanticColor.labelAssistive.color)
+        }
+        Box {
+            FCPackRow(name = flag.profile.name, meta = meta, onClick = { onFlagTapped(flag.id, false) })
+            flag.profile.thumbnailUrl?.let { url ->
+                FCRemoteImage(
+                    url = url,
+                    modifier = Modifier.align(Alignment.CenterStart).padding(start = FestiCoreSpacing.paddingP16)
+                        .size(PackThumbnailSize).clip(RoundedCornerShape(PackThumbnailRadius)).clearAndSetSemantics {},
+                )
+            }
+        }
+        RowDivider()
+        FCListRow(label = "기수 보드 열기", onClick = { onFlagTapped(flag.id, true) })
+        RowDivider()
+        FCListRow(label = "다른 페스티벌 깃발 만들기", onClick = onEntryTapped)
+    }
+}
+
+private val BearerFlagLifecycle.profileTitle: String
+    get() = when (this) {
+        BearerFlagLifecycle.Scheduled -> "예정"
+        BearerFlagLifecycle.Active -> "운영 중"
+        BearerFlagLifecycle.Resting -> "쉬는 중"
+        BearerFlagLifecycle.Ended -> "오늘 종료"
+    }
 
 /** Figma More: 오른쪽 위 설정 버튼(gear 24)이 설정 홈을 연다. iOS처럼 큰 상단 바 위에 겹쳐 그린다. */
 @Composable

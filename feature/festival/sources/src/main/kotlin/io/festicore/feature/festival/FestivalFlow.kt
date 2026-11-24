@@ -81,6 +81,7 @@ fun FestivalFlow(
 fun rememberFestivalFlowEntries(
     coordinator: FestivalCoordinator = koinViewModel(),
     listViewModel: FestivalListViewModel = koinViewModel(),
+    bearerBoardContent: @Composable (festivalId: String, flagId: String) -> Unit = { _, _ -> },
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val flowLifecycleOwner = LocalLifecycleOwner.current
@@ -124,6 +125,7 @@ fun rememberFestivalFlowEntries(
                         onPendingFestivalConsumed = coordinator::onPendingBoardFestivalConsumed,
                     )
                 }
+                entry<FestivalRoute.BearerBoard> { key -> bearerBoardContent(key.festivalId, key.flagId) }
                 entry<FestivalRoute.ZoneMap> { key ->
                     ZoneMapScreen(
                         viewModel = koinViewModel { parametersOf(key.festivalId, key.zoneId) },

@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":feature:auth:sources"))
     implementation(project(":feature:web:sources"))
     implementation(project(":feature:festival:sources"))
+    implementation(project(":feature:bearer:sources"))
     implementation(project(":feature:profile:sources"))
     implementation(project(":feature:timetable:sources"))
     implementation(project(":feature:featureassembly"))
