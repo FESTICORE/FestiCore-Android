@@ -2,15 +2,15 @@ package io.festicore.feature.festival.di
 
 import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.feature.festival.FestivalCoordinator
+import io.festicore.feature.festival.crew.CrewJoinViewModel
 import io.festicore.feature.festival.crew.CrewViewModel
-import io.festicore.feature.festival.crewcreate.CrewCreateViewModel
-import io.festicore.feature.festival.crewgather.CrewGatherViewModel
-import io.festicore.feature.festival.crewjoin.CrewJoinViewModel
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.flag.FlagCoordinator
 import io.festicore.feature.festival.flag.FlagViewModel
 import io.festicore.feature.festival.flagdetail.FlagDetailViewModel
 import io.festicore.feature.festival.liveboard.LiveBoardViewModel
+import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateViewModel
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherViewModel
 import io.festicore.feature.festival.notificationinbox.NotificationInboxViewModel
 import io.festicore.feature.festival.zonemap.ZoneMapViewModel
 import org.koin.core.module.dsl.viewModel

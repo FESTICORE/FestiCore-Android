@@ -7,8 +7,8 @@ import io.festicore.domain.festival.entity.FestivalCrewState
 import io.festicore.domain.festival.entity.FestivalIsoTime
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.entity.FestivalPackDocument
-import io.festicore.feature.festival.crewgather.CrewGatherInput
 import io.festicore.feature.festival.liveboard.LiveBoardPresentation
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherInput
 import java.time.Instant
 
 /** iOS `FestivalCrewFeature.Load`. */

@@ -4,8 +4,8 @@ import io.festicore.app.BuildConfig
 import io.festicore.app.application.MainActivityProvider
 import io.festicore.app.application.StoredAppearanceModeSettings
 import io.festicore.app.deeplink.AppDeeplinkBridge
-import io.festicore.app.navigation.AppCoordinator
-import io.festicore.app.navigation.MainTabCoordinator
+import io.festicore.app.navigation.main.AppCoordinator
+import io.festicore.app.navigation.maintab.MainTabCoordinator
 import io.festicore.core.coreassembly.coreModules
 import io.festicore.domain.auth.sources.ActivityProvider
 import io.festicore.domain.auth.sources.CurrentUserStore

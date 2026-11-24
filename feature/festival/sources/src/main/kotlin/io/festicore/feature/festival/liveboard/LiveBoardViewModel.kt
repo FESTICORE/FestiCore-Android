@@ -19,8 +19,8 @@ import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
 import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.domain.usernotification.entity.UserNotificationBadge
 import io.festicore.domain.usernotification.entity.UserNotificationBadgeUseCase
-import io.festicore.feature.festival.crewgather.CrewGatherInput
 import io.festicore.feature.festival.festivallist.FestivalListPresentation
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherInput
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration

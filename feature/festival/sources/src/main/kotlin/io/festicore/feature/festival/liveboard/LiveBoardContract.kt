@@ -9,8 +9,8 @@ import io.festicore.domain.festival.entity.FestivalOverview
 import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.festival.entity.PackDownloadProgress
 import io.festicore.domain.usernotification.entity.UserNotificationItem
-import io.festicore.feature.festival.crewgather.CrewGatherInput
 import io.festicore.feature.festival.festivallist.FestivalListPresentation
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherInput
 import java.time.Instant
 
 /** 선택 축제 팩 감시 상태. iOS `FestivalFeature.Connection`. */

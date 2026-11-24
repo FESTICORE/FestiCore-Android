@@ -6,14 +6,14 @@ import io.festicore.domain.festival.entity.FestivalCrew
 import io.festicore.domain.festival.entity.FestivalCrewInvite
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
 import io.festicore.domain.festival.entity.FestivalPackDocument
-import io.festicore.feature.festival.crewcreate.CrewCreateContent
-import io.festicore.feature.festival.crewcreate.CrewCreateState
-import io.festicore.feature.festival.crewcreate.CrewCreateStep
-import io.festicore.feature.festival.crewgather.CrewGatherContent
-import io.festicore.feature.festival.crewgather.CrewGatherState
-import io.festicore.feature.festival.crewjoin.CrewJoinContent
-import io.festicore.feature.festival.crewjoin.CrewJoinLoad
-import io.festicore.feature.festival.crewjoin.CrewJoinState
+import io.festicore.feature.festival.crew.CrewJoinContent
+import io.festicore.feature.festival.crew.CrewJoinLoad
+import io.festicore.feature.festival.crew.CrewJoinState
+import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateContent
+import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateState
+import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateStep
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherContent
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherState
 import java.time.Instant
 
 // 프리뷰 전용 가짜 값.

@@ -45,7 +45,7 @@ import androidx.lifecycle.ViewModel
 import io.festicore.domain.festival.entity.FestivalLiveBoardSchedule
 import io.festicore.domain.festival.entity.FestivalOverview
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardUseCase
-import io.festicore.feature.festival.crewgather.CrewGatherSheet
+import io.festicore.feature.festival.liveboard.crewgather.CrewGatherSheet
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButtonStyle
 import io.festicore.ui.designkit.component.card.FCCardAction

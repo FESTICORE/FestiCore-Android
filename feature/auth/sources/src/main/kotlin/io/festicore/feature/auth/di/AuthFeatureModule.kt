@@ -1,8 +1,8 @@
 package io.festicore.feature.auth.di
 
 import io.festicore.feature.auth.AuthCoordinator
-import io.festicore.feature.auth.LaunchLoginViewModel
-import io.festicore.feature.auth.SignUpViewModel
+import io.festicore.feature.auth.login.LaunchLoginViewModel
+import io.festicore.feature.auth.signup.SignUpViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
