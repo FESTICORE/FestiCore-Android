@@ -49,12 +49,8 @@ fun FlagFlow(
                 flagViewModel.onFollowChangedElsewhere(sideEffect.result, sideEffect.baseCount)
         }
     }
-    // 깃발 탭을 고를 때마다 흐름이 다시 그려져 입력을 다시 맞춘다(iOS `MTCSy` 깃발 탭 동기화).
-    LaunchedEffect(input.selectedFestivalId) { flagViewModel.onFestivalChanged(input.selectedFestivalId) }
-    LaunchedEffect(input.zoneNames) { flagViewModel.onZoneNamesChanged(input.zoneNames) }
-    LaunchedEffect(input.accountId) {
-        if (coordinator.onAccountChanged(input.accountId)) flagViewModel.onAccountChanged()
-    }
+    // 깃발 탭을 고를 때마다 흐름이 다시 그려져 목록 문맥을 다시 맞춘다(iOS `MTCSy` 깃발 탭 동기화). 값 변화는 [rememberFlagFlowEntries]가 맞춘다.
+    LaunchedEffect(Unit) { flagViewModel.onFestivalChanged(input.selectedFestivalId) }
 
     NavDisplay(
         entries = entries,
@@ -68,13 +64,14 @@ fun FlagFlow(
 
 /**
  * 깃발 스택 항목. 탭을 바꿔도 남는 범위(메인 탭 항목)에서 부른다. 항목 범위(상세 ViewModel · 저장 상태)는 탭을 바꿔도 남고
- * 스택에서 빠질 때만 정리된다(Navigation 3 `rememberDecoratedNavEntries` 여러 백스택 방식). [detailContext]는 열린 상세에 넘긴다.
+ * 스택에서 빠질 때만 정리된다(Navigation 3 `rememberDecoratedNavEntries` 여러 백스택 방식). [input]은 목록에, [detailContext]는 열린 상세에 넘긴다.
  *
  * @param onLoginRequested 로그인 요청. 문맥이 `null`이면 기본 문구(목록), [FlagLoginContext.Follow]는 상세 팔로우, [FlagLoginContext.Report]는 신고
  * @param onTermsAcceptanceRequested 약관 재동의 요청(iOS `session.retryProfile`)
  */
 @Composable
 fun rememberFlagFlowEntries(
+    input: FlagTabInput,
     detailContext: StateFlow<FlagDetailContext>,
     onLoginRequested: (FlagLoginContext?) -> Unit,
     onTermsAcceptanceRequested: () -> Unit,
@@ -83,6 +80,12 @@ fun rememberFlagFlowEntries(
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val context by detailContext.collectAsState()
+    // 깃발 탭이 안 보여도 축제 · 존 이름 · 계정 변화를 바로 반영한다(iOS `TabView`의 숨은 탭도 동기화를 받는다).
+    LaunchedEffect(input.selectedFestivalId) { flagViewModel.onFestivalChanged(input.selectedFestivalId) }
+    LaunchedEffect(input.zoneNames) { flagViewModel.onZoneNamesChanged(input.zoneNames) }
+    LaunchedEffect(input.accountId) {
+        if (coordinator.onAccountChanged(input.accountId)) flagViewModel.onAccountChanged()
+    }
     return rememberDecoratedNavEntries(
         backStack = state.routes,
         entryDecorators =

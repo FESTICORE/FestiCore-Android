@@ -154,6 +154,16 @@ private fun HomeWithCovers(
         flagCoordinator.openDetail(flagRequest)
         mainTab.onFlagRequestConsumed()
     }
+    val liveRequest = mainTabState.liveRequest
+    LaunchedEffect(liveRequest) {
+        when (liveRequest) {
+            null -> return@LaunchedEffect
+            LiveTabRequest.FestivalList -> festivalCoordinator.onDeeplinkFestivalListOpened()
+            is LiveTabRequest.Festival -> festivalCoordinator.onDeeplinkFestivalOpened(liveRequest.festivalId)
+            is LiveTabRequest.CrewInvite -> festivalCoordinator.onCrewInviteOpened(liveRequest.code)
+        }
+        mainTab.onLiveRequestConsumed()
+    }
     val packDirectionsRequest = mainTabState.packDirectionsRequest
     LaunchedEffect(packDirectionsRequest) {
         if (packDirectionsRequest == null) return@LaunchedEffect
@@ -170,6 +180,7 @@ private fun HomeWithCovers(
     val festivalEntries = rememberFestivalFlowEntries(coordinator = festivalCoordinator, listViewModel = festivalListViewModel)
     val flagEntries =
         rememberFlagFlowEntries(
+            input = flagBoard.flagTabInput(accountId),
             detailContext = flagDetailContext,
             onLoginRequested = { context -> coordinator.onLoginRequested(mainTabState.flagLoginContext(context)) },
             onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
@@ -212,16 +223,6 @@ private fun HomeWithCovers(
                 onFlagTabRequested = mainTab::onFlagTabRequested,
                 isLoginSheetPresented = state.loginSheet != null,
                 liveContent = { onHidesTabBarChanged, onFlagTabRequested ->
-                    val liveRequest = mainTabState.liveRequest
-                    LaunchedEffect(liveRequest) {
-                        when (liveRequest) {
-                            null -> return@LaunchedEffect
-                            LiveTabRequest.FestivalList -> festivalCoordinator.onDeeplinkFestivalListOpened()
-                            is LiveTabRequest.Festival -> festivalCoordinator.onDeeplinkFestivalOpened(liveRequest.festivalId)
-                            is LiveTabRequest.CrewInvite -> festivalCoordinator.onCrewInviteOpened(liveRequest.code)
-                        }
-                        mainTab.onLiveRequestConsumed()
-                    }
                     FestivalFlow(
                         entries = festivalEntries,
                         onHidesTabBarChanged = onHidesTabBarChanged,
@@ -245,7 +246,6 @@ private fun HomeWithCovers(
                 myContent = { onHidesTabBarChanged ->
                     ProfileFlow(
                         entries = profileEntries,
-                        account = coordinator.account,
                         onHidesTabBarChanged = onHidesTabBarChanged,
                         coordinator = profileCoordinator,
                     )

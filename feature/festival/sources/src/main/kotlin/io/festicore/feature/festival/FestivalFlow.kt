@@ -62,11 +62,6 @@ fun FestivalFlow(
     LaunchedEffect(state.hidesTabBar) { onHidesTabBarChanged(state.hidesTabBar) }
     // 라이브 탭을 고를 때마다 흐름이 다시 그려진다(iOS `MainTabCoordinator` `.live` → `reloadCachedPacks`).
     LaunchedEffect(Unit) { listViewModel.onReloadCachedPacks() }
-    ListForegroundEffect(
-        lifecycleOwner = LocalLifecycleOwner.current,
-        onForegroundChanged = listViewModel::onForegroundChanged,
-        onBackgrounded = listViewModel::onBackgrounded,
-    )
 
     NavDisplay(
         entries = entries,
@@ -89,6 +84,12 @@ fun rememberFestivalFlowEntries(
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val flowLifecycleOwner = LocalLifecycleOwner.current
+    // 라이브 탭이 안 보여도 배경 전환을 받아 목록이 받는 팩을 멈추고 돌아오면 다시 읽는다(iOS 숨은 탭도 `scenePhase`를 받는다).
+    ListForegroundEffect(
+        lifecycleOwner = flowLifecycleOwner,
+        onForegroundChanged = listViewModel::onForegroundChanged,
+        onBackgrounded = listViewModel::onBackgrounded,
+    )
     return rememberDecoratedNavEntries(
         backStack = state.routes,
         entryDecorators =

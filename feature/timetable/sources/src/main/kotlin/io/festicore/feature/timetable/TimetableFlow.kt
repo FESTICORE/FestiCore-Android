@@ -40,7 +40,6 @@ fun TimetableFlow(
     val timetableState by timetableViewModel.collectAsState()
 
     LaunchedEffect(Unit) { timetableViewModel.onTimetableAppeared() }
-    LaunchedEffect(timetableState.festivalId) { coordinator.onFestivalChanged(timetableState.festivalId) }
     val hidesTabBar = state.hidesTabBar(isSetDetailPresented = timetableState.setDetail != null)
     LaunchedEffect(hidesTabBar) { onHidesTabBarChanged(hidesTabBar) }
     val pendingSet = state.pendingSet
@@ -72,6 +71,8 @@ fun rememberTimetableFlowEntries(
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val timetableState by timetableViewModel.collectAsState()
+    // 타임테이블 탭이 안 보여도 축제가 바뀌면 옛 축제 검색 · 변경 목록을 바로 닫는다(iOS `TabView`의 숨은 탭도 동기화를 받는다).
+    LaunchedEffect(timetableState.festivalId) { coordinator.onFestivalChanged(timetableState.festivalId) }
     return rememberDecoratedNavEntries(
         backStack = state.routes,
         entryDecorators =

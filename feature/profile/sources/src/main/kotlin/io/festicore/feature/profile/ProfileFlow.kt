@@ -29,7 +29,7 @@ import org.orbitmvi.orbit.compose.collectAsState
 
 /**
  * 마이 탭 루트(iOS `ProfileCoordinatorView`). 마이 위에 팩 상세 · 설정 홈을, 설정 홈 위에 계정 · 화면 모드 · 문서 · 공지를 push로 쌓는다.
- * [account]는 앱이 소유한 계정 상태다(설계 쟁점 M13). 각 화면에 입력으로 넘기고 Coordinator는 세션 잃음을 본다.
+ * 계정 상태는 앱이 소유한다(설계 쟁점 M13). [rememberProfileFlowEntries]가 각 화면에 입력으로 넘기고 Coordinator는 세션 잃음을 본다.
  * [onHidesTabBarChanged]로 탭 바를 숨길지와 자리를 남길지 알린다(iOS `shouldHideTabBar` · `shouldReserveTabBarSpace`의 마이 부분).
  * 로그인 · 축제 목록 · 계정 작업은 상위(앱)에 콜백으로 올린다(iOS `ProfileDelegate`).
  * 약관 문서는 `feature/web` 화면이라 상위가 [legalDocument]로 그린다(가입 흐름과 같은 방식).
@@ -40,14 +40,11 @@ import org.orbitmvi.orbit.compose.collectAsState
 @Composable
 fun ProfileFlow(
     entries: List<NavEntry<NavKey>>,
-    account: StateFlow<AccountState>,
     onHidesTabBarChanged: (hides: Boolean, reservesSpace: Boolean) -> Unit,
     modifier: Modifier = Modifier,
     coordinator: ProfileCoordinator = koinViewModel(),
 ) {
     val state by coordinator.collectAsState()
-    val currentAccount by account.collectAsState()
-    LaunchedEffect(currentAccount) { coordinator.onAccountChanged(currentAccount) }
     LaunchedEffect(state.hidesTabBar, state.reservesTabBarSpace) {
         onHidesTabBarChanged(state.hidesTabBar, state.reservesTabBarSpace)
     }
@@ -90,6 +87,8 @@ fun rememberProfileFlowEntries(
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val currentAccount by account.collectAsState()
+    // 마이 탭이 안 보여도 세션 잃음을 바로 반영해 이전 계정 경로(계정 · 설정)를 닫는다(iOS `TabView`의 숨은 탭도 계정 변화를 받는다).
+    LaunchedEffect(currentAccount) { coordinator.onAccountChanged(currentAccount) }
     return rememberDecoratedNavEntries(
         backStack = state.routes,
         entryDecorators =
