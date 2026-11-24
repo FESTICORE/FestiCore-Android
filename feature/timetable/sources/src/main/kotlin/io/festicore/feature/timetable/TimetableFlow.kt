@@ -75,7 +75,11 @@ fun TimetableFlow(
                 entry<TimetableRoute.SetList> { key ->
                     // 열 때 타임테이블이 가진 날짜를 넘기고, 같은 축제 팩이 바뀌면 날짜만 바꾼다(iOS `syncTimetable`).
                     val listViewModel: TimetableSetListViewModel = koinViewModel { parametersOf(key.mode, timetableState.days) }
-                    LaunchedEffect(listViewModel, timetableState.days) { listViewModel.onDaysChanged(timetableState.days) }
+                    // 목록을 연 축제와 지금 축제가 같을 때만 날짜를 바꾼다. 축제가 바뀌면 목록은 곧 닫히고, 그 사이 새 축제 날짜를 옛 목록에 보이지 않는다.
+                    val isSameFestival = key.festivalId == timetableState.festivalId
+                    LaunchedEffect(listViewModel, timetableState.days, isSameFestival) {
+                        if (isSameFestival) listViewModel.onDaysChanged(timetableState.days)
+                    }
                     TimetableSetListScreen(
                         viewModel = listViewModel,
                         onSetSelected = coordinator::onSetListSetSelected,
