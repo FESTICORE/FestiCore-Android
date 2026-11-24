@@ -14,4 +14,5 @@ dependencies {
     implementation(project(":ui:sharedui"))
     implementation(libs.lib("compose-foundation"))
     implementation(libs.lib("activity-compose"))
+    implementation(libs.lib("lifecycle-runtime-compose"))
 }

@@ -8,7 +8,7 @@ modules: [feature/bearer, feature/featureassembly]
 > 기수가 코드 인증 · 깃발 등록 · 프로필 · 오늘 계획 · 기수 보드 화면을 거쳐 깃발을 맡고 상태를 바꾼다. 이 문서는 화면이 들어올 때마다(BS1~BC2) 갱신한다.
 
 iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swift` · `Sources/{Claim,Register,Profile,Plan,Board}`).
-설계: `.claude/docs/specs/2026-11-24-bearer-android-design.md`(화면 2 기수 인증 · 화면 3 깃발 프로필 · 화면 4 오늘 계획 고르기 · 화면 5 깃발 등록 · 화면 6 기수 여부 · 화면 전환 · iOS → Android 적응 · PR BS1 · BS2 · BS3).
+설계: `.claude/docs/specs/2026-11-24-bearer-android-design.md`(화면 2 기수 인증 · 화면 3 깃발 프로필 · 화면 4 오늘 계획 고르기 · 화면 5 깃발 등록 · 화면 6 기수 여부 · 화면 1 기수 보드 · 화면 전환 · iOS → Android 적응 · 검토 반영 B-3 · PR BS1 · BS2 · BS3 · BS4).
 
 ## 개요
 
@@ -17,7 +17,7 @@ iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swif
 | 기수 인증(S13 F~I) | `claim/` | BS1 |
 | 깃발 프로필(S10 A~E) · 오늘 계획 고르기 | `profile/` · `plan/` | BS2 |
 | 깃발 등록(S14 D · E) · 기수 여부(S14 C) | `register/` | BS3 |
-| 보드 | `board/` | 아직(BS4) |
+| 기수 보드(S09 A~J) · 존 · 활동 시트 | `board/` | BS4(`BearerBoardScreen` · `BearerBoardPickers` · 다크 고정 `FestiCoreDarkMode`) |
 
 경로는 `feature/bearer/interface` `BearerRoute`(NavKey)에 둔다. 화면은 SideEffect를 받아 콜백만 부르고, 경로 연결 · Coordinator는 BC1(`app` `navigation/bearer/BearerEntryCoordinator`)에서 한다.
 
@@ -174,6 +174,39 @@ iOS 대응: `Projects/Feature/Bearer/**`(`Interface/Sources/Bearer*Delegate.swif
 - 카드(간격 `P12`): 아이콘 20 in 44 원(`backgroundAlternative`) · 제목 `baseCalloutBold` · 설명 `baseFootnoteRegular`(간격 `P4`) · `FCCheckCircle`, 패딩 `P16`, r16, 테두리 고름 `primaryNormal` 2 / `lineNormal` 1. "관객이에요" / "깃발을 팔로우하고 크루와 함께 놀아요"(`ic_users_24`), "기수예요" / "내 깃발 프로필을 만들고 팔로워를 모아요"(`ic_flag_20`).
 - 아래 `FCPrimaryButton("다음", 고름)`(좌우 `P16` · 위아래 `P12`, 배경 `backgroundNormal`).
 
+## 기수 보드 (`board/`, iOS `BearerBoardFeature` · `BearerZonePickerFeature` · `BearerActivityPickerFeature`)
+
+경로 `BearerRoute.Board(festivalId, flagId)`. 보는 사용자 id(`viewerUserId`)는 경로에 싣지 않고 Coordinator가 ViewModel 인자로 넘긴다. 존 · 활동 시트는 iOS에서도 고르면 알리기만 하는 Feature라 Android는 State `destination` 값(`ZonePicker(zones, selectedZoneId)` · `ActivityPicker(selected)`)과 ViewModel 함수(`onZonePicked` · `onActivityPicked`)로 둔다.
+
+### 동작 규칙
+
+1. 보이면(`onAppear`) 대기열 알림을 먼저 구독하고 → 대기 건을 받아 지금 상태 위에 얹고 → `retryPendingStatus` → 보드가 없으면 읽는다(보드 + 팩 함께, 팩 실패는 무시). 읽은 뒤 서버 상태 위에 남은 대기 건을 차례로 다시 얹는다. 사라지면(`onDisappear`) 구독 · 로딩 · 확인 표시만 끝낸다(대기열 전송은 계속).
+2. 다시 읽는 때: 보드 진입 · "다시 시도" · `Rejected`(iOS와 같음) + 보드가 있는 동안 포그라운드 복귀(`onForeground`, 화면의 `LifecycleEventEffect(ON_START)`) + 오프라인 표시 중 첫 `Sent`(연결 복구). 다시 읽어도 지금 보드를 유지한다(스켈레톤은 보드가 없을 때만). 주기 폴링 · 웹소켓은 없다.
+3. 누르기: 존 · 활동은 운영 중 · 쉬는 중만, 쉬기는 운영 중만, 다시 시작은 쉬는 중만(마지막 활동이 있으면 바로, 없으면 활동 시트), 종료는 종료가 아니면 확인 팝업, 올리기는 예정만(존(`homeZoneId` 선택) → 활동 시트), 재시작은 종료 · 오늘 재시작 안 씀만(존 → 활동). 존 이동은 같은 존이면, 활동 변경은 쉬는 중이 아니고 같은 활동이면 무시한다.
+4. 반영: 보는 사용자가 없으면 "로그인한 뒤에 바꿀 수 있어요"로 거절. 요청을 만들어 `pending`에 더하고 화면 상태를 바로 바꾸고(낙관적) 1초 확인 오버레이 + `CheckHaptic` 뒤 대기열에 넣는다. 오늘 재시작 여부는 서버 값 또는 대기 중 재시작이다.
+5. 대기열 알림: `Pending` → 목록 교체, `Sent` → 오프라인 · 멈춤 · 오류 해제, 대기 건이 없을 때만 서버 상태 채택, `Offline` → 오프라인 표시, `NeedsLogin` · `GaveUp` → 멈춤 + 문구("다시 보내기" → `retryPendingStatus`), `Rejected` → 문구 + 다시 읽기.
+6. 읽기 실패: 보드가 없으면 실패 화면 + 문구, 있으면 오프라인 표시만(`Offline`일 때).
+7. 닫기(상단 · 시스템 뒤로): 대기 건이 있으면 확인 팝업(`CloseConfirm(count)`), 없거나 팝업 "닫기"면 `CloseRequested`.
+
+### 문구
+
+| 상황 | 문구 |
+| --- | --- |
+| 확인 제목 | "깃발을 올렸어요" · "깃발을 다시 올렸어요" · "{존}{으로/로} 바뀌었어요"(존 이름 없으면 "새 존") · "{활동}{으로/로} 바뀌었어요" · "쉬는 중으로 바뀌었어요" · "오늘 깃발을 내렸어요" |
+| 확인 메시지 | 오프라인 "연결되면 팔로워에게 알려요", 아니면 "팔로워에게 알렸어요" |
+| 전송 멈춤 | `NeedsLogin` "로그인이 풀렸어요. 다시 로그인하면 이어서 보내요" · `GaveUp` "서버에 보내지 못했어요. 잠시 뒤 다시 보내기를 눌러 주세요" |
+| 읽기 실패 | `Offline` "인터넷에 연결되지 않아 기수 보드를 열지 못했어요" · `NotBearer` "이 깃발의 기수가 아니에요" · `NotFound` "깃발을 찾을 수 없어요" · `NotAuthenticated` "로그인한 뒤에 열어 주세요" · 그 외 "기수 보드를 불러오지 못했어요" |
+| 거절(`Rejected`) | `Stale` "다른 기기에서 먼저 바뀌어 최신 상태로 돌렸어요" · `TransitionRejected` "지금 상태에서는 바꿀 수 없어 최신 상태로 돌렸어요" · `ZoneNotFound` "존을 찾을 수 없어 최신 상태로 돌렸어요" · `NotBearer` "이 깃발의 기수가 아니에요" · `TermsRequired` "새 약관에 동의한 뒤에 바꿀 수 있어요" · `NotAuthenticated` "로그인한 뒤에 바꿀 수 있어요" · 그 외 "바꾸지 못해 최신 상태로 돌렸어요" |
+
+팝업 · 시트 · 화면 문구는 설계 "화면 1: 기수 보드" 구성을 따른다. 화면은 `BearerBoardScreen`(경로 · 보는 사용자 id → `koinViewModel`, 닫기는 `onClose` 콜백)과 `BearerBoardContent`(순수 UI)로 나눈다. 존 → 활동으로 이어질 때는 시트가 바깥에서 바뀌므로 `onSheetDismissed`를 부르지 않는다(사용자가 직접 내렸을 때만).
+
+### Android에서 다른 점
+
+- 포그라운드 복귀 · 연결 복구(오프라인 중 첫 `Sent`) 때도 다시 읽는다(설계 B-3). 포그라운드 알림은 보드가 있을 때만 읽는다(첫 읽기는 `onAppear`).
+- 확인 오버레이 1초는 ViewModel `delay`(테스트는 가상 시간). 성공 햅틱은 `CheckHaptic` SideEffect로 화면이 낸다.
+- 시스템 뒤로는 상단 닫기와 같다(`onCloseTapped`).
+- 다크 고정은 designkit `FestiCoreDarkMode`(`ProvideNightMode` 감쌈, 설계 B6). 시트 · 팝업도 같은 야간 비트를 이어받는다. 성공 햅틱은 `HapticFeedbackType.Confirm`, 30초 상대 시각 갱신은 `produceState` + `delay`.
+
 ## 엣지 케이스
 
 - 사진 업로드 중에는 저장할 수 없고, 저장 중에는 새 사진을 받지 않는다. 업로드가 끝난 뒤 온 진행 · 실패는 버린다.
@@ -189,3 +222,5 @@ iOS `BearerProfileFeatureTests` 13건을 같은 이름으로 `BearerProfileViewM
 iOS `BearerPlanPickFeatureTests` 4건을 같은 이름으로 `BearerPlanPickViewModelTest`에 옮긴다: `groupsDaysAndOpensPlannedDay` · `togglesAndReturnsOrderedPlan` · `limitsToThirty` · `backCloses`. 같은 파일 `festivalDay`는 iOS `AppDateFormatTests`의 `festivalDay` 줄이다.
 
 iOS `BearerRegisterFeatureTests` 10건을 같은 이름으로 `BearerRegisterViewModelTest`에 옮긴다: `festivalOptions` · `loadsUpcomingAndSelectsPreferred` · `receivedPackLoadsZones` · `emptyFestivalsFail` · `registerSucceeds` · `offlineRetryReusesKey` · `conflictsShowAlerts` · `validation` · `roleChoice` · `savingKeepsRequestedFestival`. Android 추가 `photoLoadFailed`.
+
+iOS `BearerBoardFeatureTests` 13건을 같은 이름으로 `BearerBoardViewModelTest`에 옮긴다: `loads` · `disappearClearsTransientState` · `requiresViewer` · `rest` · `twoPendingChanges` · `outboxStates` · `rejectedReloads` · `closeWithPending` · `raise` · `endAndRestart` · `resume` · `coBearerChange` · `josa`. Android 추가 `reloadsOnForegroundKeepingPending` · `reloadsWhenConnectionReturns`(설계 B-3).

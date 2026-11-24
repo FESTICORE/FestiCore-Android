@@ -2,6 +2,7 @@ package io.festicore.feature.bearer.di
 
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerSet
+import io.festicore.feature.bearer.board.BearerBoardViewModel
 import io.festicore.feature.bearer.claim.BearerClaimViewModel
 import io.festicore.feature.bearer.plan.BearerPlanPickViewModel
 import io.festicore.feature.bearer.profile.BearerProfileViewModel
@@ -34,6 +35,15 @@ val bearerFeatureModule = module {
             bearerUseCase = get(),
             catalogUseCase = get(),
             receivedPackUseCase = get(),
+        )
+    }
+    // 인자: 축제 id · 깃발 id(`BearerRoute.Board`) · 보는 사용자 id(로그인 안 했으면 null).
+    viewModel { params ->
+        BearerBoardViewModel(
+            festivalId = params.get<String>(0),
+            flagId = params.get<String>(1),
+            viewerUserId = params.get<String?>(2),
+            bearerUseCase = get(),
         )
     }
 }

@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * 기수 흐름의 화면. iOS `BearerEntryStep`(App `Navigation/Bearer`).
- * 경로 연결 · Coordinator는 BC1(`app` `navigation/bearer/BearerEntryCoordinator`)에서 한다. 나머지 화면 경로는 각 화면 PR(BS2~BS4)에서 더한다.
+ * 경로 연결 · Coordinator는 BC1(`app` `navigation/bearer/BearerEntryCoordinator`)에서 한다. 나머지 화면 경로는 각 화면 PR(BS2~BS4)에서 더했다.
  */
 @Serializable
 sealed interface BearerRoute : NavKey {
@@ -35,4 +35,13 @@ sealed interface BearerRoute : NavKey {
     /** 오늘 계획 고르기(iOS `planPick`). 팩 공연 · 고른 계획은 Coordinator가 프로필 State에서 ViewModel 인자로 넘긴다. */
     @Serializable
     data class PlanPick(val festivalId: String) : BearerRoute
+
+    /**
+     * 기수 보드(iOS `board`, Figma S09 A~J). 보는 사용자 id는 경로에 싣지 않고 Coordinator가 ViewModel 인자로 넘긴다.
+     */
+    @Serializable
+    data class Board(
+        val festivalId: String,
+        val flagId: String,
+    ) : BearerRoute
 }
