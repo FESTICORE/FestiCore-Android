@@ -11,6 +11,7 @@ import io.festicore.core.location.client.LocationActivityProvider
 import io.festicore.domain.auth.sources.auth.CurrentUserStore
 import io.festicore.domain.auth.sources.di.domainAuthModule
 import io.festicore.domain.auth.sources.google.ActivityProvider
+import io.festicore.domain.bearer.sources.di.domainBearerModule
 import io.festicore.domain.festival.pack.FestivalPackUseCase
 import io.festicore.domain.festival.sources.di.domainFestivalModule
 import io.festicore.domain.notice.sources.di.domainNoticeModule
@@ -63,6 +64,7 @@ val appModules: List<Module> =
             domainFestivalModule,
             domainUserNotificationModule,
             domainNoticeModule,
+            domainBearerModule(baseUrl = BuildConfig.BASE_URL),
             domainTimetableModule,
         ) +
         featureModules(legalBaseUrl = BuildConfig.LEGAL_BASE_URL) +
