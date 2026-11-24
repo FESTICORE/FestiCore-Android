@@ -95,7 +95,7 @@ iOS 대응: `Projects/Feature/Timetable/Sources/{Main,SetDetail,SetList}/**`(`Ma
 
 - 스택: `[Timetable]` 위에 `SetList(mode)` · `SchedulePick`을 쌓는다. 전환은 `TimetableTransitions`(350ms `FastOutSlowInEasing`, 다른 탭과 같음). 화면은 자기 `BackHandler`를 두지 않는다.
 - 검색 아이콘 · 변경 배너 → `SetList(Search | Changes)` push. 고르기나 목록이 이미 있으면 무시한다(iOS `guard destination == nil`).
-- 목록에서 공연 고름 → 목록 pop + `pendingSetId` → 흐름이 `TimetableViewModel.onSetClicked(id)` 후 비운다. 목록 뒤로 · 시스템 뒤로 = pop.
+- 목록 경로는 연 축제(`SetList(mode, festivalId)`)를 가진다. 목록에서 공연 고름 → 목록 pop + `pendingSet(목록 축제, 공연)` → 흐름이 지금 타임테이블 축제와 같을 때만 `TimetableViewModel.onSetClicked(id)`, 다르면 버리고 비운다(축제가 바뀐 직후 이전 목록에서 고른 공연이 다른 축제 시트로 열리지 않게). 목록 뒤로 · 시스템 뒤로 = pop.
 - `SchedulePick` side effect → push, `CloseSchedulePick` → 결과 없이 pop. 고르기 화면 결과 → pop + `pendingPickResult`(고르기가 없으면 버림). 시스템 뒤로로 고르기를 pop하면 `Skipped`.
 - 타임테이블 축제가 처음 받은 값에서 바뀌면 검색 · 변경 목록을 닫는다(iOS `sameFestival ? … : nil`).
 - 탭 바: `routes.size > 1 ∨ 공연 시트 있음`이면 숨긴다(iOS `MTC:101-104`). 자리 예약 없음.

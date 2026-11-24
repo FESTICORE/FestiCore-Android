@@ -38,10 +38,11 @@ fun TimetableFlow(
     LaunchedEffect(timetableState.festivalId) { coordinator.onFestivalChanged(timetableState.festivalId) }
     val hidesTabBar = state.hidesTabBar(isSetDetailPresented = timetableState.setDetail != null)
     LaunchedEffect(hidesTabBar) { onHidesTabBarChanged(hidesTabBar) }
-    val pendingSetId = state.pendingSetId
-    LaunchedEffect(pendingSetId) {
-        if (pendingSetId == null) return@LaunchedEffect
-        timetableViewModel.onSetClicked(pendingSetId)
+    val pendingSet = state.pendingSet
+    LaunchedEffect(pendingSet) {
+        if (pendingSet == null) return@LaunchedEffect
+        // 목록을 연 축제가 지금 축제와 다르면 버린다.
+        state.pendingSetId(timetableState.festivalId)?.let(timetableViewModel::onSetClicked)
         coordinator.onPendingSetConsumed()
     }
 
@@ -61,8 +62,8 @@ fun TimetableFlow(
             entryProvider {
                 entry<TimetableRoute.Timetable> {
                     TimetableScreen(
-                        onSearch = coordinator::onSearch,
-                        onShowChanges = coordinator::onShowChanges,
+                        onSearch = { coordinator.onSearch(timetableState.festivalId) },
+                        onShowChanges = { coordinator.onShowChanges(timetableState.festivalId) },
                         onRequestNotification = {},
                         onSchedulePick = coordinator::onSchedulePick,
                         onCloseSchedulePick = coordinator::onCloseSchedulePick,

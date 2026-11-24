@@ -4,6 +4,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
@@ -21,12 +22,12 @@ class TimetableCoordinatorTest {
         previousClientAtEpochMillis = null,
     )
     private val onPick = TimetableCoordinatorState(routes = listOf(TimetableRoute.Timetable, pick))
-    private val search = TimetableRoute.SetList(TimetableSetListMode.Search)
+    private val search = TimetableRoute.SetList(TimetableSetListMode.Search, festivalId = "festival")
 
     @Test
     fun searchPushHidesTabBarAndBackRestoresIt() = runTest {
         TimetableCoordinator().test(this) {
-            containerHost.onSearch()
+            containerHost.onSearch("festival")
             expectState { copy(routes = listOf(TimetableRoute.Timetable, search)) }
             assertTrue(containerHost.container.stateFlow.value.hidesTabBar(isSetDetailPresented = false))
             containerHost.onSetListClosed()
@@ -38,8 +39,10 @@ class TimetableCoordinatorTest {
     @Test
     fun `시간표 변경 배너는 변경 목록을 쌓고 시스템 뒤로는 pop한다`() = runTest {
         TimetableCoordinator().test(this) {
-            containerHost.onShowChanges()
-            expectState { copy(routes = listOf(TimetableRoute.Timetable, TimetableRoute.SetList(TimetableSetListMode.Changes))) }
+            containerHost.onShowChanges("festival")
+            expectState {
+                copy(routes = listOf(TimetableRoute.Timetable, TimetableRoute.SetList(TimetableSetListMode.Changes, "festival")))
+            }
             containerHost.goBack()
             expectState { copy(routes = listOf(TimetableRoute.Timetable)) }
             // 타임테이블뿐이면 스택을 비우지 않는다.
@@ -51,9 +54,10 @@ class TimetableCoordinatorTest {
     fun `검색 결과를 고르면 목록을 닫고 그 공연을 대기 값으로 남긴다`() = runTest {
         TimetableCoordinator().test(this, initialState = TimetableCoordinatorState(routes = listOf(TimetableRoute.Timetable, search))) {
             containerHost.onSetListSetSelected("set_a")
-            expectState { copy(routes = listOf(TimetableRoute.Timetable), pendingSetId = "set_a") }
+            expectState { copy(routes = listOf(TimetableRoute.Timetable), pendingSet = TimetablePendingSet("festival", "set_a")) }
+            assertEquals("set_a", containerHost.container.stateFlow.value.pendingSetId("festival"))
             containerHost.onPendingSetConsumed()
-            expectState { copy(pendingSetId = null) }
+            expectState { copy(pendingSet = null) }
         }
     }
 
@@ -104,8 +108,8 @@ class TimetableCoordinatorTest {
     @Test
     fun `고르기가 열려 있으면 검색 · 변경 목록을 열지 않는다`() = runTest {
         TimetableCoordinator().test(this, initialState = onPick) {
-            containerHost.onSearch()
-            containerHost.onShowChanges()
+            containerHost.onSearch("festival")
+            containerHost.onShowChanges("festival")
         }
     }
 
@@ -122,6 +126,25 @@ class TimetableCoordinatorTest {
             containerHost.onFestivalChanged("festival")
             containerHost.onFestivalChanged("other")
             expectState { copy(routes = listOf(TimetableRoute.Timetable)) }
+        }
+    }
+
+    /** Codex TT-01: 축제가 바뀐 직후 이전 축제 목록에서 고른 공연은 같은 ID가 있어도 지금 축제 시트로 열지 않는다. */
+    @Test
+    fun `이전 축제 목록에서 고른 공연은 지금 축제에서 열지 않는다`() = runTest {
+        TimetableCoordinator().test(this, initialState = TimetableCoordinatorState(routes = listOf(TimetableRoute.Timetable, search))) {
+            containerHost.onSetListSetSelected("set_a")
+            expectState { copy(routes = listOf(TimetableRoute.Timetable), pendingSet = TimetablePendingSet("festival", "set_a")) }
+            val state = containerHost.container.stateFlow.value
+            assertNull(state.pendingSetId("other"))
+            assertNull(state.pendingSetId(null))
+        }
+    }
+
+    @Test
+    fun `목록이 없으면 고른 공연을 남기지 않는다`() = runTest {
+        TimetableCoordinator().test(this) {
+            containerHost.onSetListSetSelected("set_a")
         }
     }
 
