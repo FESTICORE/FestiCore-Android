@@ -1,6 +1,6 @@
 package io.festicore.domain.auth.sources.model.mapper
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.service.api.base.AuthSessionError
 import kotlin.coroutines.cancellation.CancellationException

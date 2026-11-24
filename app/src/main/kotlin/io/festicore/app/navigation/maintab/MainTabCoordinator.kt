@@ -1,8 +1,8 @@
 package io.festicore.app.navigation.maintab
 
 import androidx.lifecycle.ViewModel
+import io.festicore.core.logger.FestiCoreLogCategory
 import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.feature.auth.LoginContext
 import io.festicore.feature.festival.FestivalLoginContext
@@ -103,7 +103,7 @@ class MainTabCoordinator :
 
             // 라우팅 보류: P0에서 축제 열기 → 타임테이블 탭 → 공연 상세로 잇는다(iOS `MainTabCoordinator.swift:371-377`).
             // 지금은 타임테이블 탭만 골라도 라이브 탭이 그려지지 않아 보드가 축제를 열지 못한다.
-            is FestiCoreDeeplink.Set -> FestiCoreLogger.debug("공연 딥링크는 푸시(P0) 전이라 열지 않음", LogCategory.NAVIGATION)
+            is FestiCoreDeeplink.Set -> FestiCoreLogger.debug("공연 딥링크는 푸시(P0) 전이라 열지 않음", FestiCoreLogCategory.NAVIGATION)
 
             is FestiCoreDeeplink.Flag ->
                 reduce { state.copy(selectedTab = FCTabBarTab.Flag, flagRequest = deeplink.id) }

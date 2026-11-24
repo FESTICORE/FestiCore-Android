@@ -1,6 +1,6 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.domain.festival.sources.service.FestivalFlagServiceError
 import io.festicore.domain.festival.sources.service.isValidFlagId
 import io.festicore.service.api.base.AuthSessionError

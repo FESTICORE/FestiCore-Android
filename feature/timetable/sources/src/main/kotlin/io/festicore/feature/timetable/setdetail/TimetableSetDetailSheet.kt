@@ -8,7 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
-import io.festicore.domain.timetable.TimetableSetDetail
+import io.festicore.domain.timetable.entity.TimetableSetDetail
 import io.festicore.feature.timetable.TimetablePushGate
 import io.festicore.feature.timetable.main.TimetableState
 import io.festicore.ui.designkit.component.modal.FCSheet

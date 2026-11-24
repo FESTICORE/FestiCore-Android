@@ -3,11 +3,11 @@ package io.festicore.domain.timetable.sources
 import io.festicore.domain.festival.entity.FestivalIsoTime
 import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.timetable.FestivalPackTimetableMapper
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableLineupArtist
-import io.festicore.domain.timetable.TimetableLineupDay
-import io.festicore.domain.timetable.TimetableSet
-import io.festicore.domain.timetable.TimetableStage
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableLineupArtist
+import io.festicore.domain.timetable.entity.TimetableLineupDay
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableStage
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate

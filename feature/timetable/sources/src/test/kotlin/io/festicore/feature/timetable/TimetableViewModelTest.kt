@@ -2,11 +2,11 @@ package io.festicore.feature.timetable
 
 import io.festicore.domain.festival.entity.FestivalBoardSelection
 import io.festicore.domain.festival.entity.FestivalPackDocument
-import io.festicore.domain.timetable.TimetableInterval
-import io.festicore.domain.timetable.TimetableOverlap
-import io.festicore.domain.timetable.TimetableSet
-import io.festicore.domain.timetable.TimetableSetDetail
-import io.festicore.domain.timetable.TimetableSetOverlap
+import io.festicore.domain.timetable.entity.TimetableInterval
+import io.festicore.domain.timetable.entity.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableSetDetail
+import io.festicore.domain.timetable.entity.TimetableSetOverlap
 import io.festicore.feature.timetable.main.TimetableContentStatus
 import io.festicore.feature.timetable.main.TimetableScheduleSync
 import io.festicore.feature.timetable.main.TimetableSideEffect

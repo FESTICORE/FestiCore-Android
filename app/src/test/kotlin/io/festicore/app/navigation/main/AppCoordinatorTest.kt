@@ -7,7 +7,7 @@ import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.entity.AuthLoginResult
 import io.festicore.domain.auth.entity.AuthProfile
 import io.festicore.domain.auth.entity.AuthUser
-import io.festicore.domain.auth.sources.CurrentUserStore
+import io.festicore.domain.auth.sources.auth.CurrentUserStore
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.LaunchLoginResult
 import io.festicore.feature.auth.LoginContext

@@ -7,13 +7,13 @@ import io.festicore.domain.festival.sources.service.FestivalOfficialNewsService
 import io.festicore.domain.festival.sources.service.FestivalScheduleService
 import io.festicore.service.auth.AuthSession
 import io.festicore.service.device.DeviceInstallationService
-import io.festicore.service.festivalcatalog.FestivalCatalogCache
-import io.festicore.service.festivalcatalog.FestivalImageUrlResolver
 import io.festicore.service.festivalcatalog.NetworkFestivalCatalogService
 import io.festicore.service.festivalcatalog.NetworkFestivalFlagFollowService
 import io.festicore.service.festivalcatalog.NetworkFestivalLiveBoardService
 import io.festicore.service.festivalcatalog.NetworkFestivalOfficialNewsService
 import io.festicore.service.festivalcatalog.NetworkFestivalScheduleService
+import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
+import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import java.io.File
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module

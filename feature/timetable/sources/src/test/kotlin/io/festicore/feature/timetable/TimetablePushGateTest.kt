@@ -1,7 +1,7 @@
 package io.festicore.feature.timetable
 
-import io.festicore.domain.timetable.TimetableInterval
-import io.festicore.domain.timetable.TimetableSetDetail
+import io.festicore.domain.timetable.entity.TimetableInterval
+import io.festicore.domain.timetable.entity.TimetableSetDetail
 import io.festicore.feature.timetable.main.TimetableNotificationStatus
 import io.festicore.feature.timetable.main.notifyAction
 import io.festicore.feature.timetable.schedulepick.schedulePickGuide

@@ -1,6 +1,6 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.sources.model.dto.FestivalItemDto
 import io.festicore.domain.festival.sources.model.dto.FestivalListDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
@@ -8,6 +8,8 @@ import io.festicore.domain.festival.sources.service.FestivalCatalogService
 import io.festicore.domain.festival.sources.service.FestivalCatalogServiceError
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
+import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 

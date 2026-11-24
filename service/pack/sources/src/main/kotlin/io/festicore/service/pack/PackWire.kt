@@ -1,7 +1,7 @@
 package io.festicore.service.pack
 
-import io.festicore.core.network.FestiCoreWebSocket
-import io.festicore.core.network.WebSocketError
+import io.festicore.core.network.websocket.FestiCoreWebSocket
+import io.festicore.core.network.websocket.WebSocketError
 import java.security.MessageDigest
 import java.util.Base64
 import kotlin.time.Duration

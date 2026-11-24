@@ -1,8 +1,8 @@
 package io.festicore.app.deeplink
 
 import android.content.Intent
+import io.festicore.core.logger.FestiCoreLogCategory
 import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.core.storage.shared.PendingDeeplinkStore
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.core.utility.deeplink.FestiCoreDeeplinkParser
@@ -35,7 +35,7 @@ class AppDeeplinkBridge(
             for (deeplink in incoming) {
                 store.save(deeplink.encoded)
                 signal.emit(Unit)
-                FestiCoreLogger.debug("딥링크 대기: ${deeplink::class.simpleName}", LogCategory.NAVIGATION)
+                FestiCoreLogger.debug("딥링크 대기: ${deeplink::class.simpleName}", FestiCoreLogCategory.NAVIGATION)
             }
         }
     }
@@ -57,7 +57,7 @@ class AppDeeplinkBridge(
     fun handlePushPayload(payload: Map<String, String>) {
         val deeplink = FestiCoreDeeplinkParser.parse(payload)
         if (deeplink == null) {
-            FestiCoreLogger.debug("처리할 딥링크가 없는 푸시", LogCategory.NAVIGATION)
+            FestiCoreLogger.debug("처리할 딥링크가 없는 푸시", FestiCoreLogCategory.NAVIGATION)
             return
         }
         broadcast(deeplink)

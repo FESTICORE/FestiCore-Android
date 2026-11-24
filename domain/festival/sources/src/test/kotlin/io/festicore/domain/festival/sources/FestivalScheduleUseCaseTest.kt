@@ -1,5 +1,5 @@
 package io.festicore.domain.festival.sources
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.domain.festival.entity.FestivalBoardSelection
 import io.festicore.domain.festival.entity.FestivalSchedule
 import io.festicore.domain.festival.entity.FestivalScheduleError

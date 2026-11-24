@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources.model.mapper
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.entity.FestivalFlagDetailError
 import io.festicore.domain.festival.entity.FestivalFlagFollowError
 import io.festicore.domain.festival.entity.FestivalFlagPinError

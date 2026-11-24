@@ -2,7 +2,7 @@ package io.festicore.domain.timetable.sources
 
 import io.festicore.domain.festival.entity.FestivalPackDocument
 import io.festicore.domain.festival.entity.FestivalPackDocument.Performance
-import io.festicore.domain.timetable.TimetableLineupArtist
+import io.festicore.domain.timetable.entity.TimetableLineupArtist
 import java.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject

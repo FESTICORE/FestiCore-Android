@@ -1,8 +1,8 @@
 package io.festicore.feature.auth.login
 
 import androidx.lifecycle.ViewModel
+import io.festicore.core.logger.FestiCoreLogCategory
 import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.domain.auth.auth.AuthRepository
 import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.entity.AuthLoginResult
@@ -81,7 +81,7 @@ class LaunchLoginViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                FestiCoreLogger.error("로그인 확인 실패 후 세션을 지울 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
+                FestiCoreLogger.error("로그인 확인 실패 후 세션을 지울 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.AUTH)
             }
         }
         // iOS `LoginFeature`는 로그인 성공 때 문구를 지운다. 401은 실패 문구를 보이지 않는다.

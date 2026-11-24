@@ -2,10 +2,10 @@ package io.festicore.feature.timetable
 
 import io.festicore.domain.festival.entity.FestivalSchedule
 import io.festicore.domain.festival.entity.FestivalScheduleError
-import io.festicore.domain.timetable.TimetableDay
 import io.festicore.domain.timetable.TimetablePickOverlap
-import io.festicore.domain.timetable.TimetableSet
-import io.festicore.domain.timetable.TimetableStage
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableStage
 import io.festicore.feature.timetable.schedulepick.SchedulePickFormat
 import io.festicore.feature.timetable.schedulepick.SchedulePickSideEffect
 import io.festicore.feature.timetable.schedulepick.SchedulePickViewModel

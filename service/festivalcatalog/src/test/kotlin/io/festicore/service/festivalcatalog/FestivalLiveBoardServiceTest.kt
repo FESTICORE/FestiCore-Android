@@ -1,9 +1,11 @@
 package io.festicore.service.festivalcatalog
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.service.apiendpoint.festival.FestivalRequest
+import io.festicore.service.festivalcatalog.storage.FestivalCatalogCache
+import io.festicore.service.festivalcatalog.url.FestivalImageUrlResolver
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond

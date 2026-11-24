@@ -1,6 +1,6 @@
 package io.festicore.service.festivalcatalog
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.sources.model.dto.FestivalScheduleDto
 import io.festicore.domain.festival.sources.service.FestivalLiveBoardServiceError
 import io.festicore.domain.festival.sources.service.FestivalScheduleService

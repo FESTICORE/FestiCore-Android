@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.festival.entity.FestivalPackError
 import io.festicore.domain.festival.entity.PackDownloadEvent
 import io.festicore.domain.festival.entity.PackDownloadProgress

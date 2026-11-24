@@ -1,7 +1,7 @@
 package io.festicore.feature.timetable.setdetail
 
-import io.festicore.domain.timetable.TimetableInterval
-import io.festicore.domain.timetable.TimetableSetDetail
+import io.festicore.domain.timetable.entity.TimetableInterval
+import io.festicore.domain.timetable.entity.TimetableSetDetail
 import java.time.Instant
 
 /**

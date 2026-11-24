@@ -1,8 +1,8 @@
 package io.festicore.service.apiendpoint.auth
 
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.error.NetworkError
 import io.festicore.service.api.RefreshResponse
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey

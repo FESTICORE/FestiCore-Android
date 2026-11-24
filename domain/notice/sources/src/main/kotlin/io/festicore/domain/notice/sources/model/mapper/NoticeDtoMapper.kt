@@ -1,6 +1,6 @@
 package io.festicore.domain.notice.sources.model.mapper
 
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.core.utility.date.AppDateFormat
 import io.festicore.domain.notice.entity.NoticeDetail
 import io.festicore.domain.notice.entity.NoticeError

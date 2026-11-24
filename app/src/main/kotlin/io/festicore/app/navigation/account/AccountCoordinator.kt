@@ -1,8 +1,8 @@
 package io.festicore.app.navigation.account
 
 import io.festicore.app.navigation.main.AppCoordinator
+import io.festicore.core.logger.FestiCoreLogCategory
 import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.domain.auth.auth.AuthRepository
 import io.festicore.domain.auth.entity.AuthDomainError
 import kotlinx.coroutines.CancellationException
@@ -43,7 +43,7 @@ class AccountCoordinator(
             throw e
         } catch (e: Exception) {
             // iOS와 같이 바인딩은 다음 실행에서 복구한다. 해제 실패로 계정 요청을 막지 않는다.
-            FestiCoreLogger.error("계정 작업 중 기기 연결 해제 실패: ${e::class.simpleName}", LogCategory.APP)
+            FestiCoreLogger.error("계정 작업 중 기기 연결 해제 실패: ${e::class.simpleName}", FestiCoreLogCategory.APP)
         }
         currentCoroutineContext().ensureActive()
         try {
@@ -71,7 +71,7 @@ class AccountCoordinator(
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
-        FestiCoreLogger.error("계정 작업 실패 뒤 로그인 상태를 확인할 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
+        FestiCoreLogger.error("계정 작업 실패 뒤 로그인 상태를 확인할 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.AUTH)
         false
     }
 
@@ -81,7 +81,7 @@ class AccountCoordinator(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            FestiCoreLogger.error("계정 기기 연결 실패: ${e::class.simpleName}", LogCategory.APP)
+            FestiCoreLogger.error("계정 기기 연결 실패: ${e::class.simpleName}", FestiCoreLogCategory.APP)
         }
     }
 

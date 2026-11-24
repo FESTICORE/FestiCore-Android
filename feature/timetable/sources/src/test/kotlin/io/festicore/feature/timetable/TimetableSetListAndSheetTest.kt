@@ -1,8 +1,8 @@
 package io.festicore.feature.timetable
 
-import io.festicore.domain.timetable.TimetableInterval
-import io.festicore.domain.timetable.TimetableSetDetail
-import io.festicore.domain.timetable.TimetableSetOverlap
+import io.festicore.domain.timetable.entity.TimetableInterval
+import io.festicore.domain.timetable.entity.TimetableSetDetail
+import io.festicore.domain.timetable.entity.TimetableSetOverlap
 import io.festicore.feature.timetable.setdetail.TimetableSetDetailContent
 import io.festicore.feature.timetable.setdetail.scheduleHelper
 import io.festicore.feature.timetable.setdetail.sheetState

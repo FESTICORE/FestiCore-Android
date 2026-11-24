@@ -1,7 +1,7 @@
 package io.festicore.domain.auth.sources
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.NoCredentialException
-import io.festicore.core.network.NetworkError
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.auth.entity.AuthDomainError
 import io.festicore.domain.auth.sources.google.toGoogleSignInError
 import io.festicore.domain.auth.sources.model.mapper.toAuthDomainError

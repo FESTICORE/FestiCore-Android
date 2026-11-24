@@ -45,9 +45,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableOverlap
-import io.festicore.domain.timetable.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableSet
 import io.festicore.ui.designkit.component.layout.fcScrollBottomInset
 import io.festicore.ui.designkit.component.timetable.FCNowLine
 import io.festicore.ui.designkit.component.timetable.FCOverlapHighlight

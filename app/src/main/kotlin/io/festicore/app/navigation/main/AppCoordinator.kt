@@ -5,8 +5,8 @@ import androidx.navigation3.runtime.NavKey
 import io.festicore.app.navigation.account.AccountCoordinator
 import io.festicore.app.navigation.account.AccountOperation
 import io.festicore.app.navigation.account.AccountOperationResult
+import io.festicore.core.logger.FestiCoreLogCategory
 import io.festicore.core.logger.FestiCoreLogger
-import io.festicore.core.logger.LogCategory
 import io.festicore.core.storage.onboarding.FirstInstallOnboardingStore
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.auth.AuthRepository
@@ -135,7 +135,7 @@ class AppCoordinator(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            FestiCoreLogger.error("첫 설치 기록을 저장할 수 없음: ${e::class.simpleName}", LogCategory.APP)
+            FestiCoreLogger.error("첫 설치 기록을 저장할 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.APP)
         }
         checkSession()
     }
@@ -264,7 +264,7 @@ class AppCoordinator(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            FestiCoreLogger.error("만료된 팩을 지우지 못함: ${e::class.simpleName}", LogCategory.APP)
+            FestiCoreLogger.error("만료된 팩을 지우지 못함: ${e::class.simpleName}", FestiCoreLogCategory.APP)
         }
     }
 
@@ -416,7 +416,7 @@ class AppCoordinator(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                FestiCoreLogger.error("첫 설치 기록을 확인할 수 없음: ${e::class.simpleName}", LogCategory.APP)
+                FestiCoreLogger.error("첫 설치 기록을 확인할 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.APP)
                 true
             }
         if (hasCompleted) {
@@ -456,7 +456,7 @@ class AppCoordinator(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                FestiCoreLogger.error("대기 딥링크를 꺼낼 수 없음: ${e::class.simpleName}", LogCategory.APP)
+                FestiCoreLogger.error("대기 딥링크를 꺼낼 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.APP)
                 null
             } ?: return@intent
         postSideEffect(AppCoordinatorSideEffect.OpenDeeplink(deeplink))
@@ -598,7 +598,7 @@ class AppCoordinator(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            FestiCoreLogger.error("세션을 지울 수 없음: ${e::class.simpleName}", LogCategory.AUTH)
+            FestiCoreLogger.error("세션을 지울 수 없음: ${e::class.simpleName}", FestiCoreLogCategory.AUTH)
         }
     }
 

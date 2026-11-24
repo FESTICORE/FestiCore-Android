@@ -1,11 +1,11 @@
 package io.festicore.service.apiendpoint.festival
 
-import io.festicore.core.network.BaseResponse
-import io.festicore.core.network.ErrorBody
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.festiCoreExchange
-import io.festicore.core.network.festiCoreRequest
+import io.festicore.core.network.endpoint.festiCoreExchange
+import io.festicore.core.network.endpoint.festiCoreRequest
+import io.festicore.core.network.error.NetworkError
+import io.festicore.core.network.response.BaseResponse
+import io.festicore.core.network.response.ErrorBody
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.api.base.bearerAuthorization
 import io.festicore.service.api.festival.FestivalApi

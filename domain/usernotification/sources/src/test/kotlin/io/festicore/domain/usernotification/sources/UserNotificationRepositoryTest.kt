@@ -1,6 +1,6 @@
 package io.festicore.domain.usernotification.sources
-import io.festicore.core.network.NetworkError
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.error.NetworkError
 import io.festicore.domain.usernotification.entity.UserNotificationError
 import io.festicore.domain.usernotification.sources.repository.UserNotificationRepositoryImpl
 import io.festicore.service.api.base.BearerAuthorizationKey

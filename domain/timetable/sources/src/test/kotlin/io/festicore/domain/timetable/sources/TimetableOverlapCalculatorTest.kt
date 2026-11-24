@@ -1,11 +1,11 @@
 package io.festicore.domain.timetable.sources
 
-import io.festicore.domain.timetable.TimetableDay
-import io.festicore.domain.timetable.TimetableOverlap
 import io.festicore.domain.timetable.TimetablePickOverlap
-import io.festicore.domain.timetable.TimetableSet
-import io.festicore.domain.timetable.TimetableSetOverlap
-import io.festicore.domain.timetable.TimetableStage
+import io.festicore.domain.timetable.entity.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableOverlap
+import io.festicore.domain.timetable.entity.TimetableSet
+import io.festicore.domain.timetable.entity.TimetableSetOverlap
+import io.festicore.domain.timetable.entity.TimetableStage
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

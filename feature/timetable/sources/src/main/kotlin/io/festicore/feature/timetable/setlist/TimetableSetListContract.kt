@@ -1,6 +1,6 @@
 package io.festicore.feature.timetable.setlist
 
-import io.festicore.domain.timetable.TimetableDay
+import io.festicore.domain.timetable.entity.TimetableDay
 import io.festicore.feature.timetable.TimetableSetListMode
 
 /** 공연 검색 · 시간표 변경 목록 상태. iOS `TimetableSetListFeature.State`. */

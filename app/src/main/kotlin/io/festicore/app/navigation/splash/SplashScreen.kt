@@ -14,8 +14,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import io.festicore.app.navigation.main.AppCoordinator
-import io.festicore.ui.animation.FestiCoreAnimationAsset
-import io.festicore.ui.animation.FestiCoreLottieView
+import io.festicore.ui.animation.lottie.FestiCoreAnimationAsset
+import io.festicore.ui.animation.lottie.FestiCoreLottieView
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import kotlin.time.Duration.Companion.seconds
 

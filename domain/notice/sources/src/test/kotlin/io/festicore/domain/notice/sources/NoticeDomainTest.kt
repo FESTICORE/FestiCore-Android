@@ -1,8 +1,8 @@
 package io.festicore.domain.notice.sources
 
-import io.festicore.core.network.BaseResponse
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.core.network.response.BaseResponse
 import io.festicore.domain.notice.entity.NoticeDetail
 import io.festicore.domain.notice.entity.NoticeError
 import io.festicore.domain.notice.entity.NoticeSummary

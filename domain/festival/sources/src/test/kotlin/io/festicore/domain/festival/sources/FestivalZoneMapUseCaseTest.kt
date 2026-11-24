@@ -1,6 +1,6 @@
 package io.festicore.domain.festival.sources
 import io.festicore.core.network.FestiCoreJson
-import io.festicore.core.network.createFestiCoreHttpClient
+import io.festicore.core.network.client.createFestiCoreHttpClient
 import io.festicore.domain.festival.catalog.FestivalCatalogRepository
 import io.festicore.domain.festival.entity.FestivalCatalogItem
 import io.festicore.domain.festival.entity.FestivalCatalogPage
