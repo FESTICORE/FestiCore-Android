@@ -17,11 +17,17 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /**
  * 깃발 상세 · 팔로우 · 신고 · 대표 깃발 · 기수 요청. 실패는 [NetworkError], Bearer 요청은 [AuthSessionError]도 던진다. 재시도하지 않는다.
@@ -95,9 +101,13 @@ class FlagRequest(@PublishedApi internal val client: HttpClient) {
         }
     }
 
-    /** `GET api/v1/flags/{id}/bearer`. 기수 보드. Bearer 대상. */
-    suspend inline fun <reified T> bearer(flagId: String, expectedSessionId: String): T = unwrapAuth {
-        client.festiCoreRequest {
+    /** `GET api/v1/flags/{id}/bearer`. 기수 보드. Bearer 대상. [onServerDate]는 응답 `Date` 헤더 시각이다(오류 응답 포함). */
+    suspend inline fun <reified T> bearer(
+        flagId: String,
+        expectedSessionId: String,
+        noinline onServerDate: (Instant) -> Unit = {},
+    ): T = unwrapAuth {
+        client.festiCoreRequest(onResponse = { it.serverDate()?.let(onServerDate) }) {
             method = HttpMethod.Get
             url(FlagApi.bearer(flagId))
             bearerAuthorization(expectedSessionId)
@@ -119,14 +129,18 @@ class FlagRequest(@PublishedApi internal val client: HttpClient) {
         }
     }
 
-    /** `POST api/v1/flags/{id}/status` + `Idempotency-Key`. 같은 변경을 다시 보낼 때는 같은 키를 쓴다. Bearer 대상. */
+    /**
+     * `POST api/v1/flags/{id}/status` + `Idempotency-Key`. 같은 변경을 다시 보낼 때는 같은 키를 쓴다. Bearer 대상.
+     * [onServerDate]는 응답 `Date` 헤더 시각이다(오류 응답 포함). 기수 대기열이 서버 시각 추정에 쓴다.
+     */
     suspend inline fun <reified T> status(
         flagId: String,
         body: FlagStatusBody,
         idempotencyKey: String,
         expectedSessionId: String,
+        noinline onServerDate: (Instant) -> Unit = {},
     ): T = unwrapAuth {
-        client.festiCoreRequest {
+        client.festiCoreRequest(onResponse = { it.serverDate()?.let(onServerDate) }) {
             method = HttpMethod.Post
             url(FlagApi.status(flagId))
             bearerAuthorization(expectedSessionId)
@@ -244,6 +258,13 @@ class FlagRequest(@PublishedApi internal val client: HttpClient) {
     private fun String.errorBodyOrNull(): ErrorBody? = try {
         FestiCoreJson.decodeFromString(ErrorBody.serializer(), this)
     } catch (_: IllegalArgumentException) { // SerializationException 포함
+        null
+    }
+
+    /** 응답 `Date` 헤더(RFC 1123). 없거나 읽지 못하면 null. */
+    @PublishedApi internal fun HttpResponse.serverDate(): Instant? = try {
+        headers[HttpHeaders.Date]?.let { ZonedDateTime.parse(it, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant() }
+    } catch (_: DateTimeParseException) {
         null
     }
 

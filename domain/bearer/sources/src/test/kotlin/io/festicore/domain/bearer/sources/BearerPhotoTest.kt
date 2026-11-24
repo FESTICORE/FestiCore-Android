@@ -119,7 +119,7 @@ class BearerPhotoTest {
         assertEquals(BearerPhotoEncoder.SizePlan(2048, 1536, 4), BearerPhotoEncoder.SizePlan.of(8192, 6144))
     }
 
-    private fun useCase(repository: BearerRepository) = BearerUseCaseImpl(repository, StubPackSyncService(null))
+    private fun useCase(repository: BearerRepository) = BearerUseCaseImpl(repository, StubPackSyncService(null), outbox = UnusedOutbox())
 
     private fun encodeFailure(data: ByteArray): Throwable? = try {
         BearerPhotoEncoder().encode(data)

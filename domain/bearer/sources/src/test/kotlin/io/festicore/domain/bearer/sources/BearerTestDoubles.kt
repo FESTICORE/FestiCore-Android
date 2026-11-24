@@ -1,7 +1,11 @@
 package io.festicore.domain.bearer.sources
 
 import io.festicore.core.network.client.createFestiCoreHttpClient
+import io.festicore.domain.bearer.bearer.BearerStatusOutbox
+import io.festicore.domain.bearer.entity.BearerOutboxEvent
+import io.festicore.domain.bearer.entity.BearerStatusRequest
 import io.festicore.domain.bearer.sources.model.mapper.BearerImageUrl
+import io.festicore.domain.bearer.sources.outbox.BearerServerClock
 import io.festicore.domain.bearer.sources.repository.BearerRepositoryImpl
 import io.festicore.service.api.base.BearerAuthorization
 import io.festicore.service.api.base.BearerAuthorizationKey
@@ -30,12 +34,14 @@ import kotlinx.serialization.json.jsonObject
 /**
  * 보낸 요청을 기록하고 정한 응답을 주는 Ktor `MockEngine` 클라이언트. iOS `BearerTestDoubles.swift` `RecordingClient`.
  * [routes]가 있으면 경로마다 다른 응답을 주고, 등록하지 않은 경로는 500이다. [offline]이면 연결 실패를 던진다.
+ * [serverDate]가 있으면 응답에 `Date` 헤더로 붙인다.
  */
 internal class RecordingClient(
     private val status: Int = 200,
     private val json: String = "",
     private val routes: Map<String, Pair<Int, String>> = emptyMap(),
     private val offline: Boolean = false,
+    private val serverDate: String? = null,
 ) {
     val sent = mutableListOf<HttpRequestData>()
     val last: HttpRequestData get() = sent.last()
@@ -52,7 +58,11 @@ internal class RecordingClient(
             }
             if (offline) throw IOException("연결 없음")
             val (code, body) = routes[request.url.encodedPath.removePrefix("/")] ?: if (routes.isEmpty()) status to json else 500 to ""
-            respond(body, HttpStatusCode.fromValue(code), headersOf(HttpHeaders.ContentType, "application/json"))
+            val headers = listOfNotNull(
+                HttpHeaders.ContentType to listOf("application/json"),
+                serverDate?.let { HttpHeaders.Date to listOf(it) },
+            )
+            respond(body, HttpStatusCode.fromValue(code), headersOf(*headers.toTypedArray()))
         },
     )
 
@@ -61,14 +71,38 @@ internal class RecordingClient(
     }
 }
 
+/** 대기열을 쓰지 않는 UseCase 테스트용. 부르면 실패한다(iOS `MockBearerStatusOutbox`). */
+internal class UnusedOutbox : BearerStatusOutbox {
+    override suspend fun enqueue(
+        flagId: String,
+        ownerUserId: String,
+        request: BearerStatusRequest,
+    ) = error("대기열 미사용")
+
+    override suspend fun pending(flagId: String): List<BearerStatusRequest> = error("대기열 미사용")
+
+    override fun events(flagId: String): Flow<BearerOutboxEvent> = error("대기열 미사용")
+
+    override suspend fun resume() = error("대기열 미사용")
+
+    override fun cancelWork() = error("대기열 미사용")
+
+    override suspend fun removeAll(ownerUserId: String) = error("대기열 미사용")
+}
+
 internal const val SESSION_ID = "ses_1"
 internal const val DEVICE_ID = "8a5c2f8e-1d2b-4c3d-9e4f-0a1b2c3d4e5f"
 
-internal fun makeRepository(client: RecordingClient, loggedIn: Boolean = true) = BearerRepositoryImpl(
+internal fun makeRepository(
+    client: RecordingClient,
+    loggedIn: Boolean = true,
+    serverClock: BearerServerClock = BearerServerClock(),
+) = BearerRepositoryImpl(
     api = FlagRequest(client.client),
     currentSessionId = { if (loggedIn) SESSION_ID else null },
     installationDeviceId = { DEVICE_ID },
     imageUrl = BearerImageUrl(RecordingClient.BASE_URL),
+    serverClock = serverClock,
 )
 
 internal val HttpRequestData.path: String get() = url.encodedPath.removePrefix("/")

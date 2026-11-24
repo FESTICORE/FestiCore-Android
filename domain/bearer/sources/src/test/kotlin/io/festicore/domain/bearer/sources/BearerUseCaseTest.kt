@@ -102,7 +102,7 @@ class BearerUseCaseTest {
         pack: CachedFestivalPack? = null,
         newUuid: () -> String = { "uuid" },
         clock: Clock = Clock.systemUTC(),
-    ) = BearerUseCaseImpl(repository, StubPackSyncService(pack), newUuid, clock)
+    ) = BearerUseCaseImpl(repository, StubPackSyncService(pack), newUuid, clock, outbox = UnusedOutbox())
 }
 
 /** 코드 인증만 기록하는 저장소. 나머지는 쓰지 않는다. iOS `ClaimRecordingRepository`. */

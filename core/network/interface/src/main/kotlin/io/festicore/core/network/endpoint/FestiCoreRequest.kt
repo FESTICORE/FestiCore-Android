@@ -24,8 +24,16 @@ import kotlinx.serialization.SerializationException
  * - 2xx + 다른 `code` → [NetworkError.InvalidResponse]
  * - 2xx가 아님 → 본문을 [ErrorBody]로 읽어 [NetworkError.Http]
  */
-suspend inline fun <reified T> HttpClient.festiCoreRequest(noinline block: HttpRequestBuilder.() -> Unit): T = mapNetworkErrors {
+suspend inline fun <reified T> HttpClient.festiCoreRequest(noinline block: HttpRequestBuilder.() -> Unit): T =
+    festiCoreRequest(onResponse = {}, block = block)
+
+/** [festiCoreRequest]와 같고, [onResponse]를 상태와 관계없이 응답을 받자마자 부른다(서버 `Date` 헤더 읽기 등). */
+suspend inline fun <reified T> HttpClient.festiCoreRequest(
+    noinline onResponse: (HttpResponse) -> Unit,
+    noinline block: HttpRequestBuilder.() -> Unit,
+): T = mapNetworkErrors {
     val response = request(block)
+    onResponse(response)
     if (!response.status.isSuccess()) throw response.toHttpError()
     val body = response.body<BaseResponse<T>>()
     if (body.code != SUCCESS_CODE) throw NetworkError.InvalidResponse(body.code, body.message)
