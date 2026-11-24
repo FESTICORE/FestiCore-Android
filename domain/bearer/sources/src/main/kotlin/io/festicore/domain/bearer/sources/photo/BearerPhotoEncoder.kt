@@ -112,8 +112,14 @@ internal class BearerPhotoEncoder(private val useImageDecoder: Boolean = Build.V
         const val MAX_SIDE = 2048
         private val QUALITIES = listOf(85, 75, 65, 55, 45, 35)
 
-        private fun Bitmap.jpeg(quality: Int): ByteArray =
-            ByteArrayOutputStream().also { compress(Bitmap.CompressFormat.JPEG, quality, it) }.toByteArray()
+        /** JPEG로 다시 인코딩한다. 인코딩에 실패하면 빈 · 부분 결과를 올리지 않고 지원하지 않는 사진으로 본다. */
+        private fun Bitmap.jpeg(quality: Int): ByteArray {
+            val output = ByteArrayOutputStream()
+            if (!compress(Bitmap.CompressFormat.JPEG, quality, output) || output.size() == 0) {
+                throw BearerError.UnsupportedPhoto()
+            }
+            return output.toByteArray()
+        }
 
         /** 디코딩한(방향 적용) 비트맵을 [plan] 크기로 맞춘다. 가로 · 세로는 비트맵 방향을 따른다. */
         private fun Bitmap.scaledTo(plan: SizePlan): Bitmap {
