@@ -204,11 +204,14 @@ class BoundaryTests(unittest.TestCase):
         path = "service/config/src/main/kotlin/A.kt"
         self.assertEqual(0, self.check(path, "val a = FirebaseApp.initializeApp(context, options)\n").returncode)
 
-    def test_feature_may_depend_only_on_analytics_interface(self):
+    def test_feature_may_depend_only_on_three_interfaces(self):
         path = "feature/festival/sources/build.gradle.kts"
         allowed = [
             'dependencies { implementation(project(":service:analytics:interface")) }\n',
             "dependencies { implementation(projects.service.analytics.`interface`) }\n",
+            'dependencies { implementation(project(":core:storage:interface")) }\n',
+            'dependencies { implementation(project(":core:location:interface")) }\n',
+            "dependencies { implementation(projects.core.location.`interface`) }\n",
         ]
         for text in allowed:
             self.assertEqual(0, self.check(path, text).returncode, text)
@@ -216,8 +219,8 @@ class BoundaryTests(unittest.TestCase):
             'dependencies { implementation(project(":service:analytics:sources")) }\n',
             'dependencies { implementation(project(":core:storage:sources")) }\n',
             'dependencies { implementation(project(":core:network:interface")) }\n',
-            'dependencies { implementation(project(":core:storage:interface")) }\n',
-            'dependencies { implementation(project(":core:location:interface")) }\n',
+            'dependencies { implementation(project(":core:location:sources")) }\n',
+            'dependencies { implementation(project(":core:storage:interfaceX")) }\n',
             'dependencies { implementation(project(":service:analytics:interfaceX")) }\n',
             "dependencies { implementation(projects.service.analytics.sources) }\n",
             "dependencies { implementation(projects.core.network.`interface`) }\n",
@@ -226,6 +229,14 @@ class BoundaryTests(unittest.TestCase):
             result = self.check(path, text)
             self.assertEqual(1, result.returncode, text)
             self.assertIn("feature는 service · core를 의존하지 않는다", result.stdout)
+
+    def test_location_api_only_in_location_sources(self):
+        text = "import android.location.LocationManager\n"
+        result = self.check("feature/festival/sources/src/main/kotlin/A.kt", text)
+        self.assertEqual(1, result.returncode)
+        self.assertIn("위치 API는 core:location:sources만", result.stdout)
+        self.assertEqual(0, self.check("feature/festival/sources/src/main/kotlin/A.kt", "val a = 1\n").returncode)
+        self.assertEqual(0, self.check("core/location/sources/src/main/kotlin/A.kt", text).returncode)
 
     def test_analytics_sources_only_assembled(self):
         text = 'dependencies {\n    implementation(project(":service:analytics:sources"))\n}\n'

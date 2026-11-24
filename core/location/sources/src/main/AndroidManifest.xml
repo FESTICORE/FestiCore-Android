@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        귀가 카드 도보 계산의 현재 위치(iOS NSLocationWhenInUseUsageDescription, 사용 중일 때만).
+        iOS가 100m 정확도를 쓰므로 정확 위치도 함께 요청하고, 사용자가 대략 위치만 허용해도 쓴다(Android 12+는 둘을 함께 요청해야 한다).
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+</manifest>
