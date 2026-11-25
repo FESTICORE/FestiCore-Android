@@ -75,6 +75,7 @@ class LaunchLoginViewModelTest {
                         currentTermsVersion = TERMS_V2,
                         sessionId = "s9",
                         isReconsent = true,
+                        isNewUser = false,
                     ),
                 ),
             )
