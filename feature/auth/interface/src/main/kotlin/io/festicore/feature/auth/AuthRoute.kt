@@ -18,6 +18,7 @@ sealed interface AuthRoute : NavKey {
      * @param currentTermsVersion 서버 현재 약관 버전.
      * @param sessionId 가입 요청을 묶을 세션. 가입 완료([LaunchLoginResult.Completed])도 이 세션을 싣는다.
      * @param isReconsent 예전 약관에 동의한 기존 회원인지(iOS `termsAcceptedAt != nil`). 참이면 처음부터 재동의 문구를 보인다.
+     * @param isNewUser 첫 로그인에서 생성된 신규 계정인지. 재확인 가입은 false다.
      */
     @Serializable
     data class SignUp(
@@ -26,6 +27,7 @@ sealed interface AuthRoute : NavKey {
         val currentTermsVersion: String,
         val sessionId: String,
         val isReconsent: Boolean = false,
+        val isNewUser: Boolean = false,
     ) : AuthRoute
 
     /** 가입 정보 위에 여는 약관 상세(iOS `AuthScreen.legalDocument`, 앱 안 웹 화면). */

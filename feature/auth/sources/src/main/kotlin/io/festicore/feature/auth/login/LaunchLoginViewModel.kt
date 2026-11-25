@@ -122,7 +122,12 @@ class LaunchLoginViewModel(
             val userId = profile?.user?.id ?: login.user.id
             postSideEffect(
                 LaunchLoginSideEffect.Finished(
-                    LaunchLoginResult.Completed(userId = userId, sessionId = login.sessionId, profile = profile),
+                    LaunchLoginResult.Completed(
+                        userId = userId,
+                        sessionId = login.sessionId,
+                        profile = profile,
+                        didCompleteSignUp = login.newUser,
+                    ),
                 ),
             )
             return@subIntent
@@ -136,6 +141,7 @@ class LaunchLoginViewModel(
                 currentTermsVersion = profile.currentTermsVersion,
                 sessionId = login.sessionId,
                 isReconsent = profile.user.termsAcceptedAt != null,
+                isNewUser = login.newUser,
             )
         postSideEffect(LaunchLoginSideEffect.SignUpRequired(route))
     }

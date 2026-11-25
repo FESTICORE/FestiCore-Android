@@ -38,7 +38,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectSideEffect(
-                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile, didCompleteSignUp = true),
+                ),
             )
         }
     }
@@ -52,7 +54,7 @@ class LaunchLoginViewModelTest {
             expectState(signingIn.copy(isSigningIn = false))
             expectSideEffect(
                 LaunchLoginSideEffect.SignUpRequired(
-                    AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V1, sessionId = "s9"),
+                    AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V1, sessionId = "s9", isNewUser = true),
                 ),
             )
         }
@@ -61,13 +63,19 @@ class LaunchLoginViewModelTest {
     @Test
     fun `예전 약관에 동의한 기존 회원이면 재동의로 가입 정보에 간다`() = runTest {
         val repository = FakeAuthRepository(profile = { AuthProfile(user(), TERMS_V2) }).apply { currentSessionId = "s9" }
-        viewModel(login = { loginResult(sessionId = "s9") }, repository = repository).test(this) {
+        viewModel(login = { loginResult(sessionId = "s9").copy(newUser = false) }, repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectState(signingIn.copy(isSigningIn = false))
             expectSideEffect(
                 LaunchLoginSideEffect.SignUpRequired(
-                    AuthRoute.SignUp(userId = "u1", nickname = "페스티", currentTermsVersion = TERMS_V2, sessionId = "s9", isReconsent = true),
+                    AuthRoute.SignUp(
+                        userId = "u1",
+                        nickname = "페스티",
+                        currentTermsVersion = TERMS_V2,
+                        sessionId = "s9",
+                        isReconsent = true,
+                    ),
                 ),
             )
         }
@@ -80,7 +88,9 @@ class LaunchLoginViewModelTest {
         viewModel(login = login, repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u9", sessionId = "s1")))
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u9", sessionId = "s1", didCompleteSignUp = true)),
+            )
         }
     }
 
@@ -90,7 +100,9 @@ class LaunchLoginViewModelTest {
         viewModel(repository = repository).test(this) {
             containerHost.onSignInTapped()
             expectState(signingIn)
-            expectSideEffect(LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1")))
+            expectSideEffect(
+                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", didCompleteSignUp = true)),
+            )
         }
         assertEquals(0, repository.clearCount)
     }
@@ -102,7 +114,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectSideEffect(
-                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile, didCompleteSignUp = true),
+                ),
             )
         }
         assertEquals(listOf<String?>("s1"), repository.fetchSessionIds)
@@ -218,7 +232,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(LaunchLoginState(isSigningIn = true, attemptId = 2))
             expectSideEffect(
-                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile, didCompleteSignUp = true),
+                ),
             )
         }
     }
@@ -243,7 +259,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSkipTapped()
             pending.complete(loginResult())
             expectSideEffect(
-                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile, didCompleteSignUp = true),
+                ),
             )
         }
         assertEquals(1, useCase.callCount)
@@ -256,7 +274,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInTapped()
             expectState(signingIn)
             expectSideEffect(
-                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile, didCompleteSignUp = true),
+                ),
             )
         }
         assertEquals(
@@ -278,7 +298,9 @@ class LaunchLoginViewModelTest {
             containerHost.onSignInRequested()
             expectState(signingIn)
             expectSideEffect(
-                LaunchLoginSideEffect.Finished(LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile)),
+                LaunchLoginSideEffect.Finished(
+                    LaunchLoginResult.Completed(userId = "u1", sessionId = "s1", profile = eligibleProfile, didCompleteSignUp = false),
+                ),
             )
         }
         assertEquals(emptyList<AnalyticsEvent>(), analytics.events)

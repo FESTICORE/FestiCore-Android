@@ -83,7 +83,12 @@ fun LaunchLoginFlow(
                             route = route,
                             onCompleted = { profile ->
                                 coordinator.onFinished(
-                                    LaunchLoginResult.Completed(userId = route.userId, sessionId = route.sessionId, profile = profile),
+                                    LaunchLoginResult.Completed(
+                                        userId = route.userId,
+                                        sessionId = route.sessionId,
+                                        profile = profile,
+                                        didCompleteSignUp = route.isNewUser,
+                                    ),
                                 )
                             },
                             onClosed = coordinator::onSignUpClosed,
