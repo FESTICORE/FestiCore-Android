@@ -24,13 +24,16 @@ import io.festicore.feature.bearer.profile.BearerProfileScreen
 import io.festicore.feature.bearer.profile.BearerProfileViewModel
 import io.festicore.feature.bearer.register.BearerRegisterScreen
 import io.festicore.feature.bearer.register.BearerRegisterViewModel
+import io.festicore.feature.bearer.register.BearerRoleChoiceScreen
+import io.festicore.feature.bearer.register.BearerRoleChoiceViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-/** 앱이 소유하는 마이 탭 기수 등록 · 인증 · 프로필 · 보드 경로. */
+/** 앱이 소유하는 기수 여부 · 등록 · 인증 · 프로필 · 보드 경로. */
 @Composable
 fun BearerEntryHost(
     startRoute: BearerRoute,
+    roleChoicePreferredFestivalId: String? = null,
     viewerUserId: String?,
     onRegistered: (festivalId: String) -> Unit,
     onPackRequested: (festivalId: String) -> Unit,
@@ -130,7 +133,15 @@ fun BearerEntryHost(
                         BearerBoardScreen(route = route, viewerUserId = viewerUserId, onClose = ::closeOrPop)
                     }
 
-                    entry<BearerRoute.RoleChoice> { onClose() }
+                    entry<BearerRoute.RoleChoice> {
+                        val viewModel: BearerRoleChoiceViewModel = koinViewModel()
+                        BearerRoleChoiceScreen(
+                            viewModel = viewModel,
+                            onAudienceChosen = onClose,
+                            onBearerChosen = { push(BearerRoute.Register(roleChoicePreferredFestivalId)) },
+                            onCloseRequested = onClose,
+                        )
+                    }
                 },
         )
 

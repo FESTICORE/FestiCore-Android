@@ -49,6 +49,8 @@ data class AppCoordinatorState(
     val routes: List<NavKey> = listOf(AppRoute.Splash),
     val launchLogin: Boolean = false,
     val signUp: AuthRoute.SignUp? = null,
+    /** 신규 가입 직후 기수 여부 화면이 첫 진입 덮개를 이어 받고 있다. */
+    val bearerSetupPresented: Boolean = false,
     val coverEpoch: Int = 0,
     val coverTop: AuthRoute? = null,
     val loginSheet: LoginContext? = null,
@@ -63,11 +65,14 @@ data class AppCoordinatorState(
     val showsSignUp: Boolean
         get() = signUp != null || (launchLogin && coverTop is AuthRoute.SignUp)
 
-    fun withoutCover(): AppCoordinatorState = copy(launchLogin = false, signUp = null, coverTop = null)
+    val hasCover: Boolean
+        get() = authCover != null || bearerSetupPresented
+
+    fun withoutCover(): AppCoordinatorState = copy(launchLogin = false, signUp = null, bearerSetupPresented = false, coverTop = null)
 
     /** 대기 딥링크를 열 수 있다: 홈이고 덮개(로그인 · 가입)가 없다(iOS `deeplinkReceived`의 `home` · `!isMainTabCovered`). */
     val canOpenDeeplink: Boolean
-        get() = routes == listOf(AppRoute.Home) && authCover == null
+        get() = routes == listOf(AppRoute.Home) && !hasCover
 }
 
 /** 루트 밖으로 나가는 일. 메인 탭이 처리한다. */
@@ -151,8 +156,19 @@ class AppCoordinator(
         when (result) {
             is LaunchLoginResult.Completed -> {
                 // 그 사이 세션이 바뀌었거나 없어졌으면 다른 세션의 사용자라 현재 사용자로 두지 않는다.
-                onLoginCompleted(result)
-                closeCover()
+                val accepted = onLoginCompleted(result)
+                if (accepted && result.didCompleteSignUp) {
+                    reduce {
+                        state.copy(
+                            launchLogin = false,
+                            signUp = null,
+                            coverTop = null,
+                            bearerSetupPresented = true,
+                        )
+                    }
+                } else {
+                    closeCover()
+                }
             }
 
             LaunchLoginResult.SignUpCancelled -> closeCover()
@@ -171,7 +187,7 @@ class AppCoordinator(
      * 이미 떠 있으면 문맥만 바꾸고 진행 중인 로그인 상태는 그대로 둔다.
      */
     fun onLoginRequested(context: LoginContext) = intent {
-        if (state.routes.lastOrNull() != AppRoute.Home || state.authCover != null) return@intent
+        if (state.routes.lastOrNull() != AppRoute.Home || state.hasCover) return@intent
         // 바로 로그인이 진행 중이면 그 로그인 상태를 시트로 보인다(iOS `loginRequested`가 `directLogin`을 `login`으로 바꾼다).
         val id = if (state.loginSheet == null && !state.directLogin) state.loginSheetId + 1 else state.loginSheetId
         reduce { state.copy(loginSheet = context, loginSheetId = id, directLogin = false) }
@@ -182,7 +198,7 @@ class AppCoordinator(
      * 홈이고 덮개 · 시트 · 진행 중인 바로 로그인이 없을 때만 시작한다. 결과는 시트 로그인과 같은 [onLoginSheetFinished] · [onLoginSheetSignUpRequired]로 온다.
      */
     fun onGoogleLoginRequested() = intent {
-        if (state.routes.lastOrNull() != AppRoute.Home || state.authCover != null) return@intent
+        if (state.routes.lastOrNull() != AppRoute.Home || state.hasCover) return@intent
         if (state.loginSheet != null || state.directLogin) return@intent
         reduce { state.copy(directLogin = true, loginSheetId = state.loginSheetId + 1) }
     }
@@ -230,7 +246,7 @@ class AppCoordinator(
      * 계정 상태는 [onLoginCompleted]와 같이 같은 사용자의 이전 프로필만 남긴다(다른 계정의 닉네임이 보이지 않게).
      */
     fun onLoginSheetSignUpRequired(route: AuthRoute.SignUp) = intent {
-        if (currentSessionId() != route.sessionId || state.authCover != null) {
+        if (currentSessionId() != route.sessionId || state.hasCover) {
             reduce { state.copy(loginSheet = null, directLogin = false) }
             return@intent
         }
@@ -245,6 +261,12 @@ class AppCoordinator(
     fun onAuthCoverTopChanged(route: AuthRoute) = intent {
         if (state.authCover == null) return@intent
         reduce { state.copy(coverTop = route) }
+    }
+
+    /** 가입 직후 기수 여부 흐름이 끝났다(iOS `bearerSetup` 종료). 덮개를 걷고 대기 딥링크를 재개한다. */
+    fun onBearerSetupFinished() = intent {
+        if (!state.bearerSetupPresented) return@intent
+        closeCover()
     }
 
     /**
@@ -394,13 +416,14 @@ class AppCoordinator(
      * 로그인 완료가 현재 세션의 결과면 그 사용자를 현재 사용자로 두고 계정 상태를 확인한 프로필로 채운다.
      * 확인이 실패해 프로필이 없으면 같은 사용자의 이전 프로필만 남기고, 다음 재확인에 맡긴다.
      */
-    private suspend fun onLoginCompleted(result: LaunchLoginResult.Completed) {
-        if (currentSessionId() != result.sessionId) return
+    private suspend fun onLoginCompleted(result: LaunchLoginResult.Completed): Boolean {
+        if (currentSessionId() != result.sessionId) return false
         updateCurrentUserId(result.userId)
         accountState.update { account ->
             val profile = result.profile ?: account.profile?.takeIf { it.user.id == result.userId }
             account.copy(profile = profile, hasSession = true)
         }
+        return true
     }
 
     /**
@@ -600,7 +623,7 @@ class AppCoordinator(
             if (open != route) reduce { state.copy(signUp = route) }
             return@subIntent
         }
-        if (state.authCover != null) return@subIntent
+        if (state.hasCover) return@subIntent
         reduce { state.copy(signUp = route) }
     }
 

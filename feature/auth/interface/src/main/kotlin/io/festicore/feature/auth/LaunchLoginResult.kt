@@ -14,6 +14,8 @@ sealed interface LaunchLoginResult {
         val userId: String,
         val sessionId: String,
         val profile: AuthProfile? = null,
+        /** 이번 흐름에서 신규 계정의 가입 정보 입력을 끝냈다(iOS `signUpCompleted`, BC2). */
+        val didCompleteSignUp: Boolean = false,
     ) : LaunchLoginResult
 
     /** "지금은 건너뛸게요"를 눌렀다. 저장하지 않아 다음 실행에 다시 뜬다. */

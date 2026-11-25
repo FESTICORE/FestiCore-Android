@@ -36,6 +36,7 @@ import io.festicore.core.logger.FestiCoreLogger
 import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardPreferenceUseCase
+import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.login.LaunchLoginFlow
 import io.festicore.feature.auth.login.LoginSheet
@@ -160,11 +161,15 @@ private fun HomeWithCovers(
     timetableViewModel: TimetableViewModel = koinViewModel(),
     currentUserProvider: CurrentUserProvider = koinInject(),
     liveBoardPreferenceUseCase: FestivalLiveBoardPreferenceUseCase = koinInject(),
+    festivalBoardSelectionUseCase: FestivalBoardSelectionUseCase = koinInject(),
 ) {
     val mainTabState by mainTab.collectAsState()
     val festivalState by festivalCoordinator.collectAsState()
     val flagState by flagViewModel.collectAsState()
     val accountId by currentUserProvider.currentUserId.collectAsState()
+    val profileState by profileViewModel.collectAsState()
+    val boardSelection by festivalBoardSelectionUseCase.selection.collectAsState()
+    val bearerPreferredFestivalId = boardSelection?.festivalId ?: profileState.packs.singleOrNull()?.id
     var profileBearerRoute by remember { mutableStateOf<BearerRoute?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val flagBoard = festivalState.flagBoard
@@ -286,7 +291,7 @@ private fun HomeWithCovers(
         )
     val timetableEntries = rememberTimetableFlowEntries(coordinator = timetableCoordinator, timetableViewModel = timetableViewModel)
     val mainTabOffset by animateFloatAsState(
-        targetValue = if (state.launchLogin) 1f else 0f,
+        targetValue = if (state.launchLogin || state.bearerSetupPresented) 1f else 0f,
         animationSpec = LaunchTransitions.coverTween(),
         label = "mainTabOffset",
     )
@@ -299,7 +304,7 @@ private fun HomeWithCovers(
             modifier =
                 Modifier
                     .graphicsLayer { translationX = mainTabOffset * size.width }
-                    .then(if (state.authCover != null) Modifier.clearAndSetSemantics {} else Modifier),
+                    .then(if (state.hasCover) Modifier.clearAndSetSemantics {} else Modifier),
         ) {
             MainTabScreen(
                 selection = mainTabState.selectedTab,
@@ -385,6 +390,32 @@ private fun HomeWithCovers(
                     signUpProfile = state.signUp ?: signUp,
                 )
             }
+        }
+        if (state.bearerSetupPresented) {
+            BearerEntryHost(
+                startRoute = BearerRoute.RoleChoice,
+                roleChoicePreferredFestivalId = bearerPreferredFestivalId,
+                viewerUserId = accountId,
+                onRegistered = { festivalId ->
+                    coroutineScope.launch {
+                        try {
+                            liveBoardPreferenceUseCase.saveSelectedFestivalId(festivalId)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            FestiCoreLogger.error(
+                                "기수 등록 축제 선택 저장 실패: ${e::class.simpleName}",
+                                FestiCoreLogCategory.STORAGE,
+                            )
+                        }
+                    }
+                },
+                onPackRequested = { festivalId ->
+                    coordinator.onBearerSetupFinished()
+                    mainTab.open(FestiCoreDeeplink.Festival(festivalId))
+                },
+                onClose = coordinator::onBearerSetupFinished,
+            )
         }
     }
 }

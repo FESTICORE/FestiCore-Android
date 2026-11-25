@@ -417,6 +417,43 @@ class AppCoordinatorTest {
     }
 
     @Test
+    fun `신규 가입을 마치면 첫 진입 덮개에서 기수 여부로 이어간다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        val deeplinks = FakeDeeplinks()
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth, deeplinks = deeplinks).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+            deeplinks.receive(FestiCoreDeeplink.Festival("fst_a"))
+
+            auth.sessionId = "s1"
+            containerHost.onLaunchLoginFinished(completed.copy(didCompleteSignUp = true))
+            expectState { copy(launchLogin = false, bearerSetupPresented = true) }
+            assertEquals(0, deeplinks.consumeCount)
+
+            containerHost.onBearerSetupFinished()
+            expectState { copy(bearerSetupPresented = false) }
+            expectSideEffect(AppCoordinatorSideEffect.OpenDeeplink(FestiCoreDeeplink.Festival("fst_a")))
+            cancelAndIgnoreRemainingItems()
+        }
+        assertEquals(0, auth.fetchCount)
+    }
+
+    @Test
+    fun `오래된 가입 세션 결과는 기수 여부를 띄우지 않는다`() = runTest {
+        val auth = FakeAuthRepository().apply { sessionId = null }
+        coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
+            runOnCreate()
+            containerHost.onSplashAppeared()
+            expectState { copy(routes = listOf(AppRoute.Home), launchLogin = true) }
+
+            auth.sessionId = "s2"
+            containerHost.onLaunchLoginFinished(completed.copy(didCompleteSignUp = true))
+            expectState { copy(launchLogin = false) }
+        }
+    }
+
+    @Test
     fun `시나리오 6 - 건너뛰기 재확인은 덮개를 지운 뒤 실행된다`() = runTest {
         val auth = FakeAuthRepository().apply { sessionId = null }
         coordinator(FakeOnboardingStore(completed = true), loggedIn = false, auth = auth).test(this) {
