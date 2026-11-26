@@ -58,6 +58,15 @@ internal data class BearerClaimDataDto(
     val coBearers: List<String>? = null,
 )
 
+/** 깃발 축제 이동 응답 `data`(`POST flags/{id}/festival-transfer`). */
+@Serializable
+internal data class BearerFestivalTransferDataDto(
+    val flagId: String,
+    val previousFestivalId: String,
+    val festivalId: String,
+    val flag: BearerFlagProfileDto,
+)
+
 /** 공동 기수 초대 응답 `data`. iOS `BearerInviteDataDTO`. */
 @Serializable
 internal data class BearerInviteDataDto(

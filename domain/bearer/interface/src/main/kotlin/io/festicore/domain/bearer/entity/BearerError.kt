@@ -41,6 +41,15 @@ sealed class BearerError : Exception() {
     /** 축제당 한 깃발만 맡을 수 있다. */
     class BearerLimit : BearerError()
 
+    /** 깃발의 현재 축제가 옮기기 전 축제와 다르다(409 `FESTIVAL_MISMATCH`). 다른 곳에서 이미 옮겼다. */
+    class FestivalMismatch : BearerError()
+
+    /** 공동 기수가 있는 깃발은 옮길 수 없다(409 `FLAG_HAS_CO_BEARERS`). */
+    class HasCoBearers : BearerError()
+
+    /** 소유자가 기수 모드를 껐다(409 `BEARER_MODE_OFF`). */
+    class BearerModeOff : BearerError()
+
     /** 원래 기수는 해제할 수 없다. */
     class OwnerRequired : BearerError()
 

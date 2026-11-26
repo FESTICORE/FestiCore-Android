@@ -117,6 +117,13 @@ data class BearerRegisterBody(
     val plan: List<String>? = null,
 )
 
+/** 깃발 축제 이동 본문(`POST flags/{id}/festival-transfer`). 서버는 이 두 키만 받는다. */
+@Serializable
+data class FlagFestivalTransferBody(
+    val fromFestivalId: String,
+    val toFestivalId: String,
+)
+
 private fun JsonObject.nullableString(key: String): String? = when (val value = get(key)) {
     null, JsonNull -> null
     is JsonPrimitive -> if (value.isString) value.content else throw SerializationException("$key 형식이 다릅니다")

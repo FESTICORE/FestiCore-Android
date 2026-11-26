@@ -34,6 +34,9 @@ object FlagApi {
     /** 기수 상태 변경. iOS `FlagAPI.status`. */
     fun status(flagId: String) = "$FLAGS/$flagId/status"
 
+    /** 기존 깃발을 다른 발행 축제로 옮긴다(Android 먼저, 백엔드 #409). */
+    fun festivalTransfer(flagId: String) = "$FLAGS/$flagId/festival-transfer"
+
     /** 깃발 사진 업로드. iOS `FlagAPI.photo`. */
     fun photo(flagId: String) = "$FLAGS/$flagId/photo"
 

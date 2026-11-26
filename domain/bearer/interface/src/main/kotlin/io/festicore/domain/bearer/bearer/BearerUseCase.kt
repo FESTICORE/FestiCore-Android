@@ -3,6 +3,8 @@ package io.festicore.domain.bearer.bearer
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerFestival
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
@@ -43,6 +45,15 @@ interface BearerUseCase {
     suspend fun fetchBoard(flagId: String): BearerBoard
 
     suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile
+
+    /** 새 멱등키(`transfer-<uuid>`)로 축제 이동 한 건을 만든다. 응답을 받지 못해 다시 보낼 때는 만든 값을 그대로 쓴다. */
+    fun makeFestivalTransferRequest(
+        flagId: String,
+        fromFestivalId: String,
+        toFestivalId: String,
+    ): BearerFestivalTransferRequest
+
+    suspend fun transferFestival(request: BearerFestivalTransferRequest): BearerFestivalTransfer
 
     /**
      * 사진을 서버 규격(JPEG · 5MB 이하 · 짧은 변 256px 이상 · 긴 변 2048px)으로 다시 인코딩해 올린다.

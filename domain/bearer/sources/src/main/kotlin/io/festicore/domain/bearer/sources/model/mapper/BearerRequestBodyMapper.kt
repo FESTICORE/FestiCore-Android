@@ -1,10 +1,12 @@
 package io.festicore.domain.bearer.sources.model.mapper
 
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerProfileChange
 import io.festicore.domain.bearer.entity.BearerRegisterRequest
 import io.festicore.domain.bearer.entity.BearerStatusChange
 import io.festicore.domain.bearer.entity.BearerStatusRequest
 import io.festicore.service.apiendpoint.flag.BearerRegisterBody
+import io.festicore.service.apiendpoint.flag.FlagFestivalTransferBody
 import io.festicore.service.apiendpoint.flag.FlagProfileBody
 import io.festicore.service.apiendpoint.flag.FlagStatusBody
 import java.time.ZoneOffset
@@ -31,6 +33,8 @@ internal fun BearerStatusRequest.toBody(): FlagStatusBody {
             FlagStatusBody(clientAt, zoneId = change.zoneId, activity = change.activity.value, restart = true)
     }
 }
+
+internal fun BearerFestivalTransferRequest.toBody() = FlagFestivalTransferBody(fromFestivalId = fromFestivalId, toFestivalId = toFestivalId)
 
 /** 앞뒤 공백을 지우고, 비운 소개 · 존은 null로 보낸다. iOS `BearerProfileChange.body`. */
 internal fun BearerProfileChange.toBody(): FlagProfileBody {

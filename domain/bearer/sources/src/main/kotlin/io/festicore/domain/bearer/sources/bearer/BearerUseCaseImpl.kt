@@ -7,6 +7,8 @@ import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerError
 import io.festicore.domain.bearer.entity.BearerFestival
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFollowedFlag
@@ -76,6 +78,15 @@ internal class BearerUseCaseImpl(
 
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile =
         repository.updateProfile(flagId, change)
+
+    override fun makeFestivalTransferRequest(
+        flagId: String,
+        fromFestivalId: String,
+        toFestivalId: String,
+    ) = BearerFestivalTransferRequest(flagId, fromFestivalId, toFestivalId, idempotencyKey = "transfer-${newUuid().lowercase(Locale.ROOT)}")
+
+    override suspend fun transferFestival(request: BearerFestivalTransferRequest): BearerFestivalTransfer =
+        repository.transferFestival(request)
 
     override fun uploadPhoto(flagId: String, imageData: ByteArray): Flow<BearerPhotoUploadEvent> = channelFlow {
         val jpeg = withContext(encodeContext) { photoEncoder.encode(imageData) }
