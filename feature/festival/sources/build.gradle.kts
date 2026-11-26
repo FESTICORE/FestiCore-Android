@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":service:analytics:interface"))
     implementation(project(":core:location:interface"))
     implementation(project(":domain:festival:interface"))
+    implementation(project(":domain:bearer:interface"))
     implementation(project(":domain:auth:interface"))
     implementation(project(":domain:usernotification:interface"))
     implementation(project(":ui:designkit"))
@@ -23,6 +24,7 @@ dependencies {
     implementation(libs.lib("activity-compose"))
     implementation(libs.lib("lifecycle-runtime-compose"))
 
+    testImplementation(testFixtures(project(":domain:bearer:interface")))
     testImplementation(libs.lib("robolectric"))
     testImplementation(libs.lib("compose-ui-test-junit4"))
     debugImplementation(libs.lib("compose-ui-test-manifest"))

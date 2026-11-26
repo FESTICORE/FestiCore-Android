@@ -31,6 +31,20 @@ class FlagCoordinatorTest {
         }
     }
 
+    /** 상세 기수 메뉴 → 이동 화면 → 옮기면 상세로 돌아와 다시 불러오게 알린다(Android 먼저, 백엔드 #409). */
+    @Test
+    fun `깃발을 옮기면 이동 화면을 닫고 상세에 알린다`() = runTest {
+        val transfer = FlagRoute.FestivalTransfer("flg_1")
+        FlagCoordinator().test(this, initialState = onDetail) {
+            containerHost.openFestivalTransfer("flg_1")
+            expectState { copy(routes = listOf(FlagRoute.Directory, detail, transfer)) }
+            containerHost.onFestivalTransferred("flg_1")
+            expectState { copy(routes = listOf(FlagRoute.Directory, detail), transferredFlagId = "flg_1") }
+            containerHost.onFestivalTransferConsumed()
+            expectState { copy(transferredFlagId = null) }
+        }
+    }
+
     @Test
     fun `상세에서 바꾼 팔로우를 디렉토리 카드에도 반영한다`() = runTest {
         val result = FestivalFlagFollowResult(flagId = "flg_1", isFollowing = true, followerCount = 11)

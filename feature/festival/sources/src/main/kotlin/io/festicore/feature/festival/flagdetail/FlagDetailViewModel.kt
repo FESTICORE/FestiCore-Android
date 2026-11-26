@@ -1,6 +1,7 @@
 package io.festicore.feature.festival.flagdetail
 
 import androidx.lifecycle.ViewModel
+import io.festicore.domain.bearer.bearer.BearerUseCase
 import io.festicore.domain.festival.entity.FestivalFlagDetail
 import io.festicore.domain.festival.entity.FestivalFlagDetailError
 import io.festicore.domain.festival.entity.FestivalFlagFollowError
@@ -34,6 +35,7 @@ class FlagDetailViewModel(
     private val detailUseCase: FestivalFlagDetailUseCase,
     private val flagUseCase: FestivalFlagUseCase,
     private val analyticsUseCase: AnalyticsUseCase,
+    private val bearerUseCase: BearerUseCase,
     private val clock: Clock = Clock.systemUTC(),
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
 ) : ViewModel(),
@@ -120,12 +122,43 @@ class FlagDetailViewModel(
                 isFollowPending = false,
                 isReportPending = false,
                 reportSheet = null,
+                canTransferFestival = false,
+                isMenuPresented = false,
                 content = FlagDetailContent.Loading,
                 isOffline = false,
                 loadGeneration = state.loadGeneration + 1,
             )
         }
         load(state.loadGeneration)
+    }
+
+    /** 깃발 관리 메뉴. 옮길 수 있는 내 깃발이 아니면 열지 않는다. */
+    fun onMenuTapped() = intent {
+        if (!state.canTransferFestival) return@intent
+        reduce { state.copy(isMenuPresented = true) }
+    }
+
+    fun onMenuDismissed() = intent {
+        reduce { state.copy(isMenuPresented = false) }
+    }
+
+    fun onMenuShareTapped() = intent {
+        if (!state.isMenuPresented) return@intent
+        reduce { state.copy(isMenuPresented = false) }
+        onShareTapped()
+    }
+
+    fun onMenuTransferTapped() = intent {
+        if (!state.isMenuPresented) return@intent
+        reduce { state.copy(isMenuPresented = false) }
+        postSideEffect(FlagDetailSideEffect.FestivalTransferRequested(flagId = state.flagId))
+    }
+
+    /** 이동 화면에서 옮기기를 마쳤다. 계획 · 존 · 현장 상태가 바뀌었으니 다시 불러온다. */
+    fun onFestivalTransferred() = intent {
+        reduce { state.copy(loadGeneration = state.loadGeneration + 1) }
+        load(state.loadGeneration)
+        showToast(FlagDetailToast.FestivalTransferred)
     }
 
     // MARK: - Scope (신고 시트, iOS `FestivalFlagReportFeature`)
@@ -154,7 +187,9 @@ class FlagDetailViewModel(
             intent {
                 val failure =
                     try {
-                        onLoaded(generation, detailUseCase.detail(flagId), clock.instant())
+                        val detail = detailUseCase.detail(flagId)
+                        onLoaded(generation, detail, clock.instant())
+                        if (detail.isBearer == true && isTransferable(flagId)) onTransferable(generation)
                         return@intent
                     } catch (cancellation: CancellationException) {
                         throw cancellation
@@ -207,6 +242,17 @@ class FlagDetailViewModel(
         reportJob.getAndSet(job)?.cancel()
     }
 
+    /** 원래 기수이고 공동 기수가 없으면 옮길 수 있다(서버도 403 `FLAG_NOT_OWNER` · 409 `FLAG_HAS_CO_BEARERS`로 거절). 읽지 못하면 메뉴를 두지 않는다. */
+    private suspend fun isTransferable(flagId: String): Boolean = try {
+        val owned = bearerUseCase.fetchBearerFlags(festivalId = null).firstOrNull { it.id == flagId }
+        // 기수 보드의 coBearers에는 원래 기수도 들어 있다.
+        owned?.isOwner == true && bearerUseCase.fetchBoard(flagId = flagId).coBearers.size <= 1
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (_: Exception) {
+        false
+    }
+
     /** 1분마다 지금 시각을 바꿔 경과 시간 문구 · 계획 행 상태를 다시 그린다(iOS `clock.timer(60)`). */
     private suspend fun startClock() = subIntent {
         val job =
@@ -240,6 +286,10 @@ class FlagDetailViewModel(
             if (generation != state.loadGeneration) return@reduce state
             state.copy(content = FlagDetailContent.Loaded(detail), lastLoadedAt = at, now = at, isOffline = false, followOverride = null)
         }
+    }
+
+    private fun onTransferable(generation: Int) = intent {
+        reduce { if (generation != state.loadGeneration) state else state.copy(canTransferFestival = true) }
     }
 
     internal fun onLoadFailed(generation: Int, error: FestivalFlagDetailError) = intent {

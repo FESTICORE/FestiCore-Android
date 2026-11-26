@@ -314,7 +314,7 @@ class BearerRegisterViewModelTest {
 }
 
 /** 테스트 전용 축제 목록(iOS `MockFestivalCatalogUseCase`). 넘기지 않은 함수는 부르면 실패한다. */
-private class FakeCatalogUseCase(
+internal class FakeCatalogUseCase(
     private val cached: (suspend () -> List<FestivalCatalogItem>)? = null,
     private val refresh: (suspend () -> List<FestivalCatalogItem>)? = null,
 ) : FestivalCatalogUseCase {
@@ -330,7 +330,7 @@ private class FakeCatalogUseCase(
 }
 
 /** 테스트 전용 받은 팩(iOS `MockFestivalReceivedPackUseCase`). */
-private class FakeReceivedPackUseCase(private val packs: List<FestivalReceivedPack>) : FestivalReceivedPackUseCase {
+internal class FakeReceivedPackUseCase(private val packs: List<FestivalReceivedPack>) : FestivalReceivedPackUseCase {
     override suspend fun receivedPacks(): List<FestivalReceivedPack> = packs
 
     override suspend fun refreshReceivedPacks(): List<FestivalReceivedPack> = throw UnsupportedOperationException("이 테스트는 이 함수를 넘기지 않았다")

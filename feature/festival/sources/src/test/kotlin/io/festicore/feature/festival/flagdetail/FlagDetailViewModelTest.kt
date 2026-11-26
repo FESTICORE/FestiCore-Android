@@ -1,5 +1,6 @@
 package io.festicore.feature.festival.flagdetail
 
+import io.festicore.domain.bearer.testing.FakeBearerUseCase
 import io.festicore.domain.festival.entity.FestivalFlagDetail
 import io.festicore.domain.festival.entity.FestivalFlagDetailError
 import io.festicore.domain.festival.entity.FestivalFlagFollowError
@@ -40,6 +41,7 @@ class FlagDetailViewModelTest {
         detailUseCase = detailUseCase,
         flagUseCase = flagUseCase,
         analyticsUseCase = analytics,
+        bearerUseCase = FakeBearerUseCase(),
         clock = clock,
         sleep = sleep,
     )

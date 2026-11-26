@@ -13,6 +13,10 @@ sealed interface FlagRoute : NavKey {
     /** S05 깃발 상세(iOS `detail`). 스택에 하나만 둔다. 표시 문맥은 흐름이 따로 받는다. */
     @Serializable
     data class Detail(val flagId: String) : FlagRoute
+
+    /** 깃발 축제 이동(Android 먼저, 백엔드 #409). 상세 기수 메뉴에서 상세 위에 쌓는다. 화면은 기수 기능이 그리고 상위가 넘긴다. */
+    @Serializable
+    data class FestivalTransfer(val flagId: String) : FlagRoute
 }
 
 /**

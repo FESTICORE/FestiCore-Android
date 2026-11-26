@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import io.festicore.domain.bearer.entity.BearerFestivalOption
 import io.festicore.domain.bearer.entity.BearerFlagTag
 import io.festicore.feature.bearer.profile.ActionBar
 import io.festicore.feature.bearer.profile.BearerProfileState
@@ -63,8 +62,6 @@ import io.festicore.ui.designkit.component.popup.FCDialogItem
 import io.festicore.ui.designkit.component.selection.FCPhotoPicker
 import io.festicore.ui.designkit.component.selection.FCPhotoPickerState
 import io.festicore.ui.designkit.component.selection.FCTextField
-import io.festicore.ui.designkit.component.skeleton.FCSkeletonShape
-import io.festicore.ui.designkit.component.skeleton.FCSkeletonView
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
@@ -82,8 +79,7 @@ private val SectionSpacing = 28.dp
 private val GroupSpacing = 12.dp
 private val DoneSectionSpacing = 40.dp
 
-// iOS 페스티벌 스켈레톤 높이 44(`BRV:161`), 설정 카드 테두리 1(`BRV:304-307`)
-private val FestivalSkeletonHeight = 44.dp
+// iOS 설정 카드 테두리 1(`BRV:304-307`). 페스티벌 스켈레톤 높이 44(`BRV:161`)는 `BearerFestivalPicker`에 있다.
 private val CardBorderWidth = 1.dp
 
 // 디코딩 크기: `FCPhotoPicker` 사진 칸 88, `FCFlagCard` 썸네일 56
@@ -289,75 +285,21 @@ private fun Header() {
 
 @Composable
 private fun FestivalSection(state: BearerRegisterState, callbacks: BearerRegisterCallbacks) {
-    Column(verticalArrangement = Arrangement.spacedBy(GroupSpacing)) {
-        SectionLabel(title = "어느 페스티벌의 깃발인가요?", count = null)
-        when (val load = state.festivals.load) {
-            BearerFestivalLoad.Loading ->
-                repeat(BearerRegisterState.UPCOMING_PREVIEW_COUNT) {
-                    FCSkeletonView(FCSkeletonShape.Round(), Modifier.fillMaxWidth().height(FestivalSkeletonHeight))
-                }
-
-            is BearerFestivalLoad.Failed ->
-                Column(verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8)) {
-                    Helper(
-                        if (load.offline) {
-                            "인터넷에 연결되지 않아 페스티벌을 불러오지 못했어요."
-                        } else {
-                            "깃발을 만들 수 있는 페스티벌을 불러오지 못했어요."
-                        },
-                    )
-                    FCButton(
-                        title = "다시 시도",
-                        style = FCButtonStyle.Secondary,
-                        size = FCButtonSize.Medium,
-                        onClick = callbacks.onRetryTapped,
-                    )
-                }
-
-            BearerFestivalLoad.Loaded -> FestivalRows(state, callbacks)
-        }
-    }
-}
-
-@Composable
-private fun ColumnScope.FestivalRows(state: BearerRegisterState, callbacks: BearerRegisterCallbacks) {
-    val festivals = state.festivals
-    val hasReceived = festivals.received.isNotEmpty()
-    if (hasReceived) {
-        Helper("내가 받은 팩")
-        festivals.received.forEach { option -> FestivalButton(option, state.selectedFestivalId, callbacks.onFestivalTapped) }
-        if (festivals.visibleUpcoming.isNotEmpty()) {
-            Helper("다른 페스티벌")
-        }
-    }
-    festivals.visibleUpcoming.forEach { option -> FestivalButton(option, state.selectedFestivalId, callbacks.onFestivalTapped) }
-    if (festivals.canShowMore) {
-        FCButton(
-            title = "다른 페스티벌 찾기",
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            style = FCButtonStyle.Ghost,
-            onClick = callbacks.onShowMoreTapped,
-        )
-    }
-    Helper(
-        if (hasReceived) {
-            "로그인 전에 받은 팩·핀한 페스티벌이 먼저 보여요. 깃발은 페스티벌마다 따로 만들어요."
-        } else {
-            "앞으로 열리는 페스티벌이에요. 깃발은 페스티벌마다 따로 만들어요."
+    BearerFestivalPicker(
+        title = "어느 페스티벌의 깃발인가요?",
+        festivals = state.festivals,
+        selectedFestivalId = state.selectedFestivalId,
+        failedMessage = "깃발을 만들 수 있는 페스티벌을 불러오지 못했어요.",
+        helper = { hasReceived ->
+            if (hasReceived) {
+                "로그인 전에 받은 팩·핀한 페스티벌이 먼저 보여요. 깃발은 페스티벌마다 따로 만들어요."
+            } else {
+                "앞으로 열리는 페스티벌이에요. 깃발은 페스티벌마다 따로 만들어요."
+            }
         },
-    )
-}
-
-@Composable
-private fun FestivalButton(
-    option: BearerFestivalOption,
-    selectedFestivalId: String?,
-    onFestivalTapped: (String) -> Unit,
-) {
-    BearerZoneButton(
-        name = option.title,
-        isSelected = selectedFestivalId == option.id,
-        onClick = { onFestivalTapped(option.id) },
+        onFestivalTapped = callbacks.onFestivalTapped,
+        onRetryTapped = callbacks.onRetryTapped,
+        onShowMoreTapped = callbacks.onShowMoreTapped,
     )
 }
 
