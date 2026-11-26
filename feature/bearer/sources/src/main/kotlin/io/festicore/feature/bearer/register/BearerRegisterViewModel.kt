@@ -176,32 +176,9 @@ class BearerRegisterViewModel(
         val today = LocalDate.now(clock).toString()
         val job =
             intent {
-                val packs =
-                    try {
-                        receivedPackUseCase.receivedPacks()
-                    } catch (cancellation: CancellationException) {
-                        throw cancellation
-                    } catch (_: Exception) {
-                        emptyList()
-                    }
-                var isOffline = false
-                val catalog =
-                    try {
-                        catalogUseCase.refreshFestivals()
-                    } catch (cancellation: CancellationException) {
-                        throw cancellation
-                    } catch (_: Exception) {
-                        // 연결되지 않았으면 기기에 저장된 목록으로 고르게 한다.
-                        isOffline = true
-                        try {
-                            catalogUseCase.cachedFestivals()
-                        } catch (cancellation: CancellationException) {
-                            throw cancellation
-                        } catch (_: Exception) {
-                            emptyList()
-                        }
-                    }
-                val options = options(packs = packs, catalog = catalog, today = today)
+                val loaded = loadBearerFestivalOptions(receivedPackUseCase, catalogUseCase, today)
+                val isOffline = loaded.isOffline
+                val options = loaded.options
                 if (options.received.isEmpty() && options.upcoming.isEmpty()) {
                     reduce { state.copy(festivals = state.festivals.copy(load = BearerFestivalLoad.Failed(offline = isOffline))) }
                 } else {

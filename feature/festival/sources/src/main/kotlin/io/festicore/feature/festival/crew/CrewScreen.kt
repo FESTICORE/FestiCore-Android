@@ -99,8 +99,8 @@ private val GatherIconSize = 20.dp
 /** Figma S07 F 응답 버튼 모서리 10. 같은 값의 Radius 토큰이 없어 화면 값으로 둔다(iOS와 같음). */
 private val GatherActionRadius = 10.dp
 private val GatherActionVertical = 10.dp
-private val MenuTitleSpacing = 4.dp
-private val MenuRowSpacing = 4.dp
+internal val MenuTitleSpacing = 4.dp
+internal val MenuRowSpacing = 4.dp
 private val MenuRowHeight = 59.dp
 private val MenuLastRowHeight = 58.dp
 private val MenuIconSize = 20.dp
@@ -710,8 +710,9 @@ fun CrewMenuContent(
     }
 }
 
+/** 메뉴 시트 한 줄(Figma S07 G). 깃발 상세 기수 메뉴도 같은 줄을 쓴다. */
 @Composable
-private fun MenuRow(
+internal fun MenuRow(
     title: String,
     @DrawableRes icon: Int,
     isEnabled: Boolean = true,

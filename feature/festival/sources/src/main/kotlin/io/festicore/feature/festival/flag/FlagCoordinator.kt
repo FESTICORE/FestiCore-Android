@@ -8,7 +8,11 @@ import io.festicore.feature.festival.FlagRoute
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
-data class FlagCoordinatorState(val routes: List<NavKey> = listOf(FlagRoute.Directory))
+/** @param transferredFlagId 이동 화면에서 옮긴 깃발. 열린 상세가 다시 불러온 뒤 비운다. */
+data class FlagCoordinatorState(
+    val routes: List<NavKey> = listOf(FlagRoute.Directory),
+    val transferredFlagId: String? = null,
+)
 
 /** 흐름 안 화면 사이의 전달. [FlagFlow]가 받아 목록에 넘긴다. */
 sealed interface FlagCoordinatorSideEffect {
@@ -40,6 +44,20 @@ class FlagCoordinator :
     /** 목록 카드(iOS `detailRequested`)나 깃발 링크(iOS `showDetail`)로 상세를 연다. 다른 깃발을 열면 쌓지 않고 바꾼다. */
     fun openDetail(flagId: String) = intent {
         reduce { state.copy(routes = state.routes.filterNot { it is FlagRoute.Detail } + FlagRoute.Detail(flagId)) }
+    }
+
+    /** 상세 기수 메뉴의 '다른 페스티벌로 옮기기'. 상세 위에 이동 화면을 쌓는다. */
+    fun openFestivalTransfer(flagId: String) = intent {
+        reduce { state.copy(routes = state.routes.filterNot { it is FlagRoute.FestivalTransfer } + FlagRoute.FestivalTransfer(flagId)) }
+    }
+
+    /** 이동 화면에서 옮겼다. 이동 화면을 닫고 상세가 다시 불러오게 알린다. */
+    fun onFestivalTransferred(flagId: String) = intent {
+        reduce { state.copy(routes = state.routes.filterNot { it is FlagRoute.FestivalTransfer }, transferredFlagId = flagId) }
+    }
+
+    fun onFestivalTransferConsumed() = intent {
+        reduce { state.copy(transferredFlagId = null) }
     }
 
     /** 상세 `followChanged`. 기준 수는 목록 스냅샷 `directoryFlags`의 같은 깃발 팔로워 수다(iOS `syncDirectoryFollow`). */

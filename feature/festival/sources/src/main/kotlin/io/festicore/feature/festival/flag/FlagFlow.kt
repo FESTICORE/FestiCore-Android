@@ -68,6 +68,7 @@ fun FlagFlow(
  *
  * @param onLoginRequested 로그인 요청. 문맥이 `null`이면 기본 문구(목록), [FlagLoginContext.Follow]는 상세 팔로우, [FlagLoginContext.Report]는 신고
  * @param onTermsAcceptanceRequested 약관 재동의 요청(iOS `session.retryProfile`)
+ * @param festivalTransferContent 깃발 축제 이동 화면. 기수 기능 화면이라 상위(app)가 넘긴다. 옮기면 `onTransferred`, 뒤로는 `onClose`.
  */
 @Composable
 fun rememberFlagFlowEntries(
@@ -77,6 +78,7 @@ fun rememberFlagFlowEntries(
     onTermsAcceptanceRequested: () -> Unit,
     coordinator: FlagCoordinator = koinViewModel(),
     flagViewModel: FlagViewModel = koinViewModel(),
+    festivalTransferContent: @Composable (flagId: String, onTransferred: () -> Unit, onClose: () -> Unit) -> Unit = { _, _, _ -> },
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
     val context by detailContext.collectAsState()
@@ -107,6 +109,11 @@ fun rememberFlagFlowEntries(
                     val detailViewModel =
                         koinViewModel<FlagDetailViewModel>(key = "flagDetail-${key.flagId}") { parametersOf(key.flagId, context) }
                     LaunchedEffect(detailViewModel, context) { detailViewModel.onContextChanged(context) }
+                    LaunchedEffect(detailViewModel, state.transferredFlagId) {
+                        if (state.transferredFlagId != key.flagId) return@LaunchedEffect
+                        detailViewModel.onFestivalTransferred()
+                        coordinator.onFestivalTransferConsumed()
+                    }
                     FlagDetailScreen(
                         viewModel = detailViewModel,
                         onBack = coordinator::goBack,
@@ -119,7 +126,11 @@ fun rememberFlagFlowEntries(
                                 flagViewModel.container.stateFlow.value.snapshot,
                             )
                         },
+                        onFestivalTransferRequested = coordinator::openFestivalTransfer,
                     )
+                }
+                entry<FlagRoute.FestivalTransfer> { key ->
+                    festivalTransferContent(key.flagId, { coordinator.onFestivalTransferred(key.flagId) }, coordinator::goBack)
                 }
             },
     )

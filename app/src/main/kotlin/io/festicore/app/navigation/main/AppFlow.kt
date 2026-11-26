@@ -42,6 +42,7 @@ import io.festicore.feature.auth.login.LaunchLoginFlow
 import io.festicore.feature.auth.login.LoginSheet
 import io.festicore.feature.bearer.BearerRoute
 import io.festicore.feature.bearer.board.BearerBoardScreen
+import io.festicore.feature.bearer.transfer.BearerFestivalTransferScreen
 import io.festicore.feature.festival.FestivalCoordinator
 import io.festicore.feature.festival.FestivalFlow
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
@@ -226,6 +227,9 @@ private fun HomeWithCovers(
             onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
             coordinator = flagCoordinator,
             flagViewModel = flagViewModel,
+            festivalTransferContent = { flagId, onTransferred, onClose ->
+                BearerFestivalTransferScreen(flagId = flagId, onTransferred = { onTransferred() }, onClose = onClose)
+            },
         )
     val profileEntries =
         rememberProfileFlowEntries(

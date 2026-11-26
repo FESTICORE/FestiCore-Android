@@ -8,6 +8,7 @@ import io.festicore.feature.bearer.plan.BearerPlanPickViewModel
 import io.festicore.feature.bearer.profile.BearerProfileViewModel
 import io.festicore.feature.bearer.register.BearerRegisterViewModel
 import io.festicore.feature.bearer.register.BearerRoleChoiceViewModel
+import io.festicore.feature.bearer.transfer.BearerFestivalTransferViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -45,5 +46,9 @@ val bearerFeatureModule = module {
             viewerUserId = params.get<String?>(2),
             bearerUseCase = get(),
         )
+    }
+    // 인자: 옮길 깃발 id(깃발 상세 메뉴).
+    viewModel { (flagId: String) ->
+        BearerFestivalTransferViewModel(flagId = flagId, bearerUseCase = get(), catalogUseCase = get(), receivedPackUseCase = get())
     }
 }

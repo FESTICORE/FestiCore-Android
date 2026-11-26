@@ -29,6 +29,9 @@ sealed interface FlagDetailToast {
     data object AlreadyReported : FlagDetailToast
 
     data object ReportFailed : FlagDetailToast
+
+    /** 깃발을 다른 페스티벌로 옮겼다(Android 먼저, 백엔드 #409). */
+    data object FestivalTransferred : FlagDetailToast
 }
 
 /** 팔로우 응답으로 바뀐 값. 다음 조회 결과가 오면 비운다. */
@@ -57,6 +60,10 @@ data class FlagDetailState(
     val isReportPending: Boolean = false,
     val toast: FlagDetailToast? = null,
     val reportSheet: FlagReportSheetState? = null,
+    /** 내 깃발 · 원래 기수 · 공동 기수 없음. 이때만 상단 바 공유 대신 깃발 관리 메뉴(공유 · 다른 페스티벌로 옮기기)를 둔다. */
+    val canTransferFestival: Boolean = false,
+    /** 깃발 관리 메뉴 시트(Figma S07 G 크루장 메뉴와 같은 모양). */
+    val isMenuPresented: Boolean = false,
     val followOverride: FlagDetailFollowOverride? = null,
     val loadGeneration: Int = 0,
 ) {
@@ -87,6 +94,9 @@ sealed interface FlagDetailSideEffect {
         val isFollowing: Boolean,
         val followerCount: Int,
     ) : FlagDetailSideEffect
+
+    /** 메뉴에서 '다른 페스티벌로 옮기기'를 눌렀다. 부모가 이동 화면을 연다. */
+    data class FestivalTransferRequested(val flagId: String) : FlagDetailSideEffect
 
     /** 깃발 링크 공유(iOS `ShareLink`). Screen이 시스템 공유 시트를 연다. */
     data class ShareRequested(

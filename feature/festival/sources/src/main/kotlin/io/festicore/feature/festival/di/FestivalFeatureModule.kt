@@ -33,6 +33,7 @@ val festivalFeatureModule = module {
             detailUseCase = get(),
             flagUseCase = get(),
             analyticsUseCase = get(),
+            bearerUseCase = get(),
         )
     }
     // 인자: 축제 ID, 목록이 가진 카탈로그(iOS가 목록 상태를 복사해 push하는 것과 같은 자리).

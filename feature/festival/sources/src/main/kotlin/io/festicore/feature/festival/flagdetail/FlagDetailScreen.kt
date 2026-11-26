@@ -38,6 +38,9 @@ import androidx.compose.ui.unit.dp
 import io.festicore.domain.festival.entity.FestivalFlagDetail
 import io.festicore.domain.festival.entity.FestivalFlagReportReason
 import io.festicore.feature.festival.accessibility.FestivalAccessibilityId
+import io.festicore.feature.festival.crew.MenuRow
+import io.festicore.feature.festival.crew.MenuRowSpacing
+import io.festicore.feature.festival.crew.MenuTitleSpacing
 import io.festicore.feature.festival.flag.FlagPresentation
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.component.action.FCButton
@@ -96,6 +99,7 @@ fun FlagDetailScreen(
     onTermsAcceptanceRequested: () -> Unit,
     onFollowChanged: (FlagDetailSideEffect.FollowChanged) -> Unit,
     modifier: Modifier = Modifier,
+    onFestivalTransferRequested: (flagId: String) -> Unit = {},
 ) {
     val state by viewModel.collectAsState()
     val context = LocalContext.current
@@ -108,6 +112,8 @@ fun FlagDetailScreen(
             FlagDetailSideEffect.TermsAcceptanceRequested -> onTermsAcceptanceRequested()
 
             is FlagDetailSideEffect.FollowChanged -> onFollowChanged(sideEffect)
+
+            is FlagDetailSideEffect.FestivalTransferRequested -> onFestivalTransferRequested(sideEffect.flagId)
 
             is FlagDetailSideEffect.ShareRequested -> {
                 val send =
@@ -134,6 +140,10 @@ fun FlagDetailScreen(
         onReportReasonSelected = viewModel::onReportReasonSelected,
         onReportSubmitTapped = viewModel::onReportSubmitTapped,
         onReportSheetDismissed = viewModel::onReportSheetDismissed,
+        onMenuTapped = viewModel::onMenuTapped,
+        onMenuDismissed = viewModel::onMenuDismissed,
+        onMenuShareTapped = viewModel::onMenuShareTapped,
+        onMenuTransferTapped = viewModel::onMenuTransferTapped,
     )
 }
 
@@ -150,6 +160,10 @@ fun FlagDetailContent(
     onReportReasonSelected: (FestivalFlagReportReason) -> Unit = {},
     onReportSubmitTapped: () -> Unit = {},
     onReportSheetDismissed: () -> Unit = {},
+    onMenuTapped: () -> Unit = {},
+    onMenuDismissed: () -> Unit = {},
+    onMenuShareTapped: () -> Unit = {},
+    onMenuTransferTapped: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     var topBarHeight by remember { mutableIntStateOf(0) }
@@ -162,13 +176,20 @@ fun FlagDetailContent(
         Column(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.onSizeChanged { topBarHeight = it.height }) {
                 val detail = state.detail
+                // 옮길 수 있는 내 깃발이면 크루장 메뉴(Figma S07 A)와 같은 gear 24로 깃발 관리 메뉴를 열고, 공유는 그 안에 둔다.
+                val hasMenu = state.canTransferFestival
                 FCTopBar(
                     style = if (isOnImage) FCTopBarStyle.BackOnImage else FCTopBarStyle.Back,
                     title = detail?.name.orEmpty(),
-                    trailingIcon = R.drawable.ic_share_nodes,
-                    trailingAccessibilityLabel = "공유",
+                    trailingIcon = if (hasMenu) R.drawable.ic_gear_24 else R.drawable.ic_share_nodes,
+                    trailingAccessibilityLabel = if (hasMenu) "깃발 관리" else "공유",
                     onBack = onBack,
-                    onTrailingAction = if (detail != null) onShareTapped else null,
+                    onTrailingAction =
+                        when {
+                            detail == null -> null
+                            hasMenu -> onMenuTapped
+                            else -> onShareTapped
+                        },
                 )
                 if (offlineText != null) FCOfflineBadge(offlineText)
             }
@@ -202,6 +223,29 @@ fun FlagDetailContent(
         onSubmit = onReportSubmitTapped,
         onDismiss = onReportSheetDismissed,
     )
+    FCSheet(isPresented = state.isMenuPresented, onDismissRequest = onMenuDismissed) {
+        FlagMenuContent(onShareTapped = onMenuShareTapped, onTransferTapped = onMenuTransferTapped)
+    }
+}
+
+/** 기수 깃발 관리 메뉴(크루장 메뉴 시트 Figma S07 G와 같은 제목 · 줄 · 안내 모양). */
+@Composable
+internal fun FlagMenuContent(onShareTapped: () -> Unit, onTransferTapped: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = FestiCoreSpacing.paddingP16),
+        verticalArrangement = Arrangement.spacedBy(MenuTitleSpacing),
+    ) {
+        Text(text = "깃발 관리", style = FestiCoreTextStyle.baseHeadlineBold.textStyle, color = FestiCoreSemanticColor.labelNormal.color)
+        Column(verticalArrangement = Arrangement.spacedBy(MenuRowSpacing)) {
+            MenuRow("공유하기", R.drawable.ic_share_nodes, onClick = onShareTapped)
+            MenuRow("다른 페스티벌로 옮기기", R.drawable.ic_flag_20, isLast = true, onClick = onTransferTapped)
+            Text(
+                text = "옮기면 계획·주로 있는 존·현장 상태가 초기화돼요.",
+                style = FestiCoreTextStyle.baseCaption1Regular.textStyle,
+                color = FestiCoreSemanticColor.labelAssistive.color,
+            )
+        }
+    }
 }
 
 @Composable
@@ -407,6 +451,7 @@ private fun toastItem(toast: FlagDetailToast): FCToastItem = when (toast) {
     FlagDetailToast.Reported -> FCToastItem(icon = R.drawable.ic_check, message = "신고를 접수했어요")
     FlagDetailToast.AlreadyReported -> info("이미 신고한 깃발이에요")
     FlagDetailToast.ReportFailed -> info("신고하지 못했어요. 잠시 후 다시 시도해 주세요")
+    FlagDetailToast.FestivalTransferred -> FCToastItem(icon = R.drawable.ic_check, message = "깃발을 다른 페스티벌로 옮겼어요")
 }
 
 private fun info(message: String) = FCToastItem(icon = R.drawable.ic_circle_info_16, message = message)
