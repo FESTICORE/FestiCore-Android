@@ -4,6 +4,8 @@ import io.festicore.domain.bearer.bearer.BearerUseCase
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerFestival
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
 import io.festicore.domain.bearer.entity.BearerFlagTag
@@ -50,6 +52,10 @@ class FakeBearerUseCase(
     private val onStatusEvents: ((flagId: String) -> Flow<BearerOutboxEvent>)? = null,
     private val onRetryPendingStatus: (suspend () -> Unit)? = null,
     private val onFetchBearerFlags: (suspend (festivalId: String?) -> List<BearerOwnedFlag>)? = null,
+    private val onMakeFestivalTransferRequest: (
+        (flagId: String, fromFestivalId: String, toFestivalId: String) -> BearerFestivalTransferRequest
+    )? = null,
+    private val onTransferFestival: (suspend (request: BearerFestivalTransferRequest) -> BearerFestivalTransfer)? = null,
 ) : BearerUseCase {
     override suspend fun claim(festivalId: String, code: String): BearerClaim = onClaim(festivalId, code)
 
@@ -71,6 +77,15 @@ class FakeBearerUseCase(
     override suspend fun fetchFestival(festivalId: String): BearerFestival = (onFetchFestival ?: unused())(festivalId)
 
     override suspend fun fetchBoard(flagId: String): BearerBoard = (onFetchBoard ?: unused())(flagId)
+
+    override fun makeFestivalTransferRequest(
+        flagId: String,
+        fromFestivalId: String,
+        toFestivalId: String,
+    ): BearerFestivalTransferRequest = (onMakeFestivalTransferRequest ?: unused())(flagId, fromFestivalId, toFestivalId)
+
+    override suspend fun transferFestival(request: BearerFestivalTransferRequest): BearerFestivalTransfer =
+        (onTransferFestival ?: unused())(request)
 
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile =
         (onUpdateProfile ?: unused())(flagId, change)

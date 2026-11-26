@@ -150,6 +150,26 @@ class FlagRequest(@PublishedApi internal val client: HttpClient) {
         }
     }
 
+    /**
+     * `POST api/v1/flags/{id}/festival-transfer` `{fromFestivalId, toFestivalId}` + `Idempotency-Key`.
+     * 응답을 받지 못해 다시 보낼 때는 같은 키와 같은 본문을 보낸다. Bearer 대상.
+     */
+    suspend inline fun <reified T> transferFestival(
+        flagId: String,
+        body: FlagFestivalTransferBody,
+        idempotencyKey: String,
+        expectedSessionId: String,
+    ): T = unwrapAuth {
+        client.festiCoreRequest {
+            method = HttpMethod.Post
+            url(FlagApi.festivalTransfer(flagId))
+            bearerAuthorization(expectedSessionId)
+            idempotencyKey(idempotencyKey)
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+    }
+
     /** `POST api/v1/flags/{id}/co-bearers/invite`. 본문 없음. Bearer 대상. */
     suspend inline fun <reified T> inviteCoBearer(flagId: String, expectedSessionId: String): T = unwrapAuth {
         client.festiCoreRequest {

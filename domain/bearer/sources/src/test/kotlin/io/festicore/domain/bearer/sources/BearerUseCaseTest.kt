@@ -4,6 +4,8 @@ import io.festicore.domain.bearer.bearer.BearerRepository
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerError
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerFlagPhoto
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
@@ -125,6 +127,8 @@ internal class ClaimRecordingRepository : BearerRepository {
     override suspend fun fetchBoard(flagId: String): BearerBoard = throw BearerError.Unavailable()
 
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile = throw BearerError.Unavailable()
+
+    override suspend fun transferFestival(request: BearerFestivalTransferRequest): BearerFestivalTransfer = throw BearerError.Unavailable()
 
     override suspend fun uploadPhoto(
         flagId: String,

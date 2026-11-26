@@ -28,6 +28,7 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
 | `fetchBoard` | `GET flags/{id}/bearer` |
 | `updateProfile` | `PATCH flags/{id}` |
 | `sendStatus` | `POST flags/{id}/status` + `Idempotency-Key`(`<uuid 소문자>`) |
+| `transferFestival` | `POST flags/{id}/festival-transfer {fromFestivalId, toFestivalId}` + `Idempotency-Key`(`transfer-<uuid 소문자>`, 다시 보낼 때 같은 키). 응답 `{flagId, previousFestivalId, festivalId, flag}` |
 | `inviteCoBearer` · `removeCoBearer` | `POST flags/{id}/co-bearers/invite` · `DELETE flags/{id}/co-bearers/{userId}`(204) |
 
 3. 코드: 대문자로 바꾸고 `^[A-HJ-NP-Z2-9]{6}$`가 아니면 보내지 않고 `InvalidRequest`(시도 횟수를 쓰지 않게).
@@ -44,12 +45,13 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
    - 내 깃발: 모르는 상태는 null로 두고 깃발은 남긴다. `joinedAt` 형식 오류는 null.
    - 팔로우: 목록 뒤 깃발마다 공개 상세를 동시에 읽어 이름 · 썸네일을 붙이고 순서는 팔로우 목록. 상세가 404면 그 깃발만 빼고, 그 밖의 실패는 목록 전체 실패.
    - 팩: `name` · `zones`(id 비었거나 이름 없으면 버림) · 공연은 `timetable`이 비어 있지 않으면 그것, 아니면 `sets`. id 있음 · 시작 · 끝 해석됨 · 끝 > 시작만 시작 순. 무대 이름은 `stageName ?: stages[stageId].name`. 팩이 없거나 JSON 객체가 아니면 이름 null · 빈 목록.
-6. 오류(`BearerError`): 연결 실패 · 시간 초과 → `Offline`(취소는 그대로), 해석 실패 · `code != SUCCESS` → `InvalidResponse`, 세션 불일치 → `NotAuthenticated`, 그 밖 → `Unavailable`. HTTP는 400 `InvalidRequest` · 401 `NotAuthenticated` · 403 `TERMS_REQUIRED`/`FLAG_NOT_OWNER`/그 외 → `TermsRequired`/`NotOwner`/`NotBearer` · 404 `ZONE_NOT_FOUND`/그 외 → `ZoneNotFound`/`NotFound` · 409 `FLAG_NAME_TAKEN` · `STATUS_STALE` · `FLAG_TRANSITION`·`FLAG_RESTART_REQUIRED` · `CO_BEARER_FULL` · `BEARER_LIMIT` · `FLAG_OWNER_REQUIRED`/그 외 → `NameTaken` · `Stale` · `TransitionRejected` · `CoBearerFull` · `BearerLimit` · `OwnerRequired`/`Conflict` · 413 `PhotoTooLarge` · 415 `UnsupportedPhoto` · 422 `InvalidCode(data.remainingAttempts)` · 423 `CodeLocked(data.retryAfter ?: 600)` · 429 `RateLimited` · 그 외 `Unavailable`.
+6. 오류(`BearerError`): 연결 실패 · 시간 초과 → `Offline`(취소는 그대로), 해석 실패 · `code != SUCCESS` → `InvalidResponse`, 세션 불일치 → `NotAuthenticated`, 그 밖 → `Unavailable`. HTTP는 400 `InvalidRequest` · 401 `NotAuthenticated` · 403 `TERMS_REQUIRED`/`FLAG_NOT_OWNER`/그 외 → `TermsRequired`/`NotOwner`/`NotBearer` · 404 `ZONE_NOT_FOUND`/그 외 → `ZoneNotFound`/`NotFound` · 409 `FLAG_NAME_TAKEN` · `STATUS_STALE` · `FLAG_TRANSITION`·`FLAG_RESTART_REQUIRED` · `CO_BEARER_FULL` · `BEARER_LIMIT` · `FLAG_OWNER_REQUIRED` · `FESTIVAL_MISMATCH` · `FLAG_HAS_CO_BEARERS` · `BEARER_MODE_OFF`/그 외 → `NameTaken` · `Stale` · `TransitionRejected` · `CoBearerFull` · `BearerLimit` · `OwnerRequired` · `FestivalMismatch` · `HasCoBearers` · `BearerModeOff`/`Conflict` · 413 `PhotoTooLarge` · 415 `UnsupportedPhoto` · 422 `InvalidCode(data.remainingAttempts)` · 423 `CodeLocked(data.retryAfter ?: 600)` · 429 `RateLimited` · 그 외 `Unavailable`.
 
 ## 엣지 케이스
 
 - 코드 인증 실패 본문은 `ErrorBody`를 넓히지 않고 `FlagRequest.claim`이 돌려준 상태 · 원문에서 `data`를 직접 읽는다. `data: null`이면 남은 횟수 null.
-- `BEARER_MODE_OFF`(409)는 `Conflict`, `IDEMPOTENCY_CONFLICT`(409)도 `Conflict`.
+- `BEARER_MODE_OFF`(409)는 `BearerModeOff`(화면은 아직 따로 다루지 않아 일반 실패 문구), `IDEMPOTENCY_CONFLICT`(409)는 `Conflict`.
+- 축제 이동은 iOS에 아직 없다. 계약은 백엔드 #409(`flags.controller.ts` `transferFestival`)를 따른다. 이동 화면은 아직 없다(디자인 결정 대기).
 
 ## 제약 / 가정
 
@@ -62,7 +64,7 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
 | 모듈 | 계층 | 변경 내용 |
 | --- | --- | --- |
 | `domain/bearer` | domain | 신규. 엔티티 · 저장소 · UseCase · DTO · 매퍼 · Koin(`domainBearerModule(baseUrl)`) |
-| `service/api` · `service/apiendpoint` | service | `FlagApi` 기수 경로, `FlagRequest` 기수 요청, `FlagRequestBody`(`FlagStatusBody` · `FlagProfileBody` · `BearerClaimBody` · `BearerRegisterBody`) |
+| `service/api` · `service/apiendpoint` | service | `FlagApi` 기수 경로, `FlagRequest` 기수 요청, `FlagRequestBody`(`FlagStatusBody` · `FlagProfileBody` · `BearerClaimBody` · `BearerRegisterBody` · `FlagFestivalTransferBody`) |
 | `app` | app | `domainBearerModule` 등록 |
 
 ## 영향 범위
@@ -79,3 +81,4 @@ iOS 대응: `Projects/Domain/BearerDomain/**`(사진 `Photo/` · 대기열 `Outb
 ## 변경 이력
 
 - #214 기수 도메인과 깃발 요청을 옮겼다(사진 · 대기열 제외)
+- #236 깃발 축제 이동 요청(transferFestival)과 이동 오류 코드를 추가했다(화면 없음)

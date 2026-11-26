@@ -5,6 +5,8 @@ import io.festicore.domain.bearer.bearer.BearerRepository
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerError
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerFlagPhoto
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
@@ -19,6 +21,7 @@ import io.festicore.domain.bearer.sources.model.dto.BearerBoardDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerClaimDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerEnvelopeDto
 import io.festicore.domain.bearer.sources.model.dto.BearerErrorBodyDto
+import io.festicore.domain.bearer.sources.model.dto.BearerFestivalTransferDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFlagProfileDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFlagStatusDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFlagsDataDto
@@ -106,6 +109,14 @@ internal class BearerRepositoryImpl(
     override suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile {
         val sessionId = sessionId()
         return mapErrors { api.updateProfile<BearerFlagProfileDto>(flagId, change.toBody(), sessionId).toDomain(imageUrl) }
+    }
+
+    override suspend fun transferFestival(request: BearerFestivalTransferRequest): BearerFestivalTransfer {
+        val sessionId = sessionId()
+        return mapErrors {
+            api.transferFestival<BearerFestivalTransferDataDto>(request.flagId, request.toBody(), request.idempotencyKey, sessionId)
+                .toDomain(imageUrl)
+        }
     }
 
     override suspend fun uploadPhoto(

@@ -2,6 +2,8 @@ package io.festicore.domain.bearer.bearer
 
 import io.festicore.domain.bearer.entity.BearerBoard
 import io.festicore.domain.bearer.entity.BearerClaim
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
+import io.festicore.domain.bearer.entity.BearerFestivalTransferRequest
 import io.festicore.domain.bearer.entity.BearerFlagPhoto
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
@@ -36,6 +38,9 @@ interface BearerRepository {
     suspend fun fetchBoard(flagId: String): BearerBoard
 
     suspend fun updateProfile(flagId: String, change: BearerProfileChange): BearerFlagProfile
+
+    /** 원래 기수가 깃발을 다른 발행 축제로 옮긴다. 공동 기수가 있으면 `BearerError.HasCoBearers`. */
+    suspend fun transferFestival(request: BearerFestivalTransferRequest): BearerFestivalTransfer
 
     /** 규격을 맞춘 [jpeg]를 올린다. [onProgress]는 보낸 비율이다(1을 넘을 수 있어 UseCase가 0~1로 자른다). */
     suspend fun uploadPhoto(

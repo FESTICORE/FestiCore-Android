@@ -8,6 +8,7 @@ import io.festicore.domain.bearer.entity.BearerClaim
 import io.festicore.domain.bearer.entity.BearerCoBearer
 import io.festicore.domain.bearer.entity.BearerError
 import io.festicore.domain.bearer.entity.BearerFestival
+import io.festicore.domain.bearer.entity.BearerFestivalTransfer
 import io.festicore.domain.bearer.entity.BearerFlagLifecycle
 import io.festicore.domain.bearer.entity.BearerFlagProfile
 import io.festicore.domain.bearer.entity.BearerFlagStatus
@@ -21,6 +22,7 @@ import io.festicore.domain.bearer.entity.BearerZone
 import io.festicore.domain.bearer.sources.model.dto.BearerBoardDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerClaimDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerCoBearerDto
+import io.festicore.domain.bearer.sources.model.dto.BearerFestivalTransferDataDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFlagProfileDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFlagStatusDto
 import io.festicore.domain.bearer.sources.model.dto.BearerFlagsDataDto
@@ -103,6 +105,13 @@ internal fun BearerClaimDataDto.toDomain(imageUrl: BearerImageUrl) = BearerClaim
     profile = flag.toDomain(imageUrl),
     isNew = isNew ?: false,
     coBearerIds = coBearers.orEmpty(),
+)
+
+internal fun BearerFestivalTransferDataDto.toDomain(imageUrl: BearerImageUrl) = BearerFestivalTransfer(
+    flagId = flagId,
+    previousFestivalId = previousFestivalId,
+    festivalId = festivalId,
+    profile = flag.toDomain(imageUrl),
 )
 
 /** 모르는 상태 값은 버리지 않고 null로 두어 목록에서 깃발을 잃지 않는다. */
@@ -208,6 +217,9 @@ internal fun bearerError(
         "CO_BEARER_FULL" -> BearerError.CoBearerFull()
         "BEARER_LIMIT" -> BearerError.BearerLimit()
         "FLAG_OWNER_REQUIRED" -> BearerError.OwnerRequired()
+        "FESTIVAL_MISMATCH" -> BearerError.FestivalMismatch()
+        "FLAG_HAS_CO_BEARERS" -> BearerError.HasCoBearers()
+        "BEARER_MODE_OFF" -> BearerError.BearerModeOff()
         else -> BearerError.Conflict()
     }
 
