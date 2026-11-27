@@ -45,6 +45,33 @@ class TimetableSheetDesignParityTest {
     val composeRule = createComposeRule()
 
     @Test
+    @Config(qualifiers = "w800dp-h360dp-mdpi")
+    fun `큰 글꼴 가로 창에서 헤더를 넘겨 공연을 선택할 수 있다`() {
+        var selected: String? = null
+        val day = io.festicore.domain.timetable.entity.TimetableDay(
+            "day",
+            "8/7(금)",
+            Instant.EPOCH,
+            listOf(io.festicore.domain.timetable.entity.TimetableStage("stage", "메인 스테이지")),
+            listOf(io.festicore.domain.timetable.entity.TimetableSet("set", "테스트 공연", "stage", 900, 960, previousStart = 880)),
+        )
+        composeRule.setContent {
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(1f, 2f),
+            ) {
+                TimetableContent(
+                    state = TimetableState(days = listOf(day), source = "공식 출처"),
+                    onSearchClicked = {}, onDaySelected = {}, onRetryClicked = {}, onNotifyClicked = {},
+                    onMineOnlyToggled = {}, onSchedulePickClicked = {}, onChangeBannerClicked = {},
+                    onSetClicked = { selected = it }, onZoomChanged = {}, onScheduleToggled = {}, onSetDetailDismissed = {},
+                )
+            }
+        }
+        composeRule.onNodeWithContentDescription("테스트 공연").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.runOnIdle { assertEquals("set", selected) }
+    }
+
+    @Test
     fun `토스트는 일정 스위치 아래에 있고 표시와 시간 만료에도 스위치 위치가 같다`() {
         val state = mutableStateOf(sheet())
         composeRule.setContent {
