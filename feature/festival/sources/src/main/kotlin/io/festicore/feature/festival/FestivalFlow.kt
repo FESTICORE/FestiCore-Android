@@ -11,6 +11,8 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.festival.pack.FestivalPackUseCase
 import io.festicore.feature.festival.common.FestivalTransitions
 import io.festicore.feature.festival.crew.CrewJoinScreen
 import io.festicore.feature.festival.crew.CrewScreen
@@ -18,15 +20,19 @@ import io.festicore.feature.festival.festivallist.FestivalListScreen
 import io.festicore.feature.festival.festivallist.FestivalListViewModel
 import io.festicore.feature.festival.festivallist.ListForegroundEffect
 import io.festicore.feature.festival.flag.FlagBoard
+import io.festicore.feature.festival.flag.FlagViewModel
 import io.festicore.feature.festival.liveboard.LiveBoardScreen
 import io.festicore.feature.festival.liveboard.LiveBoardViewModel
 import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateScreen
 import io.festicore.feature.festival.notificationinbox.NotificationInboxScreen
+import io.festicore.feature.festival.prepguide.FestivalPrepFlagsScreen
 import io.festicore.feature.festival.zonemap.ZoneMapScreen
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 import org.orbitmvi.orbit.compose.collectAsState
 import org.orbitmvi.orbit.compose.collectSideEffect
 
@@ -47,6 +53,7 @@ fun FestivalFlow(
     modifier: Modifier = Modifier,
     onFlagTabRequested: () -> Unit = {},
     onLoginRequested: (FestivalLoginContext?) -> Unit = {},
+    onTermsAcceptanceRequested: () -> Unit = {},
     onPackDirectionsRequested: (festivalId: String, title: String) -> Unit = { _, _ -> },
     coordinator: FestivalCoordinator = koinViewModel(),
     listViewModel: FestivalListViewModel = koinViewModel(),
@@ -54,6 +61,7 @@ fun FestivalFlow(
     val state by coordinator.collectAsState()
     coordinator.collectSideEffect { sideEffect ->
         when (sideEffect) {
+            FestivalCoordinatorSideEffect.TermsAcceptanceRequested -> onTermsAcceptanceRequested()
             FestivalCoordinatorSideEffect.FlagTabRequested -> onFlagTabRequested()
             is FestivalCoordinatorSideEffect.LoginRequested -> onLoginRequested(sideEffect.context)
             is FestivalCoordinatorSideEffect.PackDirectionsRequested -> onPackDirectionsRequested(sideEffect.festivalId, sideEffect.title)
@@ -81,6 +89,10 @@ fun FestivalFlow(
 fun rememberFestivalFlowEntries(
     coordinator: FestivalCoordinator = koinViewModel(),
     listViewModel: FestivalListViewModel = koinViewModel(),
+    hasScheduleDays: (FestivalPackDocument) -> Boolean = { false },
+    prepScheduleContent: @Composable (FestivalRoute.PrepSchedule) -> Unit = {},
+    prepChecklistContent: @Composable (FestivalRoute.PrepChecklist) -> Unit = {},
+    packUseCase: FestivalPackUseCase = koinInject(),
     bearerBoardContent: @Composable (festivalId: String, flagId: String) -> Unit = { _, _ -> },
 ): List<NavEntry<NavKey>> {
     val state by coordinator.collectAsState()
@@ -101,7 +113,29 @@ fun rememberFestivalFlowEntries(
         entryProvider =
             entryProvider {
                 entry<FestivalRoute.List> {
-                    FestivalListScreen(viewModel = listViewModel, onFestivalSelected = coordinator::onFestivalSelected)
+                    FestivalListScreen(
+                        viewModel = listViewModel,
+                        onFestivalSelected = coordinator::onFestivalSelected,
+                        prepToken = { coordinator.listVisitToken },
+                        onPrepRequested = { id, token -> coordinator.onPrepRequested(id, token, hasScheduleDays) },
+                    )
+                }
+                entry<FestivalRoute.PrepSchedule> { prepScheduleContent(it) }
+                entry<FestivalRoute.PrepChecklist> { prepChecklistContent(it) }
+                entry<FestivalRoute.PrepFlags> { route ->
+                    val prepViewModel: FlagViewModel = koinViewModel(qualifier = named("prepFlags")) { parametersOf(route.festivalId) }
+                    val zones = packUseCase.state.value.packs[route.festivalId]?.document?.zones.orEmpty()
+                        .distinctBy { it.id }.associate { it.id to it.name }
+                    FestivalPrepFlagsScreen(
+                        viewModel = prepViewModel,
+                        zoneNames = zones,
+                        onNext = { coordinator.onPrepFlagsFinished(route) },
+                        onLater = coordinator::onPrepDismissed,
+                        onNavigationBlocked = { coordinator.onPrepNavigationBlocked(route, it) },
+                        onLogin = coordinator::onPrepLoginRequested,
+                        onTerms = coordinator::onPrepTermsRequested,
+                        onBack = coordinator::goBack,
+                    )
                 }
                 entry<FestivalRoute.LiveBoard> { key ->
                     val boardViewModel: LiveBoardViewModel =

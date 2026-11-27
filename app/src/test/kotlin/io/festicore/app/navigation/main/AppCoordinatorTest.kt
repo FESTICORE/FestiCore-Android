@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.orbitmvi.orbit.test.test
 
@@ -98,6 +100,7 @@ class AppCoordinatorTest {
 
     /** 분석 reset(계정 분리)을 부른 횟수. */
     private var analyticsResetCount = 0
+    private var widgetInvalidationCount = 0
 
     private fun coordinator(
         store: FirstInstallOnboardingStore,
@@ -106,6 +109,7 @@ class AppCoordinatorTest {
         auth: FakeAuthRepository = FakeAuthRepository().apply { sessionId = null },
         users: CurrentUserStore = CurrentUserStore(),
         deeplinks: FakeDeeplinks? = null,
+        invalidateWidget: suspend () -> Unit = { widgetInvalidationCount++ },
     ) = AppCoordinator(
         store,
         { loggedIn },
@@ -117,7 +121,58 @@ class AppCoordinatorTest {
         { deeplinks?.consume() },
         { packCleanupCount++ },
         { analyticsResetCount++ },
+        invalidateWidgetPersonal = invalidateWidget,
     )
+
+    @Test
+    fun `로그인 시트 세션 손실은 저장된 credential과 무관하게 위젯 삭제 완료를 기다린다`() = runTest {
+        val auth = FakeAuthRepository()
+        val users = CurrentUserStore().apply { update("u-old") }
+        val pending = CompletableDeferred<Unit>()
+        var started = false
+        coordinator(
+            store = FakeOnboardingStore(true),
+            loggedIn = true,
+            auth = auth,
+            users = users,
+            invalidateWidget = {
+                started = true
+                pending.await()
+            },
+        ).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Crew)
+            expectState { copy(loginSheet = LoginContext.Crew, loginSheetId = 1) }
+            containerHost.onLoginSheetFinished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = true))
+            testScheduler.runCurrent()
+            assertTrue(started)
+            assertEquals("u-old", users.currentUserId.value)
+            assertEquals("s1", auth.sessionId)
+            pending.complete(Unit)
+            expectState { copy(loginSheet = null) }
+            assertEquals(null, users.currentUserId.value)
+            assertEquals(null, auth.sessionId)
+        }
+    }
+
+    @Test
+    fun `위젯 삭제 저장 실패는 계정 비우기와 로그인 시트 닫기를 막지 않는다`() = runTest {
+        val users = CurrentUserStore().apply { update("u-old") }
+        coordinator(
+            store = FakeOnboardingStore(true),
+            loggedIn = true,
+            auth = FakeAuthRepository(),
+            users = users,
+            invalidateWidget = { throw IllegalStateException("storage unavailable") },
+        ).test(this, home) {
+            containerHost.onLoginRequested(LoginContext.Crew)
+            expectState { copy(loginSheet = LoginContext.Crew, loginSheetId = 1) }
+            containerHost.onLoginSheetFinished(LaunchLoginResult.SessionLost(sessionId = "s1", expired = true))
+            expectState { copy(loginSheet = null) }
+            assertEquals(null, users.currentUserId.value)
+            assertEquals(1, analyticsResetCount)
+            assertFalse(containerHost.account.value.hasSession)
+        }
+    }
 
     /** 대기 딥링크 하나와 새 딥링크 신호(앱의 `AppDeeplinkBridge` 대신). */
     private class FakeDeeplinks {
@@ -881,6 +936,7 @@ class AppCoordinatorTest {
             scope.testScheduler.runCurrent()
             assertEquals("u1", users.currentUserId.value)
             assertEquals(0, analyticsResetCount)
+            assertEquals(0, widgetInvalidationCount)
 
             // 토큰 갱신 401로 저장소가 비고 만료 이벤트가 온다.
             auth.sessionId = null
@@ -889,6 +945,7 @@ class AppCoordinatorTest {
             assertEquals(null, users.currentUserId.value)
             // 세션을 잃으면 분석 사용자도 분리한다.
             assertEquals(1, analyticsResetCount)
+            assertEquals(1, widgetInvalidationCount)
             cancelAndIgnoreRemainingItems()
         }
     }
@@ -912,6 +969,7 @@ class AppCoordinatorTest {
             }
             assertEquals(null, users.currentUserId.value)
             assertEquals(if (expired) 2 else 1, analyticsResetCount)
+            assertEquals(if (expired) 2 else 1, widgetInvalidationCount)
         }
     }
 
@@ -933,6 +991,7 @@ class AppCoordinatorTest {
                 assertEquals("u1", users.currentUserId.value)
                 // 버린 결과는 분석 사용자도 그대로 둔다.
                 assertEquals(if (expired) 1 else 0, analyticsResetCount)
+                assertEquals(if (expired) 1 else 0, widgetInvalidationCount)
 
                 auth.sessionId = null
                 containerHost.onLaunchLoginFinished(LaunchLoginResult.SessionLost(sessionId = "a", expired = expired))
@@ -941,6 +1000,7 @@ class AppCoordinatorTest {
             assertEquals(null, users.currentUserId.value)
             // 로그인 직후 계정 확인 401: identify한 사용자를 분리한다.
             assertEquals(if (expired) 2 else 1, analyticsResetCount)
+            assertEquals(if (expired) 2 else 1, widgetInvalidationCount)
         }
     }
 
@@ -1122,6 +1182,7 @@ class AppCoordinatorTest {
             }
             assertEquals(null, users.currentUserId.value)
             assertEquals(if (expired) 2 else 1, analyticsResetCount)
+            assertEquals(if (expired) 2 else 1, widgetInvalidationCount)
         }
     }
 

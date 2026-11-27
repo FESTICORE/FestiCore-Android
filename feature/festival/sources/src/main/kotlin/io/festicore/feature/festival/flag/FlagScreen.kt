@@ -1,12 +1,5 @@
 package io.festicore.feature.festival.flag
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -62,6 +55,7 @@ import io.festicore.ui.designkit.component.skeleton.FCSkeletonShape
 import io.festicore.ui.designkit.component.skeleton.FCSkeletonView
 import io.festicore.ui.designkit.component.toast.FCToast
 import io.festicore.ui.designkit.component.toast.FCToastItem
+import io.festicore.ui.designkit.component.toast.FCToastOverlay
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
@@ -86,7 +80,6 @@ private val SkeletonTitleHeight = 20.dp
 private val SkeletonSubtitleWidth = 100.dp
 private val SkeletonSubtitleHeight = 16.dp
 private const val SKELETON_ROWS = 3
-private const val TOAST_MILLIS = 250
 private val OfflineRefresh = 60.seconds
 
 /**
@@ -179,7 +172,7 @@ fun FlagContent(
                 }
             }
         }
-        Toast(message = state.directory.toast, modifier = Modifier.align(Alignment.BottomCenter))
+        FlagToast(message = state.directory.toast, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -215,7 +208,7 @@ private fun Head() {
 
 /** 칩 줄은 화면 끝까지 스크롤된다(Figma Filter Chips). 부모 좌우 여백 P16을 상쇄한다. */
 @Composable
-private fun FilterChips(selected: FlagTag?, onTagSelected: (FlagTag?) -> Unit) {
+internal fun FilterChips(selected: FlagTag?, onTagSelected: (FlagTag?) -> Unit) {
     Row(
         modifier =
             Modifier
@@ -310,7 +303,7 @@ private fun FlagList(
 }
 
 @Composable
-private fun FlagCard(
+internal fun FlagCard(
     row: FlagRow,
     isOffline: Boolean,
     onFollowTapped: (id: String, follow: Boolean, baseCount: Int?) -> Unit,
@@ -378,15 +371,10 @@ private fun LoadingContent() {
 
 /** 아래에서 올라오는 토스트. 만료(2초)는 ViewModel이 맡는다. 사라지는 동안 마지막 문구를 둔다. */
 @Composable
-private fun Toast(message: String?, modifier: Modifier) {
+internal fun FlagToast(message: String?, modifier: Modifier) {
     var lastMessage by remember { mutableStateOf(message) }
     if (message != null) lastMessage = message
-    AnimatedVisibility(
-        visible = message != null,
-        modifier = modifier.padding(bottom = FestiCoreSpacing.paddingP16),
-        enter = slideInVertically(tween(TOAST_MILLIS, easing = EaseOut)) { it } + fadeIn(tween(TOAST_MILLIS, easing = EaseOut)),
-        exit = slideOutVertically(tween(TOAST_MILLIS, easing = EaseOut)) { it } + fadeOut(tween(TOAST_MILLIS, easing = EaseOut)),
-    ) {
+    FCToastOverlay(visible = message != null, modifier = modifier) {
         lastMessage?.let { FCToast(FCToastItem(R.drawable.ic_circle_info_16, it)) }
     }
 }

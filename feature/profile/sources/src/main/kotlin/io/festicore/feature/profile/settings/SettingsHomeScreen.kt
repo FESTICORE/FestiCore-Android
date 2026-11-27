@@ -41,6 +41,8 @@ fun SettingsHomeScreen(
     account: AccountState,
     onBackRequested: () -> Unit,
     onAppearanceRequested: () -> Unit,
+    onHomeWidgetRequested: () -> Unit,
+    onNotificationsRequested: () -> Unit = {},
     onAccountRequested: () -> Unit,
     onNoticeListRequested: () -> Unit,
     onLegalDocumentRequested: (WebPage) -> Unit,
@@ -52,6 +54,8 @@ fun SettingsHomeScreen(
         when (sideEffect) {
             SettingsHomeSideEffect.BackRequested -> onBackRequested()
             SettingsHomeSideEffect.AppearanceRequested -> onAppearanceRequested()
+            SettingsHomeSideEffect.NotificationsRequested -> onNotificationsRequested()
+            SettingsHomeSideEffect.HomeWidgetRequested -> onHomeWidgetRequested()
             SettingsHomeSideEffect.AccountRequested -> onAccountRequested()
             SettingsHomeSideEffect.NoticeListRequested -> onNoticeListRequested()
             is SettingsHomeSideEffect.LegalDocumentRequested -> onLegalDocumentRequested(sideEffect.page)
@@ -74,6 +78,8 @@ fun SettingsHomeScreen(
         modifier = modifier,
         onBackTapped = viewModel::onBackTapped,
         onAppearanceTapped = viewModel::onAppearanceTapped,
+        onHomeWidgetTapped = viewModel::onHomeWidgetTapped,
+        onNotificationsTapped = viewModel::onNotificationsTapped,
         onAccountTapped = viewModel::onAccountTapped,
         onNoticeTapped = viewModel::onNoticeTapped,
         onLegalDocumentTapped = viewModel::onLegalDocumentTapped,
@@ -88,8 +94,8 @@ fun SettingsHomeScreen(
 }
 
 /**
- * 설정 홈(순수 UI). 앱(화면 모드) · 계정(로그인했을 때만) · 정보 그룹과 버전.
- * '알림'(설계 쟁점 M4, P0 전) · '잠금화면'(쟁점 M5, 라이브 액티비티 단계 전) 줄은 숨긴다.
+ * 설정 홈(순수 UI). 앱(화면 모드 · 홈 화면 위젯) · 계정(로그인했을 때만) · 정보 그룹과 버전.
+ * 알림은 서버 설정 편집을 제공한다. Android에 대응하지 않는 잠금화면 줄은 숨긴다.
  *
  * @param appVersion 앱 버전 이름. 없으면 버전 줄을 숨긴다.
  */
@@ -100,6 +106,8 @@ fun SettingsHomeContent(
     modifier: Modifier = Modifier,
     onBackTapped: () -> Unit = {},
     onAppearanceTapped: () -> Unit = {},
+    onHomeWidgetTapped: () -> Unit = {},
+    onNotificationsTapped: () -> Unit = {},
     onAccountTapped: () -> Unit = {},
     onNoticeTapped: () -> Unit = {},
     onLegalDocumentTapped: (SettingsLegalDocument) -> Unit = {},
@@ -117,7 +125,11 @@ fun SettingsHomeContent(
             verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP24),
         ) {
             SettingsSection(title = "앱") {
+                FCListRow(label = "알림", onClick = onNotificationsTapped)
+                SettingsRowDivider()
                 FCListRow(label = "화면 모드", value = state.appearanceMode.summary, onClick = onAppearanceTapped)
+                SettingsRowDivider()
+                FCListRow(label = "홈 화면 위젯", onClick = onHomeWidgetTapped)
             }
             if (state.showsAccount) {
                 SettingsSection(title = "계정") {

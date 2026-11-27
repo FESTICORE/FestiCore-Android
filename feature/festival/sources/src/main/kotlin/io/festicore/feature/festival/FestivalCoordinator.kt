@@ -3,8 +3,14 @@ package io.festicore.feature.festival
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
 import io.festicore.domain.auth.auth.CurrentUserProvider
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalScheduleSaved
+import io.festicore.domain.festival.pack.FestivalPackUseCase
+import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
 import io.festicore.feature.festival.flag.FlagBoard
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -15,6 +21,7 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 data class FestivalCoordinatorState(
     val routes: List<NavKey> = listOf(FestivalRoute.List),
+    val prepNavigationBlocked: Boolean = false,
     /** 목록에서 고른 축제. */
     val selectedFestivalId: String? = null,
     /** 맨 위 라이브 보드에 시트 · 다이얼로그가 떠 있다. */
@@ -41,7 +48,7 @@ data class FestivalCoordinatorState(
     val hidesTabBar: Boolean
         get() {
             val top = routes.lastOrNull()
-            return routes.size == 1 ||
+            return routes.size == 1 || (top is FestivalRoute && top.isPrep()) ||
                 (top is FestivalRoute.LiveBoard && isLiveBoardPresentingModal) ||
                 top is FestivalRoute.NotificationInbox ||
                 // 크루 · 만들기 · 참여 확인은 아래 고정 영역이 있어 탭 바 없이 보인다(iOS `isCrewOnTop`).
@@ -54,6 +61,8 @@ data class FestivalCoordinatorState(
 
 /** 라이브 흐름 밖으로 나가는 이동. 상위(메인 탭)가 처리한다. */
 sealed interface FestivalCoordinatorSideEffect {
+    data object TermsAcceptanceRequested : FestivalCoordinatorSideEffect
+
     /** 깃발 탭으로 바꾼다(iOS `delegate(.flagTabRequested)`, 설계 E6). */
     data object FlagTabRequested : FestivalCoordinatorSideEffect
 
@@ -79,6 +88,8 @@ sealed interface FestivalCoordinatorSideEffect {
 class FestivalCoordinator(
     private val currentUserProvider: CurrentUserProvider,
     private val clearBoardSelection: () -> Unit = {},
+    private val packUseCase: FestivalPackUseCase? = null,
+    private val scheduleUseCase: FestivalScheduleUseCase? = null,
 ) : ViewModel(),
     OrbitContainerHost<FestivalCoordinatorState, FestivalCoordinatorState, FestivalCoordinatorSideEffect> {
     /** 이 흐름을 만든 계정. 여기서 바뀔 때만 정리한다(구독 시작이 늦어도 놓치지 않게 만들 때 읽는다). */
@@ -102,12 +113,100 @@ class FestivalCoordinator(
             }
         }
 
+    @Volatile
+    var listVisitToken: Long = 0
+        private set
+    private var prepLoad: Job? = null
+
+    @Volatile
+    private var prepPendingToken: Long? = null
+
+    fun onPrepRequested(
+        festivalId: String,
+        token: Long,
+        hasDays: (FestivalPackDocument) -> Boolean,
+    ) = intent {
+        val userId = currentUserProvider.currentUserId.value ?: return@intent
+        if (token != listVisitToken || state.routes != listOf(FestivalRoute.List) || prepPendingToken != null) return@intent
+        prepPendingToken = token
+        prepLoad = intent {
+            try {
+                val selected = try {
+                    scheduleUseCase?.mySchedule(festivalId)?.setIds
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
+                }
+                if (token != listVisitToken || state.routes != listOf(FestivalRoute.List) ||
+                    userId != currentUserProvider.currentUserId.value
+                ) {
+                    return@intent
+                }
+                val document = packUseCase?.state?.value?.packs?.get(festivalId)?.document
+                val route = if (selected != null && document != null && hasDays(document)) {
+                    FestivalRoute.PrepSchedule(festivalId, selected)
+                } else {
+                    FestivalRoute.PrepFlags(festivalId)
+                }
+                // 목록을 떠난 순간 다른 다운로드가 가진 이전 방문 토큰도 만료시킨다.
+                // 현재 lookup 자신을 취소하지 않도록 token만 올린다.
+                listVisitToken++
+                reduce { state.copy(routes = state.routes + route, prepNavigationBlocked = false) }
+            } finally {
+                if (prepPendingToken == token) prepPendingToken = null
+            }
+        }
+    }
+
+    fun onPrepNavigationBlocked(route: FestivalRoute, blocked: Boolean) = intent {
+        if (state.routes.lastOrNull() == route) reduce { state.copy(prepNavigationBlocked = blocked) }
+    }
+
+    fun onPrepScheduleFinished(route: FestivalRoute.PrepSchedule, savedIds: Set<String>? = null) = intent {
+        if (state.routes.lastOrNull() != route || state.prepNavigationBlocked) return@intent
+        reduce { state.copy(routes = state.routes + FestivalRoute.PrepFlags(route.festivalId), prepNavigationBlocked = false) }
+        if (savedIds != null) scheduleUseCase?.notifyMyScheduleSaved(FestivalScheduleSaved(route.festivalId, savedIds))
+    }
+
+    fun onPrepFlagsFinished(route: FestivalRoute.PrepFlags) = intent {
+        if (state.routes.lastOrNull() != route || state.prepNavigationBlocked) return@intent
+        val title = packUseCase?.state?.value?.packs?.get(route.festivalId)?.document?.name.orEmpty()
+        reduce { state.copy(routes = state.routes + FestivalRoute.PrepChecklist(route.festivalId, title), prepNavigationBlocked = false) }
+    }
+
+    fun onPrepDismissed() = intent {
+        if (state.prepNavigationBlocked) return@intent
+        clearPrep()
+    }
+
+    fun onPrepLoginRequested() = intent { postSideEffect(FestivalCoordinatorSideEffect.LoginRequested(FestivalLoginContext.Follow)) }
+    fun onPrepTermsRequested() = intent { postSideEffect(FestivalCoordinatorSideEffect.TermsAcceptanceRequested) }
+
+    /** 외부 링크는 사용자 단계 이동과 달리 진행 중 쓰기를 취소하고 준비 안내를 끝낸다. */
+    fun onExternalNavigation() = intent { clearPrep() }
+
+    private fun invalidatePrepRequest() {
+        listVisitToken++
+        prepLoad?.cancel()
+        prepLoad = null
+        prepPendingToken = null
+    }
+
+    private suspend fun clearPrep() = subIntent {
+        invalidatePrepRequest()
+        reduce { state.copy(routes = state.routes.filterNot { it is FestivalRoute && it.isPrep() }, prepNavigationBlocked = false) }
+    }
+
     fun goBack() = intent {
+        if (state.prepNavigationBlocked) return@intent
+
         reduce { state.copy(routes = state.routes.dropLast(1).ifEmpty { state.routes }, isLiveBoardPresentingModal = false) }
     }
 
     /** iOS `festivalList(.view(.selectFestival(id)))`. 같은 보드가 이미 위에 있으면 다시 쌓지 않는다. */
     fun onFestivalSelected(festivalId: String) = intent {
+        invalidatePrepRequest()
         val route = FestivalRoute.LiveBoard(festivalId)
         reduce {
             state.copy(
@@ -201,6 +300,7 @@ class FestivalCoordinator(
      * 초대 딥링크는 메인 탭이 라이브 탭을 고른 뒤 이 함수로 넘긴다(iOS `MTC:379-384`).
      */
     fun onCrewInviteOpened(code: String) = intent {
+        clearPrep()
         val routes = state.routes.filterNot { it is FestivalRoute.CrewJoin || it is FestivalRoute.Crew }
         reduce { state.copy(routes = routes + FestivalRoute.CrewJoin(code)) }
     }
@@ -271,6 +371,7 @@ class FestivalCoordinator(
 
     /** 딥링크로 축제 목록을 연다(iOS `showFestivalList`). 목록 위 화면을 모두 뺀다. */
     fun onDeeplinkFestivalListOpened() = intent {
+        clearPrep()
         reduce { state.copy(routes = listOf(FestivalRoute.List), isLiveBoardPresentingModal = false) }
     }
 
@@ -280,6 +381,7 @@ class FestivalCoordinator(
      * 저장된 팩이 없는 축제 · 캐시 오류 안내(iOS `widgetPackLookupFailed`)는 P0b에서 옮긴다.
      */
     fun onDeeplinkFestivalOpened(festivalId: String) = intent {
+        clearPrep()
         val routes = listOf(FestivalRoute.List, FestivalRoute.LiveBoard(festivalId))
         reduce {
             state.copy(
@@ -297,6 +399,7 @@ class FestivalCoordinator(
     fun onPendingBoardFestivalConsumed() = intent { reduce { state.copy(pendingBoardFestivalId = null) } }
 
     private fun onAccountChanged() = intent {
+        clearPrep()
         reduce {
             state.copy(
                 routes =

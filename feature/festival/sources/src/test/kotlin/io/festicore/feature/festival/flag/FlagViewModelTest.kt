@@ -37,6 +37,34 @@ class FlagViewModelTest {
     )
 
     @Test
+    fun prepFollowTimeoutClearsPendingAndShowsFailureWithoutTrackingFlagScreen() = runTest {
+        val vm = FlagViewModel(
+            liveBoardUseCase = FakeLiveBoardUseCase(liveBoard = { snapshot("festival") }),
+            flagUseCase = FakeFlagUseCase(setFollowing = { _, _ -> awaitCancellation() }),
+            analyticsUseCase = analytics,
+            festivalId = "festival",
+            tracksScreenView = false,
+            followTimeoutMillis = 15_000,
+            sleep = { awaitCancellation() },
+        )
+        vm.test(this) {
+            containerHost.onAppeared()
+            awaitState()
+            awaitState()
+            awaitState()
+            containerHost.onFollowTapped("flag", true, 1)
+            org.junit.Assert.assertTrue(awaitState().directory.isPending("flag"))
+            testScheduler.advanceTimeBy(15_000)
+            testScheduler.runCurrent()
+            val failed = awaitState()
+            org.junit.Assert.assertTrue(failed.directory.pendingFollows.isEmpty())
+            org.junit.Assert.assertNotNull(failed.directory.toast)
+            cancelAndIgnoreRemainingItems()
+        }
+        org.junit.Assert.assertTrue(analytics.events.none { it is AnalyticsEvent.ScreenView })
+    }
+
+    @Test
     fun selectedFestivalLoadsItsFlags() = runTest {
         val snapshot = snapshot("festival-a")
         viewModel(FakeLiveBoardUseCase(liveBoard = { snapshot }), festivalId = "festival-a").test(this) {

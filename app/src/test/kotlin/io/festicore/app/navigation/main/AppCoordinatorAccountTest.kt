@@ -92,6 +92,7 @@ class AppCoordinatorAccountTest {
 
     /** 분석 reset을 부른 횟수(iOS `analyticsUseCase.reset()`). */
     private var analyticsResetCount = 0
+    private var widgetInvalidationCount = 0
 
     private fun coordinator(
         auth: FakeAuth,
@@ -117,6 +118,7 @@ class AppCoordinatorAccountTest {
             },
             linkDevice = { auth.calls += "link" },
         ),
+        invalidateWidgetPersonal = { widgetInvalidationCount++ },
     )
 
     private val home = AppCoordinatorState(routes = listOf(AppRoute.Home))
@@ -154,12 +156,15 @@ class AppCoordinatorAccountTest {
 
             assertEquals(0, analyticsResetCount)
 
+            assertEquals(0, widgetInvalidationCount)
+
             pending.complete(Unit)
             scope.settle()
             assertEquals(AccountState(), containerHost.account.value)
         }
         assertNull(users.currentUserId.value)
         assertEquals(1, analyticsResetCount)
+        assertEquals(1, widgetInvalidationCount)
     }
 
     @Test
@@ -219,6 +224,7 @@ class AppCoordinatorAccountTest {
             assertEquals(signedIn.copy(message = "로그아웃에 실패했습니다. 다시 시도해 주세요."), containerHost.account.value)
             // 실패하면 계정이 그대로라 분석 식별자도 그대로 둔다.
             assertEquals(0, analyticsResetCount)
+            assertEquals(0, widgetInvalidationCount)
 
             auth.signOutResult = { auth.sessionId = null }
             containerHost.onLogoutRequested()
@@ -246,6 +252,7 @@ class AppCoordinatorAccountTest {
         }
         assertNull(users.currentUserId.value)
         assertEquals(1, analyticsResetCount)
+        assertEquals(1, widgetInvalidationCount)
         // 로그인을 잃었으면 기기 연결을 복원하지 않는다.
         assertEquals(listOf("unbind", "withdraw"), auth.calls)
     }

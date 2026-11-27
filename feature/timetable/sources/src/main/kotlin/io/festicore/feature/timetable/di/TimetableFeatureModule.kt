@@ -26,6 +26,8 @@ val timetableFeatureModule = module {
     viewModel { params ->
         SchedulePickViewModel(
             route = params.get(),
+            saveTimeoutMillis = params.getOrNull<Long>(),
+            packUseCase = get(),
             boardSelectionUseCase = get(),
             mapper = get(),
             overlapCalculator = get(),

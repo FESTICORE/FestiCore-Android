@@ -6,7 +6,9 @@ import io.festicore.feature.profile.appearance.AppearanceSettingsViewModel
 import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.notice.NoticeDetailViewModel
 import io.festicore.feature.profile.notice.NoticeListViewModel
+import io.festicore.feature.profile.notification.NotificationSettingsViewModel
 import io.festicore.feature.profile.packdetail.PackDetailViewModel
+import io.festicore.feature.profile.settings.HomeWidgetSettingsViewModel
 import io.festicore.feature.profile.settings.SettingsHomeViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
@@ -31,6 +33,8 @@ val profileFeatureModule = module {
         SettingsHomeViewModel(initialAccount = params.get(), legalDocumentUrls = get(), appearanceModeSettings = get())
     }
     viewModelOf(::AppearanceSettingsViewModel)
+    viewModelOf(::HomeWidgetSettingsViewModel)
+    viewModelOf(::NotificationSettingsViewModel)
     // 인자: 화면을 만들 때의 계정 상태(AccountState). 닉네임 저장은 domain/auth `AuthRepository.updateNickname`.
     viewModel { params -> AccountSettingsViewModel(initialAccount = params.get(), authRepository = get(), analyticsUseCase = get()) }
     // 공지 읽기는 domain/notice `NoticeUseCase`(domainNoticeModule).
@@ -39,7 +43,14 @@ val profileFeatureModule = module {
     viewModel { (id: String, title: String) -> NoticeDetailViewModel(id = id, title = title, noticeUseCase = get()) }
     // 지도 앱 설치 여부(설계 쟁점 M10). 패키지 이름은 app 매니페스트 `<queries>`에 적는다.
     // 인자: 팩 축제 id · 넘겨받은 축제 이름. 팩 읽기 · 업데이트 · 삭제 · 준비물은 domain/festival `FestivalPackDetailUseCase`.
-    viewModel { (festivalId: String, title: String) ->
-        PackDetailViewModel(festivalId = festivalId, title = title, packDetailUseCase = get(), mapAppClient = get())
+    viewModel { params ->
+        PackDetailViewModel(
+            festivalId = params[0],
+            title = params[1],
+            packDetailUseCase = get(),
+            mapAppClient = get(),
+            tracksChecklistWrites =
+                params.values.getOrNull(2) as? Boolean ?: false,
+        )
     }
 }

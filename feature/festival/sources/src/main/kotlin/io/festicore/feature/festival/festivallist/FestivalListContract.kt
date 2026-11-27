@@ -81,6 +81,11 @@ data class FestivalListState(
 }
 
 sealed interface FestivalListSideEffect {
+    data class PrepRequested(
+        val festivalId: String,
+        val token: Long,
+    ) : FestivalListSideEffect
+
     /** 예매처를 연다. Screen이 Custom Tabs로 연다. */
     data class OpenTicket(val url: String) : FestivalListSideEffect
 

@@ -149,12 +149,19 @@ class FestivalListViewModel(
     }
 
     /** 카드 "팩 받기" · "팩 업데이트"(iOS `downloadPack`). 발행됐고 받은 버전이 더 낮을 때만 받는다. */
-    fun onDownloadPack(festivalId: String) = intent {
+    fun onDownloadPack(festivalId: String, prepToken: Long? = null) = intent {
         if (!state.isForeground || festivalId in state.packDownloads) return@intent
         val festival = state.festivals.firstOrNull { it.id == festivalId } ?: return@intent
         if (festival.packVersion <= 0 || (festival.cachedPackVersion ?: -1) >= festival.packVersion) return@intent
         reduce { state.copy(packDownloads = state.packDownloads + (festivalId to null)) }
-        downloadPack(festivalId, state.accountGeneration)
+        downloadPack(
+            festivalId,
+            state.accountGeneration,
+            prepToken?.takeIf {
+                festivalId !in state.cachedPacks &&
+                    currentUserProvider.currentUserId.value != null
+            },
+        )
     }
 
     /** 토스트가 2초 뒤 사라졌다(iOS `toastExpired`). 시간은 `FCToastHost`가 잰다. */
@@ -184,7 +191,11 @@ class FestivalListViewModel(
     }
 
     /** 축제마다 하나만 받는다. 같은 축제를 다시 받으면 이전 것을 취소한다(iOS `cancelInFlight`). */
-    private fun downloadPack(festivalId: String, generation: Int) {
+    private fun downloadPack(
+        festivalId: String,
+        generation: Int,
+        prepToken: Long?,
+    ) {
         val job =
             intent {
                 try {
@@ -192,7 +203,7 @@ class FestivalListViewModel(
                         when (event) {
                             PackDownloadEvent.Reset -> onPackDownloadProgress(festivalId, generation, null)
                             is PackDownloadEvent.Progress -> onPackDownloadProgress(festivalId, generation, event.progress)
-                            is PackDownloadEvent.Finished -> onPackDownloadFinished(festivalId, generation, event.result)
+                            is PackDownloadEvent.Finished -> onPackDownloadFinished(festivalId, generation, event.result, prepToken)
                         }
                     }
                 } catch (cancellation: CancellationException) {
@@ -260,6 +271,7 @@ class FestivalListViewModel(
         festivalId: String,
         generation: Int,
         result: PackSyncResult,
+        prepToken: Long?,
     ) = subIntent {
         if (generation != state.accountGeneration || festivalId !in state.packDownloads) return@subIntent
         val syncResult =
@@ -276,6 +288,11 @@ class FestivalListViewModel(
                 is PackSyncResult.NotModified -> finished.copy(cachedPacks = finished.cachedPacks + (festivalId to result.pack))
                 is PackSyncResult.RetryAfter, PackSyncResult.Reconnecting -> finished.withPackFailureToast()
             }
+        }
+        if (prepToken != null && currentUserProvider.currentUserId.value != null &&
+            (result is PackSyncResult.Updated || result is PackSyncResult.NotModified)
+        ) {
+            postSideEffect(FestivalListSideEffect.PrepRequested(festivalId, prepToken))
         }
     }
 

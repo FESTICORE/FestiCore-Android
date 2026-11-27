@@ -20,7 +20,10 @@ import io.festicore.feature.profile.main.ProfileScreen
 import io.festicore.feature.profile.main.ProfileViewModel
 import io.festicore.feature.profile.notice.NoticeDetailScreen
 import io.festicore.feature.profile.notice.NoticeListScreen
+import io.festicore.feature.profile.notification.NotificationSettingsScreen
 import io.festicore.feature.profile.packdetail.PackDetailScreen
+import io.festicore.feature.profile.settings.HomeWidgetSettingsScreen
+import io.festicore.feature.profile.settings.HomeWidgetStatus
 import io.festicore.feature.profile.settings.SettingsHomeScreen
 import io.festicore.feature.web.WebPage
 import kotlinx.coroutines.flow.StateFlow
@@ -71,6 +74,8 @@ fun ProfileFlow(
  * @param onWithdrawRequested 계정 화면 탈퇴 확인(iOS `withdrawRequested`)
  * @param onRefreshRequested 계정 다시 확인(iOS `profileRefreshRequested`)
  * @param onNicknameUpdated 닉네임을 바꿨다(iOS `profileUpdated`)
+ * @param readHomeWidgetStatus app이 런처에서 다시 읽는 pin 지원 · 실제 설치 상태.
+ * @param onHomeWidgetPinRequested app의 홈 위젯 추가 요청. true는 제출됨이며 설치 완료가 아니다.
  */
 @Composable
 fun rememberProfileFlowEntries(
@@ -82,6 +87,9 @@ fun rememberProfileFlowEntries(
     onWithdrawRequested: () -> Unit,
     onRefreshRequested: () -> Unit,
     onNicknameUpdated: (AuthUser) -> Unit,
+    readHomeWidgetStatus: () -> HomeWidgetStatus,
+    onHomeWidgetPinRequested: () -> Boolean,
+    homeWidgetInstallationChanges: kotlinx.coroutines.flow.Flow<Unit> = kotlinx.coroutines.flow.emptyFlow(),
     onBearerEntryRequested: () -> Unit = {},
     onBearerFlagsRetryTapped: () -> Unit = {},
     onBearerFlagsLoadFailed: () -> Unit = {},
@@ -140,6 +148,8 @@ fun rememberProfileFlowEntries(
                         account = currentAccount,
                         onBackRequested = coordinator::goBack,
                         onAppearanceRequested = coordinator::onAppearanceRequested,
+                        onHomeWidgetRequested = coordinator::onHomeWidgetRequested,
+                        onNotificationsRequested = coordinator::onNotificationsRequested,
                         onAccountRequested = coordinator::onAccountRequested,
                         onNoticeListRequested = coordinator::onNoticeListRequested,
                         onLegalDocumentRequested = coordinator::onLegalDocumentRequested,
@@ -155,6 +165,18 @@ fun rememberProfileFlowEntries(
                         onWithdrawRequested = onWithdrawRequested,
                         onRefreshRequested = onRefreshRequested,
                         onNicknameUpdated = onNicknameUpdated,
+                    )
+                }
+                entry<ProfileRoute.Notifications> {
+                    NotificationSettingsScreen(viewModel = koinViewModel(), onBack = coordinator::goBack)
+                }
+                entry<ProfileRoute.HomeWidget> {
+                    HomeWidgetSettingsScreen(
+                        viewModel = koinViewModel(),
+                        readStatus = readHomeWidgetStatus,
+                        requestPin = onHomeWidgetPinRequested,
+                        installationChanges = homeWidgetInstallationChanges,
+                        onBackRequested = coordinator::goBack,
                     )
                 }
                 entry<ProfileRoute.Appearance> {

@@ -22,6 +22,7 @@ data class PackDetailState(
     val detail: FestivalPackDetail? = null,
     val checklist: FestivalChecklist = FestivalChecklist(),
     val isEditingChecklist: Boolean = false,
+    val pendingChecklistWrites: Int = 0,
     val newItemText: String = "",
     val changes: FestivalPackChanges? = null,
     val isUpdating: Boolean = false,

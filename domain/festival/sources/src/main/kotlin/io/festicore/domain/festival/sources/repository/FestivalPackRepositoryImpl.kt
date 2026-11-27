@@ -12,6 +12,8 @@ import io.festicore.domain.festival.pack.FestivalPackRepository
 import io.festicore.domain.festival.sources.model.dto.FestivalPackDetailDto
 import io.festicore.domain.festival.sources.model.dto.FestivalPackDocumentDto
 import io.festicore.domain.festival.sources.model.mapper.toDomain
+import io.festicore.domain.festival.sources.widget.FestivalWidgetRepository
+import io.festicore.domain.festival.sources.widget.widgetAttempt
 import io.festicore.service.pack.CachedFestivalPack as ServicePack
 import io.festicore.service.pack.PackDownloadEvent as ServiceDownloadEvent
 import io.festicore.service.pack.PackSyncError
@@ -35,6 +37,7 @@ import kotlinx.serialization.json.Json
 internal class FestivalPackRepositoryImpl(
     private val service: PackSyncService,
     private val json: Json,
+    private val widget: FestivalWidgetRepository? = null,
 ) : FestivalPackRepository {
     private val mutableState = MutableStateFlow(FestivalPackState())
     override val state: StateFlow<FestivalPackState> = mutableState.asStateFlow()
@@ -71,12 +74,14 @@ internal class FestivalPackRepositoryImpl(
     override suspend fun cachedPack(festivalId: String): CachedFestivalPack? = mapPackErrors { service.cachedPack(festivalId)?.toDomain() }
 
     override suspend fun syncPack(festivalId: String): PackSyncResult = mapPackErrors {
-        service.sync(festivalId).toDomain().also(::record)
+        service.sync(festivalId).toDomain().also { record(it) }
     }
 
     override suspend fun deletePack(festivalId: String) = mapPackErrors {
         service.deletePack(festivalId)
         mutableState.update { it.copy(packs = it.packs - festivalId) }
+        widgetAttempt { widget?.refreshPublic() }
+        Unit
     }
 
     override suspend fun packDetail(festivalId: String, pack: (CachedFestivalPack) -> FestivalReceivedPack): FestivalPackDetail? =
@@ -98,13 +103,14 @@ internal class FestivalPackRepositoryImpl(
         }
     }
 
-    private fun record(result: PackSyncResult) {
+    private suspend fun record(result: PackSyncResult) {
         val pack = when (result) {
             is PackSyncResult.Updated -> result.pack
             is PackSyncResult.NotModified -> result.pack
             else -> return
         }
         mutableState.update { it.copy(packs = it.packs + (pack.festivalId to pack)) }
+        widgetAttempt { widget?.refreshPublic() }
     }
 
     private fun ServiceSyncResult.toDomain(): PackSyncResult = when (this) {

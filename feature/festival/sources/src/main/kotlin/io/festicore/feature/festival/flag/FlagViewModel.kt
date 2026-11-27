@@ -17,7 +17,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
@@ -33,9 +35,15 @@ class FlagViewModel(
     private val analyticsUseCase: AnalyticsUseCase,
     festivalId: String? = null,
     private val sleep: suspend (Duration) -> Unit = { delay(it) },
+    private val tracksScreenView: Boolean = true,
+    private val followTimeoutMillis: Long? = null,
 ) : ViewModel(),
     OrbitContainerHost<FlagState, FlagState, FlagSideEffect> {
     override val container = orbitContainer<FlagState, FlagSideEffect>(FlagState(festivalId = festivalId))
+
+    private val queuedFollows = java.util.concurrent.atomic.AtomicInteger()
+    val hasPendingFollows: Boolean
+        get() = queuedFollows.get() > 0 || container.stateFlow.value.directory.pendingFollows.isNotEmpty()
 
     private val loadJob = AtomicReference<Job?>(null)
     private val toastJob = AtomicReference<Job?>(null)
@@ -45,7 +53,7 @@ class FlagViewModel(
 
     fun onAppeared() = intent {
         // iOS `tracksScreenView`는 준비 안내(PrepGuide) 안 깃발 목록만 끈다. 그 화면은 아직 옮기지 않아 항상 남긴다.
-        analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.FestivalFlag))
+        if (tracksScreenView) analyticsUseCase.track(AnalyticsEvent.ScreenView(screen = AnalyticsScreen.FestivalFlag))
         reduce { state.copy(isVisible = true) }
         load()
     }
@@ -118,11 +126,14 @@ class FlagViewModel(
         id: String,
         follow: Boolean,
         baseCount: Int?,
-    ) = intent {
-        if (state.directory.isPending(id)) return@intent
-        val base = state.directory.followOverrides[id]?.followerCount ?: baseCount
-        reduce { state.copy(directory = state.directory.copy(pendingFollows = state.directory.pendingFollows + (id to base))) }
-        setFollowing(id, follow)
+    ): Job {
+        queuedFollows.incrementAndGet()
+        return intent {
+            if (state.directory.isPending(id)) return@intent
+            val base = state.directory.followOverrides[id]?.followerCount ?: baseCount
+            reduce { state.copy(directory = state.directory.copy(pendingFollows = state.directory.pendingFollows + (id to base))) }
+            setFollowing(id, follow)
+        }.also { it.invokeOnCompletion { queuedFollows.decrementAndGet() } }
     }
 
     /** 카드를 눌러 깃발 상세를 연다. */
@@ -179,7 +190,17 @@ class FlagViewModel(
             intent {
                 val result =
                     try {
-                        Result.success(flagUseCase.setFollowing(follow, id))
+                        Result.success(
+                            if (followTimeoutMillis ==
+                                null
+                            ) {
+                                flagUseCase.setFollowing(follow, id)
+                            } else {
+                                withTimeout(followTimeoutMillis) { flagUseCase.setFollowing(follow, id) }
+                            },
+                        )
+                    } catch (_: TimeoutCancellationException) {
+                        Result.failure(FestivalFlagFollowError.Unavailable())
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (error: FestivalFlagFollowError) {

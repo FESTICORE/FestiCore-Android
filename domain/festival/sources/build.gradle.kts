@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":service:apiendpoint"))
     implementation(project(":service:auth:interface"))
     implementation(project(":service:pack:interface"))
+    implementation(project(":service:device:interface"))
     implementation(project(":core:storage:interface"))
 
     implementation(platform(libs.lib("koin-bom")))

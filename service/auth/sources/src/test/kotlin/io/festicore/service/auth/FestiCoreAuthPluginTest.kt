@@ -107,6 +107,33 @@ class FestiCoreAuthPluginTest {
     private fun HttpRequestData.isMe() = url.encodedPath == "/api/v1/me"
 
     @Test
+    fun `로그인 상태에서도 기기 요청은 계정 토큰과 refresh를 사용하지 않는다`() = runTest {
+        session.saveLogin("account-access", "account-refresh")
+        val refresher = TokenRefresher(store, expiryEvents) { error("Device request must not refresh account credentials") }
+        val client = createFestiCoreHttpClient(
+            baseUrl = "https://example.test/",
+            engine = MockEngine { request ->
+                requests += request
+                if (request.method == io.ktor.http.HttpMethod.Get) {
+                    unauthorized()
+                } else {
+                    ok("""{"code":"SUCCESS","message":"ok","data":{}}""")
+                }
+            },
+        ) { install(festiCoreAuthPlugin(store, refresher)) }
+        try {
+            val device = io.festicore.service.apiendpoint.device.DeviceRequest(client)
+            device.register("installation", null, kotlinx.serialization.json.JsonObject(emptyMap()))
+            device.register("installation", "device-token", kotlinx.serialization.json.JsonObject(emptyMap()))
+            expect<NetworkError.Http> { device.settings("installation", "device-token") }
+            assertEquals(listOf(null, "Bearer device-token", "Bearer device-token"), requests.map { it.bearer })
+            assertTrue(session.isLoggedIn())
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun `비인증 요청에는 Authorization을 붙이지 않는다`() = runTest {
         session.saveLogin("old-access", "old-refresh")
 

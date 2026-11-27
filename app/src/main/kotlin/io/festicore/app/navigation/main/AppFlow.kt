@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -37,6 +38,7 @@ import io.festicore.core.utility.deeplink.FestiCoreDeeplink
 import io.festicore.domain.auth.auth.CurrentUserProvider
 import io.festicore.domain.festival.liveboard.FestivalLiveBoardPreferenceUseCase
 import io.festicore.domain.festival.selection.FestivalBoardSelectionUseCase
+import io.festicore.domain.timetable.FestivalPackTimetableMapper
 import io.festicore.feature.auth.AuthRoute
 import io.festicore.feature.auth.login.LaunchLoginFlow
 import io.festicore.feature.auth.login.LoginSheet
@@ -53,17 +55,24 @@ import io.festicore.feature.festival.flag.flagDetailContext
 import io.festicore.feature.festival.flag.flagTabInput
 import io.festicore.feature.festival.flag.rememberFlagFlowEntries
 import io.festicore.feature.festival.rememberFestivalFlowEntries
+import io.festicore.feature.festival.widget.FestivalWidgetPinController
 import io.festicore.feature.onboarding.OnboardingResult
 import io.festicore.feature.onboarding.OnboardingRoute
 import io.festicore.feature.onboarding.OnboardingScreen
 import io.festicore.feature.profile.ProfileCoordinator
 import io.festicore.feature.profile.ProfileFlow
 import io.festicore.feature.profile.main.ProfileViewModel
+import io.festicore.feature.profile.packdetail.PackDetailViewModel
+import io.festicore.feature.profile.prepchecklist.PrepChecklistScreen
 import io.festicore.feature.profile.rememberProfileFlowEntries
+import io.festicore.feature.profile.settings.HomeWidgetStatus
+import io.festicore.feature.timetable.SchedulePickResult
 import io.festicore.feature.timetable.TimetableCoordinator
 import io.festicore.feature.timetable.TimetableFlow
+import io.festicore.feature.timetable.TimetableRoute
 import io.festicore.feature.timetable.main.TimetableViewModel
 import io.festicore.feature.timetable.rememberTimetableFlowEntries
+import io.festicore.feature.timetable.schedulepick.SchedulePickScreen
 import io.festicore.feature.web.WebPage
 import io.festicore.feature.web.WebScreen
 import kotlin.coroutines.cancellation.CancellationException
@@ -163,7 +172,10 @@ private fun HomeWithCovers(
     currentUserProvider: CurrentUserProvider = koinInject(),
     liveBoardPreferenceUseCase: FestivalLiveBoardPreferenceUseCase = koinInject(),
     festivalBoardSelectionUseCase: FestivalBoardSelectionUseCase = koinInject(),
+    prepTimetableMapper: FestivalPackTimetableMapper = koinInject(),
 ) {
+    val context = LocalContext.current
+    val widgetPinController = remember(context) { FestivalWidgetPinController(context) }
     val mainTabState by mainTab.collectAsState()
     val festivalState by festivalCoordinator.collectAsState()
     val flagState by flagViewModel.collectAsState()
@@ -181,6 +193,7 @@ private fun HomeWithCovers(
     val flagRequest = mainTabState.flagRequest
     LaunchedEffect(flagRequest) {
         if (flagRequest == null) return@LaunchedEffect
+        festivalCoordinator.onExternalNavigation()
         flagCoordinator.openDetail(flagRequest)
         mainTab.onFlagRequestConsumed()
     }
@@ -197,12 +210,16 @@ private fun HomeWithCovers(
     val packDirectionsRequest = mainTabState.packDirectionsRequest
     LaunchedEffect(packDirectionsRequest) {
         if (packDirectionsRequest == null) return@LaunchedEffect
+        festivalCoordinator.onExternalNavigation()
         profileCoordinator.onOpenPackDirections(packDirectionsRequest.festivalId, packDirectionsRequest.title)
         mainTab.onPackDirectionsRequestConsumed()
     }
     coordinator.collectSideEffect { sideEffect ->
         when (sideEffect) {
-            is AppCoordinatorSideEffect.OpenDeeplink -> mainTab.open(sideEffect.deeplink)
+            is AppCoordinatorSideEffect.OpenDeeplink -> {
+                festivalCoordinator.onExternalNavigation()
+                mainTab.open(sideEffect.deeplink)
+            }
         }
     }
     // 탭마다 스택 항목을 탭 밖에서 만들어 둔다. 고른 탭만 그려도 다른 탭의 화면 ViewModel · 저장 상태가 남고(iOS `TabView`),
@@ -211,6 +228,33 @@ private fun HomeWithCovers(
         rememberFestivalFlowEntries(
             coordinator = festivalCoordinator,
             listViewModel = festivalListViewModel,
+            hasScheduleDays = { prepTimetableMapper.days(it, emptyList()).isNotEmpty() },
+            prepScheduleContent = { route ->
+                SchedulePickScreen(
+                    route = TimetableRoute.SchedulePick(route.festivalId, route.selectedSetIds, null),
+                    saveTimeoutMillis = 15_000,
+                    onNavigationBlocked = { festivalCoordinator.onPrepNavigationBlocked(route, it) },
+                    onBack = festivalCoordinator::goBack,
+                    onResult = { result ->
+                        festivalCoordinator.onPrepNavigationBlocked(route, false)
+                        when (result) {
+                            is SchedulePickResult.Saved -> festivalCoordinator.onPrepScheduleFinished(route, result.setIds)
+                            SchedulePickResult.Skipped -> festivalCoordinator.onPrepScheduleFinished(route)
+                            SchedulePickResult.Later -> festivalCoordinator.onPrepDismissed()
+                        }
+                    },
+                )
+            },
+            prepChecklistContent = { route ->
+                val prepDetail: PackDetailViewModel = koinViewModel { parametersOf(route.festivalId, route.title, true) }
+                PrepChecklistScreen(
+                    viewModel = prepDetail,
+                    onDone = festivalCoordinator::onPrepDismissed,
+                    onLater = festivalCoordinator::onPrepDismissed,
+                    onNavigationBlocked = { festivalCoordinator.onPrepNavigationBlocked(route, it) },
+                    onBack = festivalCoordinator::goBack,
+                )
+            },
             bearerBoardContent = { festivalId, flagId ->
                 BearerBoardScreen(
                     route = BearerRoute.Board(festivalId, flagId),
@@ -234,6 +278,12 @@ private fun HomeWithCovers(
     val profileEntries =
         rememberProfileFlowEntries(
             account = coordinator.account,
+            readHomeWidgetStatus = {
+                val status = widgetPinController.status()
+                HomeWidgetStatus(isPinSupported = status.isPinSupported, isInstalled = status.isInstalled)
+            },
+            onHomeWidgetPinRequested = widgetPinController::requestPin,
+            homeWidgetInstallationChanges = widgetPinController.installationChanges,
             onLoginRequested = { coordinator.onLoginRequested(mainTabState.loginContext(null)) },
             onGoogleLoginRequested = coordinator::onGoogleLoginRequested,
             onFestivalListRequested = mainTab::onFestivalListRequested,
@@ -255,7 +305,7 @@ private fun HomeWithCovers(
                     if (opensBoard) {
                         BearerRoute.Board(flag.festivalId, flag.id)
                     } else {
-                        BearerRoute.Profile(flag.festivalId, flag.id)
+                        BearerRoute.Profile(flag.festivalId, flag.id, isEditMode = true)
                     }
                 profileCoordinator.onBearerEntryRequested()
             },
@@ -324,6 +374,7 @@ private fun HomeWithCovers(
                             coordinator.onLoginRequested(mainTabState.liveLoginContext(context))
                         },
                         onPackDirectionsRequested = mainTab::onPackDirectionsRequested,
+                        onTermsAcceptanceRequested = coordinator::onTermsAcceptanceRequested,
                         coordinator = festivalCoordinator,
                         listViewModel = festivalListViewModel,
                     )

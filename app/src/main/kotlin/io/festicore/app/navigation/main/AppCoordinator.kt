@@ -102,6 +102,8 @@ class AppCoordinator(
     /** 현재 사용자를 비울 때마다 분석 식별자 · 슈퍼 프로퍼티를 초기화한다(`AnalyticsUseCase.reset`, [forgetCurrentUser]). */
     private val resetAnalytics: () -> Unit,
     private val accountCoordinator: AccountCoordinator = AccountCoordinator(authRepository),
+    /** 계정 분리 시 credential 제거 여부와 독립적으로 위젯 개인 스냅샷 삭제를 기다린다. */
+    private val invalidateWidgetPersonal: suspend () -> Unit = {},
 ) : ViewModel(),
     OrbitContainerHost<AppCoordinatorState, AppCoordinatorState, AppCoordinatorSideEffect> {
     override val container: Container<AppCoordinatorState, AppCoordinatorSideEffect> =
@@ -384,7 +386,17 @@ class AppCoordinator(
      * iOS는 로그아웃 · 탈퇴(`AccountCoordinator.swift:205,213`)에서만 reset하고 세션 만료(`SessionCoordinator.swift:196-224`) · 프로필 401(`:341-351`)에서는 하지 않는다.
      * Android는 로그인 직후 계정 확인 전에 identify하므로(`AuthCoordinator.acceptLogin`과 같은 시점) 세션을 잃는 모든 경로에서 분리한다(spec `service/analytics/.spec/analytics.md`).
      */
-    private fun forgetCurrentUser() {
+    private suspend fun forgetCurrentUser() {
+        val lostSession = currentSessionId()
+        try {
+            invalidateWidgetPersonal()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            // 위젯 저장 실패가 로그아웃을 막지 않는다. domain은 저장 전에 현재 owner의 개인 읽기를 차단한다.
+            FestiCoreLogger.error("위젯 개인 정보를 지우지 못함: ${error::class.simpleName}", FestiCoreLogCategory.APP)
+        }
+        lostSession?.let { clearSessionIf(it) }
         resetAnalytics()
         updateCurrentUserId(null)
     }

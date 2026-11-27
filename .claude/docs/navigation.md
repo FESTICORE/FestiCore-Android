@@ -123,7 +123,7 @@ iOS 전환 값을 그대로 옮긴다. 값은 상수로 두고 단위 테스트�
 ## 테스트
 
 - `orbit-test`로 Coordinator 함수 호출 → `routes` State와 `Finished` SideEffect를 검증한다.
-- 딥링크 수동 확인: `adb shell am start -W -a android.intent.action.VIEW -d "festicore://festival/<축제 ID>" io.festiCore.co.stage`(앱 꺼짐 · 켜짐 각각).
+- 딥링크 수동 확인: `adb shell am start -W -a android.intent.action.VIEW -d "festicore://festival/<축제 ID>" io.festicore.co.stage`(앱 꺼짐 · 켜짐 각각).
 
 ## 금지
 

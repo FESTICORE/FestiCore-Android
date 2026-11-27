@@ -28,6 +28,7 @@ class PackDetailViewModel(
     private val packDetailUseCase: FestivalPackDetailUseCase,
     private val mapAppClient: MapAppClient,
     private val newId: () -> String = { UUID.randomUUID().toString() },
+    private val tracksChecklistWrites: Boolean = false,
 ) : ViewModel(),
     OrbitContainerHost<PackDetailState, PackDetailState, PackDetailSideEffect> {
     override val container =
@@ -69,10 +70,23 @@ class PackDetailViewModel(
         load()
     }
 
-    fun onItemToggled(id: String) = intent {
-        val checked = state.checklist.checkedIds
-        reduce { state.copy(checklist = state.checklist.copy(checkedIds = if (id in checked) checked - id else checked + id)) }
-        saveChecklist()
+    private val queuedChecklistWrites = java.util.concurrent.atomic.AtomicInteger()
+    val hasPendingChecklistWrites: Boolean
+        get() = queuedChecklistWrites.get() > 0 || container.stateFlow.value.pendingChecklistWrites > 0
+
+    private fun trackedChecklistIntent(block: () -> kotlinx.coroutines.Job): kotlinx.coroutines.Job {
+        if (tracksChecklistWrites) queuedChecklistWrites.incrementAndGet()
+        return block().also { job ->
+            if (tracksChecklistWrites) job.invokeOnCompletion { queuedChecklistWrites.decrementAndGet() }
+        }
+    }
+
+    fun onItemToggled(id: String) = trackedChecklistIntent {
+        intent {
+            val checked = state.checklist.checkedIds
+            reduce { state.copy(checklist = state.checklist.copy(checkedIds = if (id in checked) checked - id else checked + id)) }
+            saveChecklist()
+        }
     }
 
     fun onEditTapped() = intent { reduce { state.copy(isEditingChecklist = true) } }
@@ -80,28 +94,32 @@ class PackDetailViewModel(
     fun onEditDoneTapped() = intent { reduce { state.copy(isEditingChecklist = false, newItemText = "") } }
 
     /** 운영팀 필수 항목은 지우지 않는다. 내 항목은 삭제하고 팩 항목은 숨긴다. */
-    fun onItemRemoved(id: String) = intent {
-        if (state.detail?.checklist?.firstOrNull { it.id == id }?.required == true) return@intent
-        val checklist = state.checklist
-        val removed =
-            if (checklist.customItems.any { it.id == id }) {
-                checklist.copy(customItems = checklist.customItems.filterNot { it.id == id })
-            } else {
-                checklist.copy(hiddenIds = checklist.hiddenIds + id)
-            }
-        reduce { state.copy(checklist = removed.copy(checkedIds = removed.checkedIds - id)) }
-        saveChecklist()
+    fun onItemRemoved(id: String) = trackedChecklistIntent {
+        intent {
+            if (state.detail?.checklist?.firstOrNull { it.id == id }?.required == true) return@intent
+            val checklist = state.checklist
+            val removed =
+                if (checklist.customItems.any { it.id == id }) {
+                    checklist.copy(customItems = checklist.customItems.filterNot { it.id == id })
+                } else {
+                    checklist.copy(hiddenIds = checklist.hiddenIds + id)
+                }
+            reduce { state.copy(checklist = removed.copy(checkedIds = removed.checkedIds - id)) }
+            saveChecklist()
+        }
     }
 
     /** 내 항목 입력. iOS `$store.newItemText`. */
     fun onNewItemTextChanged(value: String) = intent { reduce { state.copy(newItemText = value) } }
 
-    fun onAddItemTapped() = intent {
-        val label = state.newItemText.trim()
-        if (label.isEmpty()) return@intent
-        val item = FestivalChecklist.CustomItem(id = "custom-${newId().lowercase()}", label = label)
-        reduce { state.copy(checklist = state.checklist.copy(customItems = state.checklist.customItems + item), newItemText = "") }
-        saveChecklist()
+    fun onAddItemTapped() = trackedChecklistIntent {
+        intent {
+            val label = state.newItemText.trim()
+            if (label.isEmpty()) return@intent
+            val item = FestivalChecklist.CustomItem(id = "custom-${newId().lowercase()}", label = label)
+            reduce { state.copy(checklist = state.checklist.copy(customItems = state.checklist.customItems + item), newItemText = "") }
+            saveChecklist()
+        }
     }
 
     fun onUpdateTapped() = startUpdate()
@@ -217,8 +235,13 @@ class PackDetailViewModel(
 
     private suspend fun saveChecklist() = subIntent {
         // 저장을 한 줄로 세우고 잠금을 얻은 뒤의 최신 준비물을 쓴다. 빠른 연속 변경에서 오래된 저장이 나중에 덮어쓰지 않게 한다.
-        checklistSaveLock.withLock {
-            ignoringFailure { packDetailUseCase.saveChecklist(state.checklist, state.festivalId) }
+        if (tracksChecklistWrites) reduce { state.copy(pendingChecklistWrites = state.pendingChecklistWrites + 1) }
+        try {
+            checklistSaveLock.withLock {
+                ignoringFailure { packDetailUseCase.saveChecklist(state.checklist, state.festivalId) }
+            }
+        } finally {
+            if (tracksChecklistWrites) reduce { state.copy(pendingChecklistWrites = state.pendingChecklistWrites - 1) }
         }
     }
 

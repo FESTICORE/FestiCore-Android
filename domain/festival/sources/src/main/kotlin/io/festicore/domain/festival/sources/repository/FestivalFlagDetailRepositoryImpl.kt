@@ -13,6 +13,8 @@ import io.festicore.domain.festival.sources.model.mapper.toFestivalFlagReportErr
 import io.festicore.domain.festival.sources.service.FestivalCatalogService
 import io.festicore.domain.festival.sources.service.FestivalFlagServiceError
 import io.festicore.domain.festival.sources.service.isValidFlagId
+import io.festicore.domain.festival.sources.widget.FestivalWidgetRepository
+import io.festicore.domain.festival.sources.widget.widgetAttempt
 import io.festicore.service.apiendpoint.flag.FlagReportBody
 import io.festicore.service.apiendpoint.flag.FlagRequest
 import io.festicore.service.apiendpoint.flag.PinnedFlagBody
@@ -25,6 +27,7 @@ internal class FestivalFlagDetailRepositoryImpl(
     private val api: FlagRequest,
     private val catalogService: FestivalCatalogService,
     private val currentSessionId: suspend () -> String? = { null },
+    private val widget: FestivalWidgetRepository? = null,
 ) : FestivalFlagDetailRepository {
     /** 로그인 중이면 그 세션의 Bearer를 붙인다. 익명이면 `isFollowing` · `isBearer` · `isPinned`가 null이다. */
     override suspend fun detail(flagId: String): FestivalFlagDetail = try {
@@ -49,8 +52,10 @@ internal class FestivalFlagDetailRepositoryImpl(
     /** 대표 깃발을 [flagId]로 바꾸고(null이면 해제) 서버가 저장한 값을 돌려준다. */
     override suspend fun setPinnedFlag(flagId: String?): String? = try {
         if (flagId != null && !flagId.isValidFlagId()) throw FestivalFlagServiceError.InvalidFlagId()
+        val request = widgetAttempt { widget?.capture() }.value
         val result = api.setPinnedFlag<PinnedFlagDto>(PinnedFlagBody(flagId), currentSessionId())
         if (result.pinnedFlagId != flagId) throw FestivalFlagServiceError.InvalidResponse()
+        if (request != null) widgetAttempt { widget?.pin(request, result.pinnedFlagId) }
         result.pinnedFlagId
     } catch (e: Exception) {
         throw e.toFestivalFlagPinError()

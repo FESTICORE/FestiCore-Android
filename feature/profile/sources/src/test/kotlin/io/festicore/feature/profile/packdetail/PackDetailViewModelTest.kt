@@ -10,6 +10,7 @@ import io.festicore.domain.festival.entity.FestivalReceivedPack
 import io.festicore.domain.festival.packdetail.FestivalPackDetailUseCase
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -28,6 +29,7 @@ class PackDetailViewModelTest {
         var updatePack: suspend (String) -> FestivalPackDetail? = { null },
         var checklist: FestivalChecklist = FestivalChecklist(),
         var autoDownloadOnWiFi: Boolean = true,
+        var save: suspend (FestivalChecklist) -> Unit = {},
     ) : FestivalPackDetailUseCase {
         val changeRequests = mutableListOf<Pair<String, Int>>()
         val deleted = mutableListOf<String>()
@@ -51,6 +53,7 @@ class PackDetailViewModelTest {
 
         override suspend fun saveChecklist(checklist: FestivalChecklist, festivalId: String) {
             saved += checklist
+            save(checklist)
         }
 
         override suspend fun autoDownloadOnWiFi() = autoDownloadOnWiFi
@@ -64,12 +67,14 @@ class PackDetailViewModelTest {
         useCase: FakePackDetailUseCase = FakePackDetailUseCase(),
         mapAppClient: MapAppClient = MapAppClient { false },
         title: String = "원더리벳 2026",
+        tracksChecklistWrites: Boolean = false,
     ) = PackDetailViewModel(
         festivalId = "fst_a",
         title = title,
         packDetailUseCase = useCase,
         mapAppClient = mapAppClient,
         newId = { "00000000-0000-0000-0000-000000000000" },
+        tracksChecklistWrites = tracksChecklistWrites,
     )
 
     private fun sampleDetail(version: Int, latest: Int) = FestivalPackDetail(
@@ -89,6 +94,36 @@ class PackDetailViewModelTest {
         load = PackDetailLoad.Loaded,
         detail = sampleDetail(version, latest),
     )
+
+    /** 구현 후 검증: 준비 안내에서 저장 대기는 탐색에만 쓰고 입력을 막지 않는다. */
+    @Test
+    fun prepTracksQueuedWritesWhileAllowingMoreChecklistInput() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val useCase = FakePackDetailUseCase(save = { release.await() })
+        viewModel(useCase, tracksChecklistWrites = true).test(this, initialState = loaded(12, 12)) {
+            containerHost.onItemToggled("ticket")
+            expectState { copy(checklist = checklist.copy(checkedIds = setOf("ticket"))) }
+            expectState { copy(pendingChecklistWrites = 1) }
+            containerHost.onItemToggled("earplug")
+            expectState { copy(checklist = checklist.copy(checkedIds = setOf("ticket", "earplug"))) }
+            expectState { copy(pendingChecklistWrites = 2) }
+            release.complete(Unit)
+            expectState { copy(pendingChecklistWrites = 1) }
+            expectState { copy(pendingChecklistWrites = 0) }
+        }
+        assertEquals(setOf("ticket", "earplug"), useCase.saved.last().checkedIds)
+    }
+
+    @Test
+    fun prepClearsPendingWriteAfterStorageFailure() = runTest {
+        val useCase = FakePackDetailUseCase(save = { throw IOException("disk unavailable") })
+        viewModel(useCase, tracksChecklistWrites = true).test(this, initialState = loaded(12, 12)) {
+            containerHost.onItemToggled("ticket")
+            expectState { copy(checklist = checklist.copy(checkedIds = setOf("ticket"))) }
+            expectState { copy(pendingChecklistWrites = 1) }
+            expectState { copy(pendingChecklistWrites = 0) }
+        }
+    }
 
     @Test
     fun lastRideTimeUsesSeoul24Hour() {

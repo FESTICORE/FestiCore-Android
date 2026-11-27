@@ -57,6 +57,56 @@ class FestivalPackDownloadViewModelTest {
     private fun FestivalListState.packCopy() = FestivalListPresentation.packCopy(festivals.first())
 
     @Test
+    fun firstDownloadWithSessionRetainsOriginalPrepVisitToken() = runTest {
+        val received = pack(2)
+        val packs = FakePackUseCase(download = { flowOf(PackDownloadEvent.Finished(PackSyncResult.Updated(received))) })
+        viewModel(packs, FakeCurrentUserProvider("user")).test(this, initialState = started) {
+            containerHost.onDownloadPack("festival", prepToken = 42)
+            expectState { copy(packDownloads = mapOf("festival" to null)) }
+            expectState { copy(packDownloads = emptyMap(), cachedPacks = mapOf("festival" to received)) }
+            expectSideEffect(FestivalListSideEffect.PrepRequested("festival", 42))
+        }
+    }
+
+    @Test
+    fun failedFirstDownloadDoesNotRequestPrep() = runTest {
+        val packs = FakePackUseCase(download = { flow { throw FestivalPackError.Offline() } })
+        viewModel(packs, FakeCurrentUserProvider("user")).test(this, initialState = started) {
+            containerHost.onDownloadPack("festival", prepToken = 42)
+            expectState { copy(packDownloads = mapOf("festival" to null)) }
+            expectState { copy(packDownloads = emptyMap(), toast = FestivalListToast.PackDownloadFailed, toastRevision = 1) }
+            expectNoItems()
+        }
+    }
+
+    @Test
+    fun loggedOutFirstDownloadDoesNotRequestPrep() = runTest {
+        val received = pack(2)
+        val packs = FakePackUseCase(download = { flowOf(PackDownloadEvent.Finished(PackSyncResult.Updated(received))) })
+        viewModel(packs, FakeCurrentUserProvider()).test(this, initialState = started) {
+            containerHost.onDownloadPack("festival", prepToken = 42)
+            expectState { copy(packDownloads = mapOf("festival" to null)) }
+            expectState { copy(packDownloads = emptyMap(), cachedPacks = mapOf("festival" to received)) }
+            expectNoItems()
+        }
+    }
+
+    @Test
+    fun updatingExistingPackDoesNotStartPrep() = runTest {
+        val received = pack(2)
+        val packs = FakePackUseCase(download = { flowOf(PackDownloadEvent.Finished(PackSyncResult.Updated(received))) })
+        viewModel(
+            packs,
+            FakeCurrentUserProvider("user"),
+        ).test(this, initialState = started.copy(cachedPacks = mapOf("festival" to pack(1)))) {
+            containerHost.onDownloadPack("festival", prepToken = 42)
+            awaitState()
+            awaitState()
+            expectNoItems()
+        }
+    }
+
+    @Test
     fun `지운 팩을 다시 읽으면 팩 받기로 돌아가고 감시를 시작하지 않는다`() = runTest {
         val packs = FakePackUseCase(cached = { emptyList() })
         val vm = viewModel(packs)

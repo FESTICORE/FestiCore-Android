@@ -18,6 +18,7 @@ import io.festicore.domain.bearer.bearer.BearerStatusOutbox
 import io.festicore.domain.bearer.sources.di.domainBearerModule
 import io.festicore.domain.festival.pack.FestivalPackUseCase
 import io.festicore.domain.festival.sources.di.domainFestivalModule
+import io.festicore.domain.festival.widget.FestivalWidgetUseCase
 import io.festicore.domain.notice.sources.di.domainNoticeModule
 import io.festicore.domain.timetable.sources.di.domainTimetableModule
 import io.festicore.domain.usernotification.sources.di.domainUserNotificationModule
@@ -55,6 +56,7 @@ private val appModule = module {
             consumePendingDeeplink = get<AppDeeplinkBridge>()::consumePending,
             deleteExpiredPacks = { get<FestivalPackUseCase>().deleteExpiredPacks() },
             resetAnalytics = get<AnalyticsUseCase>()::reset,
+            invalidateWidgetPersonal = get<FestivalWidgetUseCase>()::invalidatePersonal,
             accountCoordinator =
                 AccountCoordinator(
                     authRepository = get(),

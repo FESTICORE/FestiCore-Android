@@ -37,6 +37,10 @@ class SettingsHomeViewModel(
 
     fun onBackTapped() = intent { postSideEffect(SettingsHomeSideEffect.BackRequested) }
 
+    fun onNotificationsTapped() = intent { postSideEffect(SettingsHomeSideEffect.NotificationsRequested) }
+
+    fun onHomeWidgetTapped() = intent { postSideEffect(SettingsHomeSideEffect.HomeWidgetRequested) }
+
     fun onAppearanceTapped() = intent { postSideEffect(SettingsHomeSideEffect.AppearanceRequested) }
 
     fun onAccountTapped() = intent {
