@@ -94,7 +94,9 @@ fun BearerEntryHost(
 
                     entry<BearerRoute.Profile> { route ->
                         val viewModel: BearerProfileViewModel =
-                            koinViewModel { parametersOf(route.festivalId, route.flagId, claimedProfile, route.isNewBearer) }
+                            koinViewModel {
+                                parametersOf(route.festivalId, route.flagId, claimedProfile, route.isNewBearer, route.isEditMode)
+                            }
                         LaunchedEffect(viewModel, selectedPlan) {
                             selectedPlan?.let { plan ->
                                 viewModel.onPlanChanged(plan)
@@ -113,7 +115,7 @@ fun BearerEntryHost(
                                 initialPlan = current.plan
                                 push(BearerRoute.PlanPick(festivalId))
                             },
-                            onCloseRequested = ::closeOrPop,
+                            onCloseRequested = { if (route.isEditMode) onClose() else closeOrPop() },
                         )
                     }
 

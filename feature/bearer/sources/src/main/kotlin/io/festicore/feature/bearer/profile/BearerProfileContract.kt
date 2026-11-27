@@ -7,19 +7,20 @@ import io.festicore.domain.bearer.entity.BearerSet
 import io.festicore.domain.bearer.entity.BearerZone
 
 /**
- * iOS `BearerProfileFeature.State`(Figma S10 A~E).
+ * iOS `BearerProfileFeature.State`(Figma S10 A~F).
  *
  * @param isNewBearer 코드로 막 기수가 된 경우. 제목과 저장 버튼 문구가 다르다.
  * @param plan 오늘 계획으로 고른 공연 ID(내 일정에서 고른 셋)
  * @param sets 오늘 계획에서 고를 수 있는 공연(받아 둔 팩)
  * @param isPlanEdited 이 화면에서 오늘 계획을 다시 골랐다. 저장할 때만 계획을 함께 보낸다.
  * @param uploadedPhotoData 마지막으로 올리기에 성공한 사진
- * @param savedProfile 저장을 마치면 완료 화면(E)을 보여 준다.
+ * @param savedProfile 일반 모드 저장 후 완료 화면(E). 마이 편집은 완료 화면 없이 닫는다.
  */
 data class BearerProfileState(
     val festivalId: String,
     val flagId: String,
     val isNewBearer: Boolean = false,
+    val isEditMode: Boolean = false,
     val festivalName: String? = null,
     val zones: List<BearerZone> = emptyList(),
     val isLoading: Boolean = true,
@@ -102,8 +103,17 @@ data class BearerProfileState(
             flagId: String,
             profile: BearerFlagProfile? = null,
             isNewBearer: Boolean = false,
+            isEditMode: Boolean = false,
         ): BearerProfileState {
-            val state = BearerProfileState(festivalId = festivalId, flagId = flagId, isNewBearer = isNewBearer, isLoading = profile == null)
+            val state =
+                BearerProfileState(
+                    festivalId = festivalId,
+                    flagId = flagId,
+                    isNewBearer = isNewBearer,
+                    isEditMode = isEditMode,
+                    isLoading =
+                        profile == null,
+                )
             return if (profile != null) state.applying(profile) else state
         }
     }
@@ -133,7 +143,7 @@ sealed interface BearerProfileSideEffect {
     /** 저장 완료 화면에서 "완료"를 눌렀다. */
     data class Finished(val flagId: String) : BearerProfileSideEffect
 
-    /** 뒤로. 올리던 사진은 취소했다. */
+    /** 뒤로 또는 마이 편집 저장 완료. 뒤로 갈 때는 올리던 사진을 취소한다. */
     data object CloseRequested : BearerProfileSideEffect
 
     /** "오늘 계획"을 눌렀다. 부모는 계획 고르기를 열고 결과를 [BearerProfileViewModel.onPlanChanged]로 넘긴다. */

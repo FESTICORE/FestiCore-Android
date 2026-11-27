@@ -76,6 +76,8 @@ class HiddenProfileTabSyncTest {
             )
         composeRule.setContent {
             rememberProfileFlowEntries(
+                readHomeWidgetStatus = { io.festicore.feature.profile.settings.HomeWidgetStatus(false, false) },
+                onHomeWidgetPinRequested = { false },
                 account = account,
                 onLoginRequested = {},
                 onGoogleLoginRequested = {},

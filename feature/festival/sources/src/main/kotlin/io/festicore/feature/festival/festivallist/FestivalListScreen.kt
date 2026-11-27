@@ -100,12 +100,15 @@ fun FestivalListScreen(
     onFestivalSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     clock: Clock = Clock.systemDefaultZone(),
+    prepToken: () -> Long = { 0L },
+    onPrepRequested: (String, Long) -> Unit = { _, _ -> },
 ) {
     val state by viewModel.collectAsState()
     val context = LocalContext.current
 
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
+            is FestivalListSideEffect.PrepRequested -> onPrepRequested(sideEffect.festivalId, sideEffect.token)
             is FestivalListSideEffect.OpenTicket -> openExternalUrl(context, sideEffect.url)
             is FestivalListSideEffect.FestivalSelected -> onFestivalSelected(sideEffect.festivalId)
         }
@@ -126,7 +129,7 @@ fun FestivalListScreen(
         onLoadMoreFestivals = viewModel::onLoadMoreFestivals,
         onSelectFestival = viewModel::onSelectFestival,
         onTicketLinkTapped = viewModel::onTicketLinkTapped,
-        onDownloadPack = viewModel::onDownloadPack,
+        onDownloadPack = { viewModel.onDownloadPack(it, prepToken()) },
         onRecentSearchSubmitted = viewModel::onRecentSearchSubmitted,
         onRecentSearchRemoved = viewModel::onRecentSearchRemoved,
         onRecentSearchesCleared = viewModel::onRecentSearchesCleared,
@@ -543,7 +546,7 @@ private fun LazyListScope.searchResults(
         item(key = "searchEmpty") {
             FCSearchEmpty(
                 query = query,
-                message = if (supportsArtistSearch) "페스티벌, 아티스트 이름이나 장소로 다시 찾아보세요" else "페스티벌 이름이나 장소로 다시 찾아보세요",
+                message = if (supportsArtistSearch) "페스티벌 이름, 아티스트, 장소로 다시 찾아보세요" else "페스티벌 이름이나 장소로 다시 찾아보세요",
             )
         }
         return

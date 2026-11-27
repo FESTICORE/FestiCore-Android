@@ -16,6 +16,7 @@ import io.festicore.domain.bearer.entity.BearerZone
 import io.festicore.feature.bearer.claim.FakeBearerUseCase
 import io.festicore.feature.bearer.claim.SampleProfile
 import java.time.Instant
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -43,6 +44,102 @@ class BearerProfileViewModelTest {
         isNewBearer = isNewBearer,
         bearerUseCase = useCase,
     )
+
+    @Test
+    fun `편집 저장은 완료 화면 없이 닫고 닫힘 전 재요청을 막는다`() = runTest {
+        val saved = SampleProfile.copy(name = "호락호락")
+        val response = CompletableDeferred<BearerFlagProfile>()
+        var saves = 0
+        var invites = 0
+        val fake = FakeBearerUseCase(
+            onUpdateProfile = { _, _ ->
+                saves++
+                response.await()
+            },
+            onInviteCoBearer = {
+                invites++
+                error("저장 중 초대 금지")
+            },
+        )
+        val initial = BearerProfileState.initial("fst_1", "flg_1", saved, isEditMode = true).copy(isPlanEdited = true)
+        viewModel(fake).test(this, initialState = initial) {
+            containerHost.onSaveTapped()
+            expectState { copy(isSaving = true) }
+            containerHost.onPlanTapped()
+            containerHost.onInviteTapped()
+            containerHost.onSaveTapped()
+            testScheduler.runCurrent()
+            assertEquals(1, saves)
+            assertEquals(0, invites)
+            response.complete(saved)
+            expectState { copy(isPlanEdited = false) }
+            expectSideEffect(BearerProfileSideEffect.CloseRequested)
+            containerHost.onSaveTapped()
+            containerHost.onPlanTapped()
+            containerHost.onInviteTapped()
+            testScheduler.runCurrent()
+            assertEquals(1, saves)
+            assertEquals(0, invites)
+            assertNull(containerHost.container.stateFlow.value.savedProfile)
+            assertTrue(containerHost.container.stateFlow.value.isSaving)
+        }
+    }
+
+    @Test
+    fun `모든 모드에서 저장 중 계획과 초대를 막고 실패하면 다시 허용한다`() = runTest {
+        for (editMode in listOf(false, true)) {
+            val response = CompletableDeferred<BearerFlagProfile>()
+            val saved = SampleProfile.copy(name = "호락호락")
+            var invites = 0
+            val fake = FakeBearerUseCase(
+                onUpdateProfile = { _, _ -> response.await() },
+                onInviteCoBearer = {
+                    invites++
+                    BearerInvite("ABCDEF", Instant.EPOCH)
+                },
+            )
+            val initial = BearerProfileState.initial("fst_1", "flg_1", saved, isEditMode = editMode)
+            viewModel(fake).test(this, initialState = initial) {
+                containerHost.onSaveTapped()
+                expectState { copy(isSaving = true) }
+                containerHost.onPlanTapped()
+                containerHost.onInviteTapped()
+                testScheduler.runCurrent()
+                assertEquals(0, invites)
+                response.completeExceptionally(BearerError.NameTaken())
+                expectState { copy(isSaving = false, nameError = BearerProfileViewModel.NAME_TAKEN_MESSAGE) }
+                containerHost.onPlanTapped()
+                expectSideEffect(BearerProfileSideEffect.PlanRequested("fst_1"))
+                containerHost.onInviteTapped()
+                expectState { copy(isInviting = true) }
+                expectState { copy(isInviting = false, alert = BearerProfileAlert.Invite("ABCDEF")) }
+                assertEquals(1, invites)
+            }
+        }
+    }
+
+    @Test
+    fun `편집 이름 충돌 후 수정하여 재저장하면 한 번 닫는다`() = runTest {
+        var calls = 0
+        val saved = SampleProfile.copy(name = "호락호락")
+        val fake = FakeBearerUseCase(onUpdateProfile = { _, _ ->
+            calls++
+            if (calls == 1) throw BearerError.NameTaken()
+            saved
+        })
+        val initial = BearerProfileState.initial("fst_1", "flg_1", saved, isEditMode = true)
+        viewModel(fake).test(this, initialState = initial) {
+            containerHost.onSaveTapped()
+            expectState { copy(isSaving = true) }
+            expectState { copy(isSaving = false, nameError = BearerProfileViewModel.NAME_TAKEN_MESSAGE) }
+            containerHost.onNameChanged("다른 이름")
+            expectState { copy(name = "다른 이름", nameError = null) }
+            containerHost.onSaveTapped()
+            expectState { copy(isSaving = true) }
+            expectSideEffect(BearerProfileSideEffect.CloseRequested)
+            assertEquals(2, calls)
+        }
+    }
 
     // 코드 등록 직후에는 서버 임시 이름과 기본 태그를 비워 둔다
     @Test

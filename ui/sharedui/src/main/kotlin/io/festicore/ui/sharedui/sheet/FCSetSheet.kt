@@ -16,10 +16,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -27,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -53,6 +57,7 @@ private val SmallIconSize = 16.dp
 private val ArtistImageHeight = 180.dp
 private val PlaceholderIconSize = 36.dp
 private const val TAG_ANIMATION_MILLIS = 150
+private const val STATUS_ANIMATION_MILLIS = 250
 
 /** 겹침 · 변경 · 종료 상태. iOS `FCSetSheet.State`. */
 sealed interface FCSetSheetState {
@@ -81,6 +86,7 @@ sealed interface FCSetSheetState {
  * @param onStageClick 무대 줄을 누를 수 있게 한다(iOS `stageAction(_:)`).
  * @param isScheduleDisabled 내 일정 토글을 잠시 끈다(iOS `scheduleDisabled(_:)`, 불러오는 중 등).
  * @param scheduleHelper 내 일정 토글 아래 안내. null이면 그 줄을 숨긴다(Android 푸시 전 알림 약속 숨김).
+ * @param bottomStatus 하단 상태 자리. 숨겨도 측정 높이를 유지해 일정 토글 위치가 바뀌지 않는다.
  */
 @Composable
 fun FCSetSheet(
@@ -101,6 +107,8 @@ fun FCSetSheet(
     endedTitle: String = "공연 종료",
     endedHelper: String = "이미 종료된 공연이에요",
     isScheduleDisabled: Boolean = false,
+    bottomStatus: (@Composable () -> Unit)? = null,
+    isBottomStatusVisible: Boolean = true,
 ) {
     val isEnded = state == FCSetSheetState.Ended
     Column(
@@ -111,7 +119,7 @@ fun FCSetSheet(
                     top = FestiCoreSpacing.paddingP16,
                     start = FestiCoreSpacing.paddingP20,
                     end = FestiCoreSpacing.paddingP20,
-                    bottom = FestiCoreSpacing.paddingP20,
+                    bottom = if (bottomStatus != null) 0.dp else FestiCoreSpacing.paddingP20,
                 ),
         verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP16),
     ) {
@@ -136,6 +144,38 @@ fun FCSetSheet(
         if (source != null) {
             // 시안 S03 시트의 출처 줄은 배경 없이 위아래 12 여백을 둔다.
             FCSourceLine(source, modifier = Modifier.padding(vertical = FestiCoreSpacing.paddingP12), isInset = false)
+        }
+        if (bottomStatus != null) {
+            val bringIntoViewRequester = remember { BringIntoViewRequester() }
+            LaunchedEffect(isBottomStatusVisible) {
+                if (isBottomStatusVisible) bringIntoViewRequester.bringIntoView()
+            }
+            val reduceMotion = rememberReduceMotion()
+            val statusProgress by animateFloatAsState(
+                targetValue = if (isBottomStatusVisible) 1f else 0f,
+                animationSpec = if (reduceMotion) snap() else tween(STATUS_ANIMATION_MILLIS, easing = EaseOut),
+                label = "setSheetStatus",
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .bringIntoViewRequester(bringIntoViewRequester)
+                        .padding(bottom = FestiCoreSpacing.paddingP16),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .graphicsLayer {
+                                alpha = statusProgress
+                                translationY = if (reduceMotion) 0f else (1f - statusProgress) * size.height
+                            }
+                            .then(if (isBottomStatusVisible) Modifier else Modifier.clearAndSetSemantics {}),
+                ) {
+                    bottomStatus()
+                }
+            }
         }
     }
 }

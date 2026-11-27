@@ -42,6 +42,7 @@ internal fun BearerZoneButton(
     name: String,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
+    isEnabled: Boolean = true,
     onClick: () -> Unit,
 ) {
     val shape = RoundedCornerShape(FestiCoreRadius.r16)
@@ -57,7 +58,7 @@ internal fun BearerZoneButton(
                 .background(background)
                 .then(if (isSelected) Modifier else Modifier.border(BorderWidth, FestiCoreSemanticColor.lineNormal.color, shape))
                 .semantics { selected = isSelected }
-                .clickable(role = Role.Button, onClick = onClick)
+                .clickable(enabled = isEnabled, role = Role.Button, onClick = onClick)
                 .padding(horizontal = FestiCoreSpacing.paddingP12),
         horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.marginM6),
         verticalAlignment = Alignment.CenterVertically,
