@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 화면 | Kotlin · Jetpack Compose · Orbit MVI · Navigation 3 + 기능별 Coordinator | Gradle + `build-logic` convention plugin |
 | 주입 · 통신 | Koin · Ktor · kotlinx.serialization | `gradle/libs.versions.toml` |
-| 관측 | Mixpanel(행동). Sentry는 쓰지 않는다(사용자 결정) | `service/analytics/sources`에서만. 토큰은 `local.properties` · CI 비밀, 없으면 시작하지 않는다 |
+| 관측 | Mixpanel(행동). Sentry(오류 · 성능) | `service/analytics/sources`에서만. 토큰 · DSN은 `local.properties` · CI 비밀, 없으면 해당 SDK를 시작하지 않는다 |
 | 설정 | Firebase(`firebase-common` 초기화만, `google-services` 플러그인 없음) | `service/config`에서만. 값은 `local.properties` · CI 비밀, 없으면 초기화하지 않는다 |
 
 환경은 `stage` · `prod` product flavor 두 개다.

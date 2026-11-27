@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
-/** iOS `AnalyticsConfigurationTests` 대응. Sentry는 사용자 결정으로 제외해 Mixpanel만 본다. */
+/** iOS `AnalyticsConfigurationTests`의 Mixpanel 설정에 대응한다. */
 @RunWith(RobolectricTestRunner::class)
 class AnalyticsConfigurationTest {
     private val context: Context = RuntimeEnvironment.getApplication()

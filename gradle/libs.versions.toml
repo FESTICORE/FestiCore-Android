@@ -29,6 +29,7 @@ coil = "3.6.3"
 browser = "1.10.0"
 firebase-bom = "35.2.0"
 mixpanel-android = "8.12.0"
+sentry-android = "8.65.1"
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -78,6 +79,7 @@ browser = { module = "androidx.browser:browser", version.ref = "browser" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-common = { module = "com.google.firebase:firebase-common" }
 mixpanel-android = { module = "com.mixpanel.android:mixpanel-android", version.ref = "mixpanel-android" }
+sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry-android" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 # build-logic(convention plugin) 클래스패스
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

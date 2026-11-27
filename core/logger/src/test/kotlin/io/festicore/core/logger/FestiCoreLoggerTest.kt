@@ -15,6 +15,21 @@ class FestiCoreLoggerTest {
     }
 
     @Test
+    fun `같은 sink는 한번만 서로 다른 인스턴스는 각각 받는다`() {
+        class RecordingSink : FestiCoreLogSink {
+            override fun send(entry: FestiCoreLogEntry) {
+                received += entry
+            }
+        }
+        val first = RecordingSink()
+        FestiCoreLogger.addSink(first)
+        FestiCoreLogger.addSink(first)
+        FestiCoreLogger.addSink(RecordingSink())
+        FestiCoreLogger.info("정보", FestiCoreLogCategory.APP)
+        assertEquals(2, received.size)
+    }
+
+    @Test
     fun `외부 출력 대상에는 INFO 이상만 보낸다`() {
         FestiCoreLogger.addSink { received += it }
 

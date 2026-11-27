@@ -51,19 +51,19 @@ class AnalyticsUseCaseTest {
             eventProperties(AnalyticsEvent.UiAction(AnalyticsButton.ProfileLogout, AnalyticsScreen.Profile)),
         )
         assertEquals(
-            mapOf("flag_id" to "flag", "is_following" to false),
+            mapOf("is_following" to false),
             eventProperties(AnalyticsEvent.FlagFollow(FlagFollowData("flag", false))),
         )
         assertEquals(
-            mapOf("action" to "schedule_toggle", "festival_id" to "fst"),
+            mapOf("action" to "schedule_toggle"),
             eventProperties(AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.ScheduleToggle, "fst"))),
         )
         assertEquals(
-            "set",
-            eventProperties(AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.SetOpen, "fst", "set")))["set_id"],
+            mapOf("action" to "set_open"),
+            eventProperties(AnalyticsEvent.TimetableAction(TimetableActionData(AnalyticsTimetableAction.SetOpen, "fst", "set"))),
         )
         assertEquals(
-            mapOf("festival_id" to "fst", "result" to "not_modified"),
+            mapOf("result" to "not_modified"),
             eventProperties(AnalyticsEvent.PackSync(PackSyncData("fst", AnalyticsPackSyncResult.NotModified))),
         )
     }
@@ -86,8 +86,8 @@ class AnalyticsUseCaseTest {
     }
 
     @Test
-    fun `이벤트 속성에는 화면 · 버튼 값과 ID만 들어간다`() {
-        val allowed = setOf("method", "screen", "referrer", "action", "flag_id", "is_following", "festival_id", "set_id", "result")
+    fun `이벤트 속성에는 화면 · 버튼 값과 결과만 들어간다`() {
+        val allowed = setOf("method", "screen", "referrer", "action", "is_following", "result")
         val withAll =
             allEvents.map { it.first } +
                 AnalyticsEvent.ScreenView(AnalyticsScreen.LiveBoard, AnalyticsScreen.FestivalList) +

@@ -10,6 +10,7 @@ dependencies {
     api(project(":service:analytics:interface"))
     implementation(project(":core:logger"))
     implementation(libs.lib("mixpanel-android"))
+    implementation(libs.lib("sentry-android"))
 
     implementation(platform(libs.lib("koin-bom")))
     implementation(libs.lib("koin-android"))
