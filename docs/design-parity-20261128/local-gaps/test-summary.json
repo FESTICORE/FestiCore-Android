@@ -1,0 +1,23 @@
+{
+  "debug_stage": {
+    "suites": 175,
+    "tests": 1333,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "stage_app": {
+    "suites": 24,
+    "tests": 188,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "prod_app": {
+    "suites": 24,
+    "tests": 188,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}
