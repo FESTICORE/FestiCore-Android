@@ -3,6 +3,7 @@ package io.festicore.feature.festival.flag
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import io.festicore.domain.festival.entity.FestivalLiveBoardSnapshot
+import io.festicore.feature.festival.prepguide.FestivalPrepFlagsContent
 import java.time.Instant
 
 // 프리뷰 전용 가짜 값.
@@ -86,4 +87,21 @@ private fun FlagFailedPreview() {
 @Composable
 private fun FlagNoFestivalPreview() {
     FlagContent(FlagState())
+}
+
+@Preview(name = "S15 · 깃발 준비")
+@Composable
+private fun PrepFlagsPreview() {
+    FestivalPrepFlagsContent(
+        state = FlagState(
+            festivalId = "preview",
+            snapshot = PreviewSnapshot,
+            viewState = FlagViewState.Loaded,
+            directory = PreviewDirectory,
+        ),
+        onTag = {},
+        onFollow = { _, _, _ -> },
+        onNext = {},
+        onLater = {},
+    )
 }
