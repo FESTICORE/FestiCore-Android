@@ -8,7 +8,7 @@
   },
   "stage_app": {
     "suites": 24,
-    "tests": 188,
+    "tests": 189,
     "failures": 0,
     "errors": 0,
     "skipped": 0

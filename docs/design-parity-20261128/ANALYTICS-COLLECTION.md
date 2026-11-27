@@ -1,6 +1,6 @@
 # Android 분석·진단 수집표 (PR #240)
 
-구현 `8c8e656`, UI/테스트 보완 `e35c704`, Stage Debug `1.0.0 (1)` 설치·verify 성공. 빌드 상세와 실제 동의 OFF→ON→재실행→철회→재실행 증거는 [LOCAL-GAPS.md](LOCAL-GAPS.md)에 기록한다. SDK 호출·설정과 외부 대시보드 수신은 별도 증거다. 아래 항목은 코드 기준이며 운영 수신/보유기간/계약을 확인했다는 뜻이 아니다.
+구현 `8c8e656`, UI/테스트 보완 `e35c704`, 디자인 후속 `33de338`, Stage Debug `1.0.0 (1)` 설치·verify 1,522 tests 성공. 빌드 상세와 실제 동의 OFF→ON→재실행→철회→재실행 증거는 [LOCAL-GAPS.md](LOCAL-GAPS.md)에 기록한다. SDK 호출·설정과 외부 대시보드 수신은 별도 증거다. 아래 항목은 코드 기준이며 운영 수신/보유기간/계약을 확인했다는 뜻이 아니다.
 
 | 항목 | Firebase | Mixpanel | Sentry |
 |---|---|---|---|
@@ -43,3 +43,7 @@ Firebase Android에는 앱별 iOS식 logger-level API가 없다. VERBOSE 시스�
 - `core/storage/sources/.../shared/SharedPreferencesAnalyticsConsentStore.kt`: 기기 동의 영구 저장.
 - `feature/profile/sources/.../settings/SettingsHomeScreen.kt`: 사용자에게 보이는 선택과 설명.
 - `app/src/main/AndroidManifest.xml`: 초기 수집/자동 화면/광고 차단.
+
+## 운영 설정 접근 확인
+
+원본 applicationId는 `io.festicore.co`, 현재 develop/PR은 `io.festiCore.co`다. 기존 Firebase APP_ID의 Android 형식과 sender/project명 대응은 확인했지만 등록 package 증거는 아니다. 원본/현재 Android 폴더에 google-services.json은 없고, 기존 Firebase CLI 읽기 조회는 authentication required였다. 브라우저 접근 host unavailable / Chrome cgWindowNotFound로 기존 콘솔도 확인할 수 없었다. 등록 없음이 아니라 접근 미확인이며 추가 인증 조회를 중단했다. 기존 `io.festiCore.co` 등록 정보가 확인되기 전 Prod 값 주입·전송을 보류한다. 키 없는 빌드 결과와 운영 설정 검증을 구별하며 applicationId를 임의 변경하지 않는다.

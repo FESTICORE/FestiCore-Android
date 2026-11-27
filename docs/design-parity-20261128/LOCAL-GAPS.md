@@ -12,7 +12,7 @@ API 36 arm64 / 1080×2400 / 360dp. 글꼴 배율 1.0/2.0, 세로/가로. MainAct
 | S13 설정 | 큰 글꼴과 가로에서 약관/버전 하단 접근 | [세로](local-gaps/s13-large-end.png), [가로](local-gaps/s13-large-landscape-scroll-end.png). 분석 설정 추가 전 제약 캡처 |
 | S15 준비물 | 큰 글꼴 가로에서도 마지막 항목/추가 행과 준비 완료·건너뛰기 표시 | [가로 하단](local-gaps/s15-large-landscape-scroll-end.png) |
 | S03 셋 상세 | 큰 글꼴에서 겹침·메모·내 일정·출처 하단 접근 | [세로 하단](local-gaps/s03-large-end.png), [가로 하단](local-gaps/s03-large-landscape-scroll-end.png) |
-| S02 타임테이블 | 큰 글꼴·가로의 스크롤, 축약 표시, 출처 footer | [세로 하단](local-gaps/s02-large-end.png), [가로 하단](local-gaps/s02-large-landscape-scroll-end.png). 시간/이름은 축약되며 전체 문구는 셋 상세로 확인 |
+| S02 타임테이블 | 초기 200% 가로에서 공연 영역 소실 발견, 후속 compact-height 스크롤 수정 | [세로 하단](local-gaps/s02-large-end.png), [가로 하단](local-gaps/s02-large-landscape-scroll-end.png). 시간/이름은 축약되며 전체 문구는 셋 상세로 확인 |
 | 홈 위젯 | 실제 앱 설정→런처 pin 승인→host 설치→2×3에서 4×3으로 크기 변경에 따른 로컬 RemoteViews 갱신 | [설치 안내](local-gaps/widget-settings.png), [시스템 확인](local-gaps/widget-pin.png), [설치 완료](local-gaps/widget-installed.png), [작은 크기](local-gaps/launcher-ours.png), [갱신 후](local-gaps/widget-large-updated.png), [큰 글꼴](local-gaps/widget-font200.png) |
 
 위젯은 `io.festiCore.co.stage`, host `com.google.android.apps.nexuslauncher`, widgetId=3으로 확인했다. 같은 에뮬레이터의 소문자 패키지 `io.festicore.co.stage` 위젯(id=2)은 다른 앱이므로 증거에서 제외했다. 공개 팩 조회/로컬 저장·크기 변경만 사용했고 인증·실서버 쓰기를 실행하지 않았다. 위젯의 서버 갱신/Doze/로그인 계정 교체 검증은 별도다.
@@ -59,3 +59,15 @@ Prod Debug 전체 188 tests가 최초 실행에서 기존 위젯 초기 상태 �
 수정 후 [200% 다크](local-gaps/consent-large-fixed-yes.png)와 [200% 라이트](local-gaps/consent-large-fixed-no.png)에서 항목 제목·꺼짐 값·전체 설명이 표시된다. 글꼴 1.0/기존 다크로 복구했다. 최종 코드의 필수 verify도 통과했으며 [XML 집계](local-gaps/test-summary.json)는 library 1,333 + Stage app 188, Prod app 188 tests 모두 실패·오류·skip 0이다. Prod app 테스트 이후에는 제목 문구만 바뀌었고 Stage app 전체가 다시 통과했다.
 
 최종 Stage Debug APK SHA256: `bce1dc0bc59956d845ca9d9f898f937ea89e689b7a45a591a6caeeee817e4cbd`. 빌드 `1.0.0 (1)`, 실제 설치 성공.
+
+## S02 낮은 창 후속 수정
+
+최종 이미지 재검수에서 [수정 전 200% 가로](local-gaps/s02-large-landscape-scroll-end.png)는 헤더가 가용 높이를 소비해 공연을 볼 수 없음을 발견했다. 초기 스크롤/축약 검증만으로 정상이라고 볼 수 없어 판단을 수정했다. 높이 480dp 미만 창에서는 헤더·본문·출처를 함께 스크롤하고 공연 본문에 유한한 480dp 높이를 주어 내부 시간축 스크롤을 유지한다. 일반 높이의 세로 화면은 기존 고정 헤더/출처 구조를 유지한다.
+
+새 회귀는 800×360dp·fontScale 2에서 헤더를 넘어 공연을 스크롤하여 클릭하고 set ID가 전달되는지 확인한다. 첫 테스트는 텍스트 대신 접근성 contentDescription을 제공하는 기존 FCSetBlock 계약을 잘못 조회해 실패했으며 올바른 접근성 노드로 수정한 뒤 통과했다.
+
+수정 커밋 `33de338`: [최종 200% 가로 다크](local-gaps/s02-compact-safe-yes.png) / [라이트](local-gaps/s02-compact-safe-no.png)에서 마지막 공연·출처에 도달하고 상태바/내비게이션 바와 겹치지 않는다. 낮은 창에서만 scroll 바깥 safeDrawingPadding이 인셋을 소비하고 기존 FCTopBar는 소비된 값을 재사용한다. 기본 세로 구조와 회전 지원 정책을 변경하지 않는다. 필수 verify 재통과: library 1,333 + Stage app 189 = 1,522 tests, 실패·오류·skip 0.
+
+운영 설정의 추가 확인은 [수집표의 접근 확인](ANALYTICS-COLLECTION.md#운영-설정-접근-확인)에 기록했다. 등록 package 미확인 상태에서 Prod 값 주입·전송을 하지 않는다.
+
+S02 최종 Stage APK SHA256: `79ff98c8dcd1694209ec9ea3a72993fd73f554c8641819ede1952af39885d950`. 이전 SHA는 분석 설정 UI 검증 시점 산출물이다.
