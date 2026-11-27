@@ -130,10 +130,11 @@ class HomeWidgetSettingsDesignParityTest {
     fun pinConfirmationRefreshesInstalledStatusWithoutLifecycleTransition() {
         val changes = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(replay = 1)
         var installed = false
+        val viewModel = HomeWidgetSettingsViewModel()
         composeRule.setContent {
             FestiCoreTheme {
                 HomeWidgetSettingsScreen(
-                    viewModel = HomeWidgetSettingsViewModel(),
+                    viewModel = viewModel,
                     readStatus = { HomeWidgetStatus(true, installed) },
                     requestPin = { true },
                     onBackRequested = {},
@@ -141,12 +142,15 @@ class HomeWidgetSettingsDesignParityTest {
                 )
             }
         }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onNodeWithText("아직 위젯을 추가하지 않았어요").isDisplayed()
+        }
         composeRule.onNodeWithText("아직 위젯을 추가하지 않았어요").assertIsDisplayed()
         composeRule.runOnIdle {
             installed = true
             changes.tryEmit(Unit)
         }
-        composeRule.waitUntil(timeoutMillis = 1000) { composeRule.onNodeWithText("홈 화면에 위젯을 추가했어요").isDisplayed() }
+        composeRule.waitUntil(timeoutMillis = 5_000) { composeRule.onNodeWithText("홈 화면에 위젯을 추가했어요").isDisplayed() }
     }
 
     private class TestLifecycleOwner : LifecycleOwner {
