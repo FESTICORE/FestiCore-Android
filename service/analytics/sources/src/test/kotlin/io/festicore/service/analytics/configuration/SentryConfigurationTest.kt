@@ -111,6 +111,19 @@ class SentryConfigurationTest {
         assertEquals(0.0, options.sessionReplay.onErrorSampleRate!!, 0.0)
     }
 
+    @Test
+    fun `철회 상태에서는 오류 전송 콜백이 이벤트를 버린다`() {
+        FestiCoreAnalyticsConfiguration.configure(context, "")
+        val options = SentryAndroidOptions()
+        SentryConfiguration.configure(context, validDsn, true, true, "1.0", 1, sdkEnabled = {
+            false
+        }, registerSink = {}) { _, setup -> setup(options) }
+        assertNull(options.beforeSend!!.execute(io.sentry.SentryEvent(), io.sentry.Hint()))
+        assertEquals(io.sentry.SentryLevel.INFO, options.diagnosticLevel)
+        assertFalse(options.isEnableUserInteractionBreadcrumbs)
+        assertFalse(options.isEnableSystemEventBreadcrumbs)
+    }
+
     private val invalidDsns = listOf(
         "",
         " \n ",

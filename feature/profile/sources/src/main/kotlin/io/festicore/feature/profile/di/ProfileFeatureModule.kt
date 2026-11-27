@@ -30,7 +30,7 @@ val profileFeatureModule = module {
     }
     // 인자: 화면을 만들 때의 계정 상태(AccountState).
     viewModel { params ->
-        SettingsHomeViewModel(initialAccount = params.get(), legalDocumentUrls = get(), appearanceModeSettings = get())
+        SettingsHomeViewModel(initialAccount = params.get(), legalDocumentUrls = get(), appearanceModeSettings = get(), analytics = get())
     }
     viewModelOf(::AppearanceSettingsViewModel)
     viewModelOf(::HomeWidgetSettingsViewModel)

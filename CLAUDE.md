@@ -10,8 +10,8 @@
 | --- | --- | --- |
 | 화면 | Kotlin · Jetpack Compose · Orbit MVI · Navigation 3 + 기능별 Coordinator | Gradle + `build-logic` convention plugin |
 | 주입 · 통신 | Koin · Ktor · kotlinx.serialization | `gradle/libs.versions.toml` |
-| 관측 | Mixpanel(행동). Sentry(오류 · 성능) | `service/analytics/sources`에서만. 토큰 · DSN은 `local.properties` · CI 비밀, 없으면 해당 SDK를 시작하지 않는다 |
-| 설정 | Firebase(`firebase-common` 초기화만, `google-services` 플러그인 없음) | `service/config`에서만. 값은 `local.properties` · CI 비밀, 없으면 초기화하지 않는다 |
+| 관측 | Firebase Analytics · Mixpanel(행동). Sentry(오류 · 성능) | `service/analytics/sources`에서만. 토큰 · DSN은 `local.properties` · CI 비밀, 없으면 해당 SDK를 시작하지 않는다 |
+| 설정 | Firebase(`firebase-common` 초기화, `google-services` 플러그인 없음) | `service/config`에서만. 값은 `local.properties` · CI 비밀, 없으면 초기화하지 않는다 |
 
 환경은 `stage` · `prod` product flavor 두 개다.
 
@@ -48,7 +48,7 @@ build-logic/  Gradle convention plugin
 | 코드 리뷰 (심각도 · 제외 · 항상 확인) | `REVIEW.md` |
 | 에이전트 · 훅 · 검증 게이트 | `.claude/docs/harness.md` |
 
-분석 문서는 해당 모듈을 만드는 PR에서 추가한다.
+분석·동의·환경별 로그는 `service/analytics/.spec/analytics.md`를 따른다.
 
 경로별 규칙은 `.claude/rules/`에 있다(`app` · `feature` · `domain` · `service-core` · `ui`). 해당 경로의 파일을 다룰 때 자동으로 적용된다.
 

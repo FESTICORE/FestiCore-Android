@@ -41,6 +41,6 @@ object FestiCoreLogger {
         Log.println(level.priority, "FestiCore/${category.name.lowercase()}", message)
         if (level < sinkMinimumLevel) return
         val entry = FestiCoreLogEntry(level, category, message)
-        sinks.forEach { it.send(entry) }
+        sinks.forEach { runCatching { it.send(entry) } }
     }
 }

@@ -4,6 +4,10 @@ import io.festicore.service.analytics.event.AnalyticsEvent
 
 /** 사용자 동작 추적 계약(iOS `AnalyticsUseCase`). 구현은 `service/analytics/sources`가 Koin에 등록한다. */
 interface AnalyticsUseCase {
+    /** 선택적 분석·진단 동의. 미리보기와 미구현 테스트는 수집하지 않는다. */
+    val isCollectionEnabled: Boolean get() = false
+    fun setCollectionEnabled(enabled: Boolean): Boolean = false
+
     /** 앱 시작 시 공통 슈퍼 프로퍼티(os_type · app_version · build) 등록. */
     fun registerBaseProperties()
 

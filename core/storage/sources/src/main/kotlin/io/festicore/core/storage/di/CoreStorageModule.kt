@@ -9,6 +9,7 @@ import io.festicore.core.storage.onboarding.FirstInstallOnboardingStore
 import io.festicore.core.storage.secure.DataStoreSecureStorage
 import io.festicore.core.storage.secure.KeystoreValueCipher
 import io.festicore.core.storage.secure.SecureStorage
+import io.festicore.core.storage.shared.AnalyticsConsentStore
 import io.festicore.core.storage.shared.AppearanceModeStore
 import io.festicore.core.storage.shared.DataStoreAppearanceModeStore
 import io.festicore.core.storage.shared.DataStoreFestivalPackLocalStore
@@ -22,6 +23,7 @@ import io.festicore.core.storage.shared.LiveBoardPreferenceStore
 import io.festicore.core.storage.shared.LocationPermissionStore
 import io.festicore.core.storage.shared.PendingDeeplinkStore
 import io.festicore.core.storage.shared.RecentSearchStore
+import io.festicore.core.storage.shared.SharedPreferencesAnalyticsConsentStore
 import io.festicore.core.storage.shared.WidgetSnapshotStore
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -38,6 +40,7 @@ private val Context.locationPermissionDataStore: DataStore<Preferences> by prefe
 private val Context.widgetDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_widget")
 
 val coreStorageModule = module {
+    single<AnalyticsConsentStore> { SharedPreferencesAnalyticsConsentStore(androidContext()) }
     single<WidgetSnapshotStore> { DataStoreWidgetSnapshotStore(androidContext().widgetDataStore, KeystoreValueCipher()) }
     single<FirstInstallOnboardingStore> { DataStoreFirstInstallOnboardingStore(androidContext().onboardingDataStore) }
     single<SecureStorage> { DataStoreSecureStorage(androidContext().secureDataStore, KeystoreValueCipher()) }

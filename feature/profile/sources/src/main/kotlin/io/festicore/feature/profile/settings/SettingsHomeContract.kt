@@ -15,6 +15,7 @@ data class SettingsHomeState(
     val account: AccountState = AccountState(),
     val appearanceMode: AppearanceMode = AppearanceMode.Dark,
     val alert: SettingsHomeAlert? = null,
+    val analyticsEnabled: Boolean = false,
 ) {
     /** 로그인하지 않았으면 계정 그룹을 숨긴다. 로그인은 마이의 로그인 카드에서 한다. */
     val showsAccount: Boolean
@@ -27,6 +28,7 @@ enum class SettingsHomeAlert(
     val message: String,
 ) {
     /** 문서 기준 주소를 쓸 수 없다. iOS `legalLinkUnavailable()`. */
+    AnalyticsSaveFailed("설정을 저장하지 못했어요", "잠시 후 다시 시도해 주세요. 수집 끄기는 즉시 적용돼요."),
     LegalLinkUnavailable("문서를 열 수 없어요", "잠시 후 다시 시도해 주세요."),
 }
 

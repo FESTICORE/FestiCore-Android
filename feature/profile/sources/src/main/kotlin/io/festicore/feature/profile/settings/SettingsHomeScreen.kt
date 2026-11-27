@@ -78,6 +78,7 @@ fun SettingsHomeScreen(
         modifier = modifier,
         onBackTapped = viewModel::onBackTapped,
         onAppearanceTapped = viewModel::onAppearanceTapped,
+        onAnalyticsTapped = viewModel::onAnalyticsTapped,
         onHomeWidgetTapped = viewModel::onHomeWidgetTapped,
         onNotificationsTapped = viewModel::onNotificationsTapped,
         onAccountTapped = viewModel::onAccountTapped,
@@ -106,6 +107,7 @@ fun SettingsHomeContent(
     modifier: Modifier = Modifier,
     onBackTapped: () -> Unit = {},
     onAppearanceTapped: () -> Unit = {},
+    onAnalyticsTapped: () -> Unit = {},
     onHomeWidgetTapped: () -> Unit = {},
     onNotificationsTapped: () -> Unit = {},
     onAccountTapped: () -> Unit = {},
@@ -130,6 +132,16 @@ fun SettingsHomeContent(
                 FCListRow(label = "화면 모드", value = state.appearanceMode.summary, onClick = onAppearanceTapped)
                 SettingsRowDivider()
                 FCListRow(label = "홈 화면 위젯", onClick = onHomeWidgetTapped)
+            }
+            SettingsSection(title = "선택적 분석·진단") {
+                FCListRow(label = "사용 정보 및 오류 공유", value = if (state.analyticsEnabled) "켜짐" else "꺼짐", onClick = onAnalyticsTapped)
+                Text(
+                    text = "앱 개선을 위해 Firebase·Mixpanel에 사용 정보, Sentry에 오류·성능 정보를 보내요. " +
+                        "로그인 시 내부 사용자 ID가 연결돼요. 켜지 않아도 앱을 사용할 수 있고 언제든 끌 수 있어요.",
+                    style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox,
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                    modifier = Modifier.padding(FestiCoreSpacing.paddingP16),
+                )
             }
             if (state.showsAccount) {
                 SettingsSection(title = "계정") {

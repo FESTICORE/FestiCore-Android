@@ -14,6 +14,8 @@ internal interface MixpanelClient {
 
     fun track(event: String, properties: Map<String, Any>)
 
+    fun setCollectionEnabled(enabled: Boolean) = Unit
+
     fun reset()
 }
 
@@ -26,10 +28,18 @@ internal class MixpanelApiClient(private val api: MixpanelAPI) : MixpanelClient 
 
     override fun track(event: String, properties: Map<String, Any>) = api.track(event, JSONObject(properties))
 
+    override fun setCollectionEnabled(enabled: Boolean) {
+        if (enabled) {
+            if (api.hasOptedOutTracking()) api.optInTracking()
+        } else {
+            api.optOutTracking()
+        }
+    }
     override fun reset() = api.reset()
 
     companion object {
         /** iOS `Mixpanel.initialize(token:trackAutomaticEvents: false)`. */
-        fun create(context: Context, token: String): MixpanelClient = MixpanelApiClient(MixpanelAPI.getInstance(context, token, false))
+        fun create(context: Context, token: String): MixpanelClient =
+            MixpanelApiClient(MixpanelAPI.getInstance(context, token, false).apply { setEnableLogging(false) })
     }
 }

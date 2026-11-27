@@ -12,7 +12,7 @@ paths:
 ## Hard
 
 - Keystore · SharedPreferences · DataStore · Room은 `core/storage/sources`(iOS `FestiCoreStorage/Sources`)에서만 쓴다. 다른 모듈은 주입받아 쓴다(verify `boundaries`가 검사).
-- 토큰 · 인가 코드 · 개인정보는 로그 · Mixpanel로 보내지 않는다. Mixpanel 호출은 `service/analytics/sources`에만 둔다(이벤트 속성은 `service/analytics/.spec/analytics.md` 허용 목록). Sentry SDK 호출도 `service/analytics/sources`에서만 하며 개인정보 자동수집은 끈다.
+- 토큰 · 인가 코드 · 개인정보는 로그 · Mixpanel로 보내지 않는다. Firebase Analytics · Mixpanel 호출은 `service/analytics/sources`에만 둔다(이벤트 속성은 `service/analytics/.spec/analytics.md` 허용 목록). Sentry SDK 호출도 `service/analytics/sources`에서만 하며 개인정보 자동수집은 끈다.
 - 모듈 공통 Gradle 설정은 `build-logic/`의 convention plugin에만, 버전은 `gradle/libs.versions.toml`에만 쓴다.
 - Koin 정의는 그 클래스가 있는 모듈의 `di/`에 둔다.
 - 위치 API(`android.location` · `androidx.core.location`)는 `core/location/sources`에서만 쓴다. 위치 좌표는 로그 · 분석 이벤트에 넣지 않는다(verify `boundaries`가 검사).

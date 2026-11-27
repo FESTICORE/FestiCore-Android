@@ -17,6 +17,11 @@ internal object SentryConfiguration {
 
     fun isEnabled(sdkEnabled: () -> Boolean = Sentry::isEnabled): Boolean = hasValidConfiguration && sdkEnabled()
 
+    fun disable() {
+        hasValidConfiguration = false
+        runCatching { Sentry.close() }
+    }
+
     internal fun resetForTesting() {
         hasValidConfiguration = false
     }
@@ -52,8 +57,15 @@ internal object SentryConfiguration {
             options.dsn = dsn
             options.environment = environment(isDebug, isStage)
             options.release = "festicore-android@$versionName+$versionCode"
+            // SDK 원문 진단에는 식별자와 페이로드가 포함될 수 있다. 앱의 안전한 로그만 사용한다.
             options.isDebug = false
+            options.setDiagnosticLevel(if (isDebug && isStage) io.sentry.SentryLevel.INFO else io.sentry.SentryLevel.ERROR)
             options.isSendDefaultPii = false
+            options.setBeforeSend { event, _ -> if (FestiCoreAnalyticsConfiguration.collectionEnabled) event else null }
+            options.setBeforeSendTransaction { event, _ -> if (FestiCoreAnalyticsConfiguration.collectionEnabled) event else null }
+            options.logs.setBeforeSend { event -> if (FestiCoreAnalyticsConfiguration.collectionEnabled) event else null }
+            options.isEnableUserInteractionBreadcrumbs = false
+            options.isEnableSystemEventBreadcrumbs = false
             options.tracesSampleRate = 0.2
             options.isAttachScreenshot = false
             options.isAttachViewHierarchy = false

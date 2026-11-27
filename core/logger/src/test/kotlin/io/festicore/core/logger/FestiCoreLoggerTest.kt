@@ -42,6 +42,14 @@ class FestiCoreLoggerTest {
     }
 
     @Test
+    fun `로그 sink 실패가 앱과 다음 sink를 중단하지 않는다`() {
+        FestiCoreLogger.addSink { error("sink unavailable") }
+        FestiCoreLogger.addSink { received += it }
+        FestiCoreLogger.error("분석 전송 실패", FestiCoreLogCategory.APP)
+        assertEquals(1, received.size)
+    }
+
+    @Test
     fun `최소 단계보다 낮은 로그는 버린다`() {
         FestiCoreLogger.minimumLevel = FestiCoreLogLevel.NOTICE
         FestiCoreLogger.addSink { received += it }

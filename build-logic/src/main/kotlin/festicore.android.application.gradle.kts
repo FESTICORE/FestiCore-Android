@@ -60,6 +60,19 @@ android {
                     val value = secretValue("FESTICORE_FIREBASE_${name.uppercase()}_$field")
                     buildConfigField("String", "FIREBASE_$field", buildConfigString(value))
                 }
+                // Analytics는 기본 앱의 google_app_id 리소스를 읽는다. 완전한 기존 설정만 생성한다.
+                val firebaseResources = mapOf(
+                    "API_KEY" to "google_api_key",
+                    "APP_ID" to "google_app_id",
+                    "PROJECT_ID" to "project_id",
+                    "SENDER_ID" to "gcm_defaultSenderId",
+                )
+                val firebaseValues = firebaseResources.mapValues { (field, _) ->
+                    secretValue("FESTICORE_FIREBASE_${name.uppercase()}_$field").trim()
+                }
+                if (firebaseValues.values.all { it.isNotEmpty() }) {
+                    firebaseResources.forEach { (field, resource) -> resValue("string", resource, firebaseValues.getValue(field)) }
+                }
             }
         }
     }

@@ -9,6 +9,9 @@ dependencies {
     val libs = catalog
     api(project(":service:analytics:interface"))
     implementation(project(":core:logger"))
+    implementation(project(":core:storage:interface"))
+    implementation(platform(libs.lib("firebase-bom")))
+    implementation(libs.lib("firebase-analytics"))
     implementation(libs.lib("mixpanel-android"))
     implementation(libs.lib("sentry-android"))
 

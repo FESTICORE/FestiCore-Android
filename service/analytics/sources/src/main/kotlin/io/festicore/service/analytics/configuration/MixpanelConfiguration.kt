@@ -19,6 +19,6 @@ internal object MixpanelConfiguration {
     ) {
         val token = token(rawToken) ?: return
         if (mainInstance != null) return
-        mainInstance = create(context.applicationContext ?: context, token)
+        mainInstance = runCatching { create(context.applicationContext ?: context, token) }.getOrNull()
     }
 }

@@ -78,6 +78,7 @@ coil-test = { module = "io.coil-kt.coil3:coil-test", version.ref = "coil" }
 browser = { module = "androidx.browser:browser", version.ref = "browser" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-common = { module = "com.google.firebase:firebase-common" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 mixpanel-android = { module = "com.mixpanel.android:mixpanel-android", version.ref = "mixpanel-android" }
 sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry-android" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
