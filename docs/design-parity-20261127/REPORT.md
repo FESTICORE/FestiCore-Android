@@ -60,3 +60,7 @@ Sentry는 스크린샷·뷰 계층·Replay·기본 PII를 끈다. 자동 breadcr
 
 
 Prod 추가 검증: `mise exec -- ./gradlew --console=plain :app:testProdDebugUnitTest :app:assembleProdDebug` 성공, 24 suites / 188 tests, 실패·오류·skip 0. Prod **debug** 빌드이며 서명된 release/배포 검증과 구분한다.
+
+### 원격 CI 후속
+
+첫 Android CI에서 `BearerEntryHostEditTest`의 일반 등록 완료 화면 검사가 비동기 저장 완료 전에 실행되어 실패했다. 다른 호스트 테스트와 같은 `waitUntil`로 완료 화면 표시를 기다리고, 실제 저장 호출 1회도 확인하도록 보강했다. 제품 코드 변경은 없다. Codex 자동 리뷰는 API quota 초과로 생성되지 않았고, Gemini 5개 항목에는 UUID/토큰 분리·Job 완료 콜백·동기 pending 가드·입력 회귀 테스트 근거로 답변했다.

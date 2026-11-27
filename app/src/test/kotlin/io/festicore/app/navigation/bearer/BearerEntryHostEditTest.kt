@@ -132,7 +132,9 @@ class BearerEntryHostEditTest {
     fun `일반 등록 경로는 저장 뒤 완료 화면을 표시한다`() {
         show(editMode = false)
         composeRule.onNodeWithText("저장하기").performClick()
+        composeRule.waitUntil { composeRule.onNodeWithText("깃발이 준비됐어요").isDisplayed() }
         composeRule.onNodeWithText("깃발이 준비됐어요").assertIsDisplayed()
+        assertEquals(1, saves)
         assertEquals(0, closes)
     }
 
