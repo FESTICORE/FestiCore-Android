@@ -57,3 +57,9 @@ S03 기본/내 일정/진행/종료/변경/겹침, S15 깃발/준비물, S02 수
 
 ![dark 6](captures/overview-dark-6.jpg)
 
+
+## 다크 재확인
+
+전환 중 빈 화면이 있던 항목을 포함한 18개를 6초 대기 후 재촬영하여 위 수집 모음에 교체했다. 단독 시트 내용은 외부 Surface/FCSheet가 없으므로 흰 배경과 인셋을 제품 동작으로 판단하지 않는다. 특히 CrewMenu/Gather, NicknameEdit, BearerZone/ActivityPicker, LoginSheet는 다크 배경·대비 검증에서 제외한다.
+
+![다크 재확인](captures/recheck-dark.jpg)

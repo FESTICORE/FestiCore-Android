@@ -65,3 +65,7 @@ adb -s emulator-5554 exec-out screencap -p > s02.png
 - 수정 후 `.claude/scripts/verify` 성공: hooks 32개, 경계·포맷, 196 suites / 1,511 tests, 실패·오류·skip 0, Stage APK 성공. `FCSetBlockTest` 3개 성공. Prod 검증은 앞선 PR 검증이며 이번에 반복하지 않았다.
 - 단순화 점검: 기존 Preview/Content 재사용, release에 없는 debug 호스트와 1줄 ellipsis 수정, 신규 의존성/API 없음. 원본 체크아웃 및 다른 담당 변경을 되돌리지 않았다.
 - 시스템 night mode는 기존 다크로 복원했다. remote CI 상태는 PR checks에서 최신 HEAD 기준으로 확인한다.
+
+### 다크 이미지 수집 후 점검
+
+기존 220장 contact sheet 검토에서 전환 중 빈 화면/흰색 잔상이 발견되어 18개 다크 fixture를 6초 대기 후 재촬영하고 수집 JSON과 contact sheet의 해당 항목을 교체했다. 선택 이미지 수는 238장으로 같으며 재촬영 원본은 별도 보관했다. 깃발 없음·팩 없음·마이·공지·기수 보드의 빈 화면은 안정 후 실제 내용이 보인다. CrewMenu/Gather, NicknameEdit, BearerZone/ActivityPicker, LoginSheet는 단독 시트 내용 프리뷰여서 외부 시트 배경 없이 흰 Activity 배경이 남는다; 해당 다크 이미지의 배경·인셋·대비는 제품 검증에서 제외한다. 이 현상을 수정된 제품 화면으로 주장하지 않는다.

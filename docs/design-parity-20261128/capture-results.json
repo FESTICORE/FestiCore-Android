@@ -1067,9 +1067,9 @@
     "preview": "io.festicore.feature.festival.flagdetail.FlagDetailPreviewsKt.FlagDetailNotFoundPreview",
     "source": "feature/festival/sources/src/main/kotlin/io/festicore/feature/festival/flagdetail/FlagDetailPreviews.kt",
     "mode": "dark",
-    "path": "captures/FlagDetailPreviews-FlagDetailNotFoundPreview-dark.png",
+    "path": "captures/FlagDetailPreviews-FlagDetailNotFoundPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "de1886927838afee6bfe88a8380ee1a37890cef0daf737d8360aec4c06381e22"
+    "sha256": "be49ec38a0e4cfa82a7a31ffb96ab582900df1a78e20897aae44004c7d730c47"
   },
   {
     "preview": "io.festicore.feature.festival.flagdetail.FlagDetailPreviewsKt.FlagDetailRetryPreview",
@@ -1195,9 +1195,9 @@
     "preview": "io.festicore.feature.festival.crew.CrewPreviewsKt.CrewMenuPreview",
     "source": "feature/festival/sources/src/main/kotlin/io/festicore/feature/festival/crew/CrewPreviews.kt",
     "mode": "dark",
-    "path": "captures/CrewPreviews-CrewMenuPreview-dark.png",
+    "path": "captures/CrewPreviews-CrewMenuPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "19cd00703b49d87eb4dd1e91e9b6f4c97bd2cf8b3d713d4eb88a2f784ca164b5"
+    "sha256": "7a0c60afdadaff6c0781e962ba6af5db2df331fe7ccc4dd0d670a1c64852a785"
   },
   {
     "preview": "io.festicore.feature.festival.crew.CrewPreviewsKt.CrewCreateNamingPreview",
@@ -1219,9 +1219,9 @@
     "preview": "io.festicore.feature.festival.crew.CrewPreviewsKt.CrewGatherPreview",
     "source": "feature/festival/sources/src/main/kotlin/io/festicore/feature/festival/crew/CrewPreviews.kt",
     "mode": "dark",
-    "path": "captures/CrewPreviews-CrewGatherPreview-dark.png",
+    "path": "captures/CrewPreviews-CrewGatherPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "461a6596fc851aea3e7de5349fc616044b2e0dd06f462865fcff5bcecf53517e"
+    "sha256": "d62367ba99fcb3b89450fa7200fd987f9a5b51e45e9bf684c588f6e60f9befee"
   },
   {
     "preview": "io.festicore.feature.festival.crew.CrewPreviewsKt.CrewJoinPreview",
@@ -1299,9 +1299,9 @@
     "preview": "io.festicore.feature.profile.settings.SettingsHomePreviewsKt.SettingsHomeGuestPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/settings/SettingsHomePreviews.kt",
     "mode": "dark",
-    "path": "captures/SettingsHomePreviews-SettingsHomeGuestPreview-dark.png",
+    "path": "captures/SettingsHomePreviews-SettingsHomeGuestPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "6270fbff96915384b03fbab88fa4f78f83beacc1e92241f994d403d8ca577b40"
+    "sha256": "8679667a4f36b66645a1ff8531bacf02344d9aaa5ee9e76210ffdfe203e47402"
   },
   {
     "preview": "io.festicore.feature.profile.settings.SettingsHomePreviewsKt.SettingsHomeSignedInPreview",
@@ -1339,25 +1339,25 @@
     "preview": "io.festicore.feature.profile.notice.NoticePreviewsKt.NoticeListFailedPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/notice/NoticePreviews.kt",
     "mode": "dark",
-    "path": "captures/NoticePreviews-NoticeListFailedPreview-dark.png",
+    "path": "captures/NoticePreviews-NoticeListFailedPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "d0a8fa4f5bd3975efcdb94028160c71c16d3dc4e25c616b10bb323e5abc05620"
+    "sha256": "8466d6dbb33e65ea6877cb8a53b0ccfe79ea7b3fa4f809d7f4fe72d3b2be2486"
   },
   {
     "preview": "io.festicore.feature.profile.notice.NoticePreviewsKt.NoticeListEmptyPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/notice/NoticePreviews.kt",
     "mode": "dark",
-    "path": "captures/NoticePreviews-NoticeListEmptyPreview-dark.png",
+    "path": "captures/NoticePreviews-NoticeListEmptyPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "d523fd12160b46687aa60f0183b56fd6ac84d67a650feb95a784e7e6277b4947"
+    "sha256": "5fef028601ec175c3965296ab304c6d56d7ffe735cb217b92a771568640e102f"
   },
   {
     "preview": "io.festicore.feature.profile.notice.NoticePreviewsKt.NoticeDetailLoadedPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/notice/NoticePreviews.kt",
     "mode": "dark",
-    "path": "captures/NoticePreviews-NoticeDetailLoadedPreview-dark.png",
+    "path": "captures/NoticePreviews-NoticeDetailLoadedPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "7a37e9ad4b0ff003af171581070c0d782b2153bd1eeb1528d4d4134f599f7a87"
+    "sha256": "8b3b8ac57283a1ecccbd535a6fb51a76fd0e0c2cb79b25012ba81418b928245b"
   },
   {
     "preview": "io.festicore.feature.profile.notice.NoticePreviewsKt.NoticeDetailLoadingPreview",
@@ -1403,9 +1403,9 @@
     "preview": "io.festicore.feature.profile.packdetail.PackDetailPreviewsKt.PackDetailMissingPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/packdetail/PackDetailPreviews.kt",
     "mode": "dark",
-    "path": "captures/PackDetailPreviews-PackDetailMissingPreview-dark.png",
+    "path": "captures/PackDetailPreviews-PackDetailMissingPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "75fae35514cdd2cab2445329eb0fd2648dcdc964487d7ca95c7d2216d5341572"
+    "sha256": "533327c18bc8eafd6895ea1e54fe5887b46c95b05a0d1ccd06a23e1f0bd53e9a"
   },
   {
     "preview": "io.festicore.feature.profile.account.AccountSettingsPreviewsKt.AccountSettingsSignedInPreview",
@@ -1427,33 +1427,33 @@
     "preview": "io.festicore.feature.profile.account.AccountSettingsPreviewsKt.AccountSettingsUnavailablePreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/account/AccountSettingsPreviews.kt",
     "mode": "dark",
-    "path": "captures/AccountSettingsPreviews-AccountSettingsUnavailablePreview-dark.png",
+    "path": "captures/AccountSettingsPreviews-AccountSettingsUnavailablePreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "250af37c48324ab07cff436f785a01631a47617c60d73c7b66c94e0a01e7ae33"
+    "sha256": "03e98273894127ac208214387eb77e09d5145c04f8fd32bc14e61164d5eb23c5"
   },
   {
     "preview": "io.festicore.feature.profile.account.AccountSettingsPreviewsKt.NicknameEditPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/account/AccountSettingsPreviews.kt",
     "mode": "dark",
-    "path": "captures/AccountSettingsPreviews-NicknameEditPreview-dark.png",
+    "path": "captures/AccountSettingsPreviews-NicknameEditPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "ee8df97e0ab05814406092ee6a21d9785c5a48e94683325d7abe1d8c65fbba36"
+    "sha256": "7f47723085810cad1ad0db94c96bd35db4fb7c7f945a0e5a7dbdc0d7a9f901f6"
   },
   {
     "preview": "io.festicore.feature.profile.main.ProfilePreviewsKt.ProfileGuestLoadedPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/main/ProfilePreviews.kt",
     "mode": "dark",
-    "path": "captures/ProfilePreviews-ProfileGuestLoadedPreview-dark.png",
+    "path": "captures/ProfilePreviews-ProfileGuestLoadedPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "40ab58dfb326763a425c30a78527b12e4e0f457fe96cb2dfeb12fbe17e017882"
+    "sha256": "e8850a4f3b5c2e24a213c692fb1ffce961084d61c5b2a8e649047812f6a63d69"
   },
   {
     "preview": "io.festicore.feature.profile.main.ProfilePreviewsKt.ProfileSignedInEmptyPreview",
     "source": "feature/profile/sources/src/main/kotlin/io/festicore/feature/profile/main/ProfilePreviews.kt",
     "mode": "dark",
-    "path": "captures/ProfilePreviews-ProfileSignedInEmptyPreview-dark.png",
+    "path": "captures/ProfilePreviews-ProfileSignedInEmptyPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "bfeaa5a98aa83370c10297229213c3b679bd1dfa15803912143d46a901f34d97"
+    "sha256": "a25579e8ccb065284c6b444bf93d4b92a31b7927db5e85c82290344fcd5e3b65"
   },
   {
     "preview": "io.festicore.feature.profile.main.ProfilePreviewsKt.ProfileLoadingPreview",
@@ -1507,17 +1507,17 @@
     "preview": "io.festicore.feature.bearer.board.BearerBoardPreviewsKt.BearerBoardCheckPreview",
     "source": "feature/bearer/sources/src/main/kotlin/io/festicore/feature/bearer/board/BearerBoardPreviews.kt",
     "mode": "dark",
-    "path": "captures/BearerBoardPreviews-BearerBoardCheckPreview-dark.png",
+    "path": "captures/BearerBoardPreviews-BearerBoardCheckPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "13c284f4c7f59c0923cd50c840d43d8f59a1ec73480a775f9e4d2a39b7708083"
+    "sha256": "78cf911315cf24416d330b6cb1acd7d3c0684c5921f952cca3396e2799794fd9"
   },
   {
     "preview": "io.festicore.feature.bearer.board.BearerBoardPreviewsKt.BearerBoardLoadingPreview",
     "source": "feature/bearer/sources/src/main/kotlin/io/festicore/feature/bearer/board/BearerBoardPreviews.kt",
     "mode": "dark",
-    "path": "captures/BearerBoardPreviews-BearerBoardLoadingPreview-dark.png",
+    "path": "captures/BearerBoardPreviews-BearerBoardLoadingPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "87126e674067718d9a3cbcdcaf605fe39c9e7eea1fad73dd9ee5d7d3fb46857e"
+    "sha256": "1a5629ada9168f7f6724c6e84b1dbf52c58630e98856ce8f0b8e477674b553ed"
   },
   {
     "preview": "io.festicore.feature.bearer.board.BearerBoardPreviewsKt.BearerBoardFailedPreview",
@@ -1531,25 +1531,25 @@
     "preview": "io.festicore.feature.bearer.board.BearerBoardPreviewsKt.BearerZonePickerPreview",
     "source": "feature/bearer/sources/src/main/kotlin/io/festicore/feature/bearer/board/BearerBoardPreviews.kt",
     "mode": "dark",
-    "path": "captures/BearerBoardPreviews-BearerZonePickerPreview-dark.png",
+    "path": "captures/BearerBoardPreviews-BearerZonePickerPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "a6290158db0b91ef7dffd51305400b3b6f338788673b3884569fd2cd91527ddf"
+    "sha256": "9a8d433f0f96cbc06e36223755c04905f3c8db3760094ad6b7c1627932e94575"
   },
   {
     "preview": "io.festicore.feature.bearer.board.BearerBoardPreviewsKt.BearerZonePickerEmptyPreview",
     "source": "feature/bearer/sources/src/main/kotlin/io/festicore/feature/bearer/board/BearerBoardPreviews.kt",
     "mode": "dark",
-    "path": "captures/BearerBoardPreviews-BearerZonePickerEmptyPreview-dark.png",
+    "path": "captures/BearerBoardPreviews-BearerZonePickerEmptyPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "2df88bd616e78556ee7da0747d75b4838ba44316c686782e120eddc1dfa976cc"
+    "sha256": "cecf0ce22b18c3e9e87374352e7ad10b5ed255934ff72ce5ab87284f71edd922"
   },
   {
     "preview": "io.festicore.feature.bearer.board.BearerBoardPreviewsKt.BearerActivityPickerPreview",
     "source": "feature/bearer/sources/src/main/kotlin/io/festicore/feature/bearer/board/BearerBoardPreviews.kt",
     "mode": "dark",
-    "path": "captures/BearerBoardPreviews-BearerActivityPickerPreview-dark.png",
+    "path": "captures/BearerBoardPreviews-BearerActivityPickerPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "120f3f97f05950bf9903002a8f180e65da074004f77d5975d74e77071e1c3d3a"
+    "sha256": "6c3096a158cba6b4d3b1c208cc79d4b21b7779a342dad85abf7b741d469714ef"
   },
   {
     "preview": "io.festicore.feature.bearer.plan.BearerPlanPickPreviewsKt.BearerPlanPickPreview",
@@ -1755,8 +1755,8 @@
     "preview": "io.festicore.feature.auth.login.LoginSheetKt.LoginSheetContentPreview",
     "source": "feature/auth/sources/src/main/kotlin/io/festicore/feature/auth/login/LoginSheet.kt",
     "mode": "dark",
-    "path": "captures/LoginSheet-LoginSheetContentPreview-dark.png",
+    "path": "captures/LoginSheet-LoginSheetContentPreview-dark-recheck.png",
     "activity_resumed": true,
-    "sha256": "31abe78adc71d21dc8ed961a57b87974378c08c7e3bb274f49b935c02a150a06"
+    "sha256": "ff3c8e993a72371a33883e502082cd68db119b8f220d7041aaeb5ed25aa8dc5e"
   }
 ]
