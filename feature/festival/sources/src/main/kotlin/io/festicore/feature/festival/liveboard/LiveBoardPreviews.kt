@@ -106,3 +106,73 @@ private fun LiveBoardLoadingPreview() {
 private fun LiveBoardNotFoundPreview() {
     FestiCoreTheme { LiveBoardContent(state = LiveBoardState(festivalId = "missing"), deviceNow = Instant.parse("2026-10-20T06:31:00Z")) }
 }
+
+// S01 상태별 실제 에뮬레이터 대조용. 서버 요청·저장 없이 같은 Content를 사용한다.
+@Preview
+@Composable
+private fun LiveBoardOfflinePreview() {
+    LiveBoardContent(state = PreviewState.copy(connection = LiveBoardConnection.Offline), deviceNow = Instant.parse("2026-10-20T06:31:00Z"))
+}
+
+@Preview
+@Composable
+private fun LiveBoardReconnectingPreview() {
+    LiveBoardContent(
+        state = PreviewState.copy(connection = LiveBoardConnection.Reconnecting),
+        deviceNow = Instant.parse("2026-10-20T06:31:00Z"),
+    )
+}
+
+@Preview
+@Composable
+private fun LiveBoardSignedInEmptyPreview() {
+    LiveBoardContent(state = PreviewState.copy(hasSession = true), deviceNow = Instant.parse("2026-10-20T06:31:00Z"))
+}
+
+@Preview
+@Composable
+private fun LiveBoardBeforeOpeningPreview() {
+    val now = Instant.parse("2026-10-20T02:00:00Z")
+    LiveBoardContent(
+        state = PreviewState.copy(clockAnchorAt = now, snapshot = PreviewState.snapshot?.copy(serverAt = now)),
+        deviceNow = now,
+    )
+}
+
+@Preview
+@Composable
+private fun LiveBoardEndedPreview() {
+    val now = Instant.parse("2026-10-20T14:30:00Z")
+    LiveBoardContent(
+        state = PreviewState.copy(
+            hasSession = true,
+            mySchedule = LiveBoardMySchedule("preview", setOf("s1", "s2")),
+            clockAnchorAt = now,
+            snapshot = PreviewState.snapshot?.copy(serverAt = now),
+        ),
+        deviceNow = now,
+    )
+}
+
+@Preview
+@Composable
+private fun LiveBoardSwitcherPreview() {
+    LiveBoardContent(
+        state = PreviewState.copy(
+            switcher = listOf(
+                LiveBoardSwitcherItem("preview", "원더리벳 2026", "11.07 (토)–11.08 (일)", null),
+                LiveBoardSwitcherItem("other", "펜타포트", "08.07 (금)–08.09 (일)", null),
+            ),
+        ),
+        deviceNow = Instant.parse("2026-10-20T06:31:00Z"),
+    )
+}
+
+@Preview
+@Composable
+private fun LiveBoardHideGuidePreview() {
+    LiveBoardContent(
+        state = PreviewState.copy(hasSession = true, isFollowGuideDialogPresented = true),
+        deviceNow = Instant.parse("2026-10-20T06:31:00Z"),
+    )
+}

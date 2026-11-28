@@ -1,0 +1,10 @@
+Pre-fix actual BasicText layout (Robolectric):
+scale=1 start size.width=47 paragraph.width=48 glyph.right=45.3648
+scale=1 end size.width=34 paragraph.width=48 glyph.right=32.2096
+scale=2 start size.width=82 paragraph.width=82 glyph.right=80.6384
+scale=2 end size.width=70 paragraph.width=82 glyph.right=68.4192
+heightOverflow=false; lineCount=1; lineEnd=5; ellipsis=false in every case.
+Same-input TextMeasurer returned paragraph.width=size.width and overflow=false.
+Removed added TextMeasurer; BasicText.fillMaxWidth uses existing time column.
+Post-fix strict overflow, ellipsis, character-end and row-click tests all pass.
+Original diagnostic logs retained locally in android-design-resume-20261128.
