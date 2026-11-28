@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -50,6 +52,14 @@ fun FCSetSelectRow(
     overlapText: String? = null,
     onClick: () -> Unit,
 ) {
+    val startStyle = FestiCoreTextStyle.baseCalloutBold.textStyle.copy(
+        color = FestiCoreSemanticColor.labelNormal.color,
+        fontFeatureSettings = TABULAR_NUMBERS,
+    )
+    val endStyle = FestiCoreTextStyle.baseCaption1Regular.textStyle.copy(
+        color = FestiCoreSemanticColor.labelAssistive.color,
+        fontFeatureSettings = TABULAR_NUMBERS,
+    )
     // Figma Set Select Row: 위아래 12 + 시간 열(24 + 4 + 16) = 68, 줄 사이 구분선 1을 더해 69 간격.
     Row(
         modifier =
@@ -63,11 +73,11 @@ fun FCSetSelectRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
-            modifier = Modifier.width(TimeWidth),
+            modifier = Modifier.width(TimeWidth * LocalDensity.current.fontScale.coerceAtLeast(1f)),
             verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP4),
         ) {
-            SetSelectText(start, FestiCoreTextStyle.baseCalloutBold, FestiCoreSemanticColor.labelNormal, isMonospacedDigit = true)
-            SetSelectText(end, FestiCoreTextStyle.baseCaption1Regular, FestiCoreSemanticColor.labelAssistive, isMonospacedDigit = true)
+            BasicText(start, modifier = Modifier.fillMaxWidth(), style = startStyle, softWrap = false, maxLines = 1)
+            BasicText(end, modifier = Modifier.fillMaxWidth(), style = endStyle, softWrap = false, maxLines = 1)
         }
         Column(
             modifier = Modifier.weight(1f),
@@ -123,7 +133,6 @@ private fun SetSelectText(
     text: String,
     textStyle: FestiCoreTextStyle,
     color: FestiCoreSemanticColor,
-    isMonospacedDigit: Boolean = false,
     // iOS는 겹침 문구만 festiCoreLineBox 없이 festiCoreFont만 쓴다.
     hasLineBox: Boolean = true,
 ) {
@@ -132,7 +141,6 @@ private fun SetSelectText(
         style =
             (if (hasLineBox) textStyle.textStyle else textStyle.textStyleWithoutLineBox).copy(
                 color = color.color,
-                fontFeatureSettings = if (isMonospacedDigit) TABULAR_NUMBERS else null,
             ),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

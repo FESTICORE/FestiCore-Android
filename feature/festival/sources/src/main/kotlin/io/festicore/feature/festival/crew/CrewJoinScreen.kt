@@ -11,10 +11,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +33,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.festival.entity.FestivalCrew
 import io.festicore.domain.festival.entity.FestivalCrewInvite
@@ -329,9 +329,9 @@ private fun DetailRow(
     value: String,
     showsDivider: Boolean,
 ) {
-    Box(modifier = Modifier.fillMaxWidth().height(if (showsDivider) RowHeight else LastRowHeight)) {
+    Box(modifier = Modifier.fillMaxWidth().heightIn(min = if (showsDivider) RowHeight else LastRowHeight)) {
         Row(
-            modifier = Modifier.fillMaxWidth().align(Alignment.Center),
+            modifier = Modifier.fillMaxWidth().align(Alignment.Center).padding(vertical = FestiCoreSpacing.paddingP12),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -339,14 +339,13 @@ private fun DetailRow(
                 style = FestiCoreTextStyle.baseSubheadlineRegular.textStyleWithoutLineBox,
                 color = FestiCoreSemanticColor.labelNeutral.color,
             )
-            Spacer(Modifier.weight(1f).widthIn(min = FestiCoreSpacing.paddingP8))
+            Spacer(Modifier.width(FestiCoreSpacing.paddingP8))
             Text(
                 text = value,
-                modifier = Modifier.padding(start = FestiCoreSpacing.paddingP8),
+                modifier = Modifier.weight(1f),
                 style = FestiCoreTextStyle.baseSubheadlineBold.textStyleWithoutLineBox,
                 color = FestiCoreSemanticColor.labelNormal.color,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
             )
         }
         if (showsDivider) {

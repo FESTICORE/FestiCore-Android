@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,7 +73,7 @@ fun FCPlanRow(
         ) {
             BasicText(
                 text = time,
-                modifier = Modifier.width(TimeWidth),
+                modifier = Modifier.width(TimeWidth * LocalDensity.current.fontScale.coerceAtLeast(1f)),
                 style =
                     FestiCoreTextStyle.baseCalloutBold.textStyleWithoutLineBox.copy(
                         color = FestiCoreSemanticColor.labelNormal.color,
