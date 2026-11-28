@@ -16,7 +16,7 @@ sealed interface FlagDetailContent {
 /** 첫 조회 실패 종류. */
 enum class FlagDetailFailure { NotFound, Unavailable }
 
-/** 화면 아래 짧은 안내(iOS `State.Toast`). 잠금화면 변경 실패는 라이브 액티비티 단계에서 넣는다. */
+/** 화면 아래 짧은 안내(iOS `State.Toast`). 홈 위젯 대표 변경 실패도 같은 하단 토스트를 쓴다. */
 sealed interface FlagDetailToast {
     data class Followed(val name: String) : FlagDetailToast
 
@@ -27,6 +27,8 @@ sealed interface FlagDetailToast {
     data object Reported : FlagDetailToast
 
     data object AlreadyReported : FlagDetailToast
+
+    data object PinFailed : FlagDetailToast
 
     data object ReportFailed : FlagDetailToast
 
@@ -44,7 +46,7 @@ data class FlagDetailFollowOverride(
 data class FlagReportSheetState(val selectedReason: FestivalFlagReportReason? = null)
 
 /**
- * S05 깃발 상세(iOS `FestivalFlagDetailFeature.State`). 잠금화면 대표 깃발(pin) 상태는 라이브 액티비티 단계로 뺐다.
+ * S05 깃발 상세(iOS `FestivalFlagDetailFeature.State`). 대표 깃발은 Android 홈 위젯에서 사용한다.
  * 응답은 [loadGeneration]이 같을 때만 반영한다.
  */
 data class FlagDetailState(
@@ -58,6 +60,8 @@ data class FlagDetailState(
     val isOffline: Boolean = false,
     val isFollowPending: Boolean = false,
     val isReportPending: Boolean = false,
+    val isPinPending: Boolean = false,
+    val pinOverride: Boolean? = null,
     val toast: FlagDetailToast? = null,
     val reportSheet: FlagReportSheetState? = null,
     /** 내 깃발 · 원래 기수 · 공동 기수 없음. 이때만 상단 바 공유 대신 깃발 관리 메뉴(공유 · 다른 페스티벌로 옮기기)를 둔다. */
@@ -71,6 +75,10 @@ data class FlagDetailState(
 
     val isFollowing: Boolean get() = followOverride?.isFollowing ?: detail?.isFollowing ?: false
 
+    val showsWidgetPin: Boolean get() = detail != null && context.hasSession && isFollowing
+
+    val isPinned: Boolean get() = showsWidgetPin && (pinOverride ?: detail?.isPinned ?: (context.pinnedFlagId == flagId))
+
     val followerCount: Int get() = followOverride?.followerCount ?: detail?.followerCount ?: 0
 
     /** 공유 시트로 보내는 깃발 링크. 앱의 링크 처리가 깃발 상세로 연다. */
@@ -79,6 +87,8 @@ data class FlagDetailState(
 
 /** iOS `FestivalFlagDetailDelegate`(잠금화면 · 뒤로 제외). 로그인 · 약관은 경계로만 알린다. */
 sealed interface FlagDetailSideEffect {
+    data object PinChanged : FlagDetailSideEffect
+
     /** 비로그인 팔로우. 부모가 팔로우 로그인 시트를 띄운다(iOS `loginRequested`). */
     data object LoginRequested : FlagDetailSideEffect
 

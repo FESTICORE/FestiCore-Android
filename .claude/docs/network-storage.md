@@ -32,6 +32,7 @@ iOS `Core/FestiCoreNetwork` · `Core/FestiCoreStorage`에 대응한다. 설계: 
 ## core/storage
 
 - 모듈은 `core/storage/interface`(계약 · 공개 값 타입, `secure/` · `shared/` · `onboarding/`)와 `core/storage/sources`(`DataStore*` 구현 · `KeystoreValueCipher` · `di/`)로 나뉜다(iOS `FestiCoreStorage/{Interface,Sources}`). 다른 모듈은 `:core:storage:interface`만 의존한다. DataStore 파일 이름 · 키는 나누기 전과 같다.
+- `AnalyticsConsentStore`: SDK 초기화 전 확인하는 선택적 분석·진단 동의 Boolean. 동기 SharedPreferences 저장 결과를 반환하고 최초 값은 false.
 - `FirstInstallOnboardingStore`: 첫 설치 온보딩 완료 여부(DataStore Preferences).
 - `RecentSearchStore`: 사용자별 최근 검색어(DataStore Preferences, iOS와 같은 키 · `\n` 형식). 규칙은 `domain/festival/.spec/recent-search.md`.
 - `SecureStorage`: 토큰 · 설치 기기 ID(키 `deviceID`, `service/device`) 같은 보안 값. Android Keystore AES/GCM으로 암호화해 DataStore에 저장한다. 복호화에 실패하면 `null`을 돌려주고 그 키를 지운다. 쓰기 실패는 `SecureStorageException`.

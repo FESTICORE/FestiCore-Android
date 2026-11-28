@@ -10,6 +10,21 @@ sealed interface FestivalRoute : NavKey {
     @Serializable
     data object List : FestivalRoute
 
+    @Serializable
+    data class PrepSchedule(
+        val festivalId: String,
+        val selectedSetIds: kotlin.collections.List<String>,
+    ) : FestivalRoute
+
+    @Serializable
+    data class PrepFlags(val festivalId: String) : FestivalRoute
+
+    @Serializable
+    data class PrepChecklist(
+        val festivalId: String,
+        val title: String,
+    ) : FestivalRoute
+
     /** S01 라이브 보드(iOS `liveBoard`). 목록 항목 · 팩은 보드가 다시 읽는다(경로 값은 ID 하나). */
     @Serializable
     data class LiveBoard(val festivalId: String) : FestivalRoute
@@ -47,3 +62,7 @@ sealed interface FestivalRoute : NavKey {
     @Serializable
     data class CrewJoin(val code: String) : FestivalRoute
 }
+
+/** 준비 안내만 제거할 때 쓰는 경계. */
+fun FestivalRoute.isPrep(): Boolean =
+    this is FestivalRoute.PrepSchedule || this is FestivalRoute.PrepFlags || this is FestivalRoute.PrepChecklist

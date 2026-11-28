@@ -4,6 +4,8 @@ import io.festicore.service.auth.store.CredentialStore
 
 /** 로그인 세션 공개 API. 토큰 값은 밖으로 내보내지 않는다. */
 class AuthSessionImpl internal constructor(private val store: CredentialStore) : AuthSession {
+    override fun sessionIdentities(): kotlinx.coroutines.flow.Flow<String?> = store.sessionIdentities()
+
     override suspend fun isLoggedIn(): Boolean = store.current() != null
 
     /** 세션에 묶인 요청(`expectedSessionId`)에 넘길 현재 세션 ID. */

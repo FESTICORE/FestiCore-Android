@@ -65,3 +65,19 @@ private fun BearerProfileDonePreview() {
         )
     }
 }
+
+@Preview(showBackground = true)
+@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun BearerProfileEditPreview() {
+    FestiCoreTheme {
+        BearerProfileContent(
+            state = previewState().copy(
+                isEditMode = true,
+                isNewBearer = false,
+                name = "미리보기 깃발",
+                tags = listOf(BearerFlagTag.Slam),
+            ),
+        )
+    }
+}

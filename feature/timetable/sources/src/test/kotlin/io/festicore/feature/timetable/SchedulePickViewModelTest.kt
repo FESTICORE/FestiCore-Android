@@ -10,6 +10,8 @@ import io.festicore.feature.timetable.schedulepick.SchedulePickFormat
 import io.festicore.feature.timetable.schedulepick.SchedulePickSideEffect
 import io.festicore.feature.timetable.schedulepick.SchedulePickViewModel
 import java.time.Instant
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,14 +28,69 @@ class SchedulePickViewModelTest {
     private val mapper = FakeMapper(days = mapOf("festival" to days))
     private var schedule = FakeScheduleUseCase()
 
-    private fun viewModel(selected: List<String> = emptyList()) = SchedulePickViewModel(
+    private fun viewModel(selected: List<String> = emptyList(), timeoutMillis: Long? = null) = SchedulePickViewModel(
         route = TimetableRoute.SchedulePick("festival", selected, null),
         boardSelectionUseCase = boardSelection,
         mapper = mapper,
         overlapCalculator = FakeOverlapCalculator(),
         scheduleUseCase = schedule,
         clock = clock,
+        saveTimeoutMillis = timeoutMillis,
     )
+
+    private fun cachedPackUseCase(): io.festicore.domain.festival.pack.FestivalPackUseCase {
+        val document = io.festicore.domain.festival.entity.FestivalPackDocument(id = "festival")
+        val pack = io.festicore.domain.festival.entity.CachedFestivalPack("festival", 1, "v1", now, document)
+        return object : io.festicore.domain.festival.pack.FestivalPackUseCase {
+            override val state = kotlinx.coroutines.flow.MutableStateFlow(
+                io.festicore.domain.festival.entity.FestivalPackState(packs = mapOf("festival" to pack)),
+            )
+            override suspend fun reloadCachedPacks() = listOf(pack)
+            override fun packUpdates(festivalId: String) =
+                kotlinx.coroutines.flow.emptyFlow<io.festicore.domain.festival.entity.PackSyncResult>()
+            override fun downloadPack(festivalId: String) =
+                kotlinx.coroutines.flow.emptyFlow<io.festicore.domain.festival.entity.PackDownloadEvent>()
+            override suspend fun syncPack(festivalId: String): io.festicore.domain.festival.entity.PackSyncResult = error("not used")
+            override suspend fun deleteExpiredPacks() = emptyList<String>()
+        }
+    }
+
+    @Test
+    fun targetCachedPackProvidesDaysWhenAnotherBoardIsSelected() {
+        val packs = cachedPackUseCase()
+        val picker = SchedulePickViewModel(
+            route = TimetableRoute.SchedulePick("festival", emptyList(), null),
+            boardSelectionUseCase = FakeBoardSelectionUseCase(selection("another")),
+            mapper = mapper,
+            overlapCalculator = FakeOverlapCalculator(),
+            scheduleUseCase = schedule,
+            clock = clock,
+            packUseCase = packs,
+        )
+        assertEquals(days, picker.container.stateFlow.value.days)
+    }
+
+    @Test
+    fun matchingOnlineDocumentWinsOverOlderCache() {
+        val online = io.festicore.domain.festival.entity.FestivalPackDocument(id = "festival", name = "최신 온라인")
+        val picker = SchedulePickViewModel(
+            route = TimetableRoute.SchedulePick("festival", emptyList(), null),
+            boardSelectionUseCase = FakeBoardSelectionUseCase(selection("festival", document = online)),
+            mapper = mapper,
+            overlapCalculator = FakeOverlapCalculator(),
+            scheduleUseCase = schedule,
+            clock = clock,
+            packUseCase = cachedPackUseCase(),
+        )
+        assertEquals(days, picker.container.stateFlow.value.days)
+        assertEquals(listOf(online), mapper.mappedPacks)
+    }
+
+    @Test
+    fun matchingOnlineDocumentWorksWithoutDownloadedPack() {
+        assertEquals(days, viewModel().container.stateFlow.value.days)
+        assertEquals("festival", mapper.mappedPacks.single().id)
+    }
 
     @Test
     fun tappingSetTogglesSelection() = runTest {
@@ -56,6 +113,21 @@ class SchedulePickViewModelTest {
             expectSideEffect(SchedulePickSideEffect.Finished(SchedulePickResult.Saved("festival", setOf("coldrain", "spyair"))))
         }
         assertEquals(listOf(FakeScheduleUseCase.Replaced("festival", listOf("coldrain", "spyair"), now)), schedule.replaced)
+    }
+
+    @Test
+    fun prepSaveDeadlineReleasesNavigationWithoutDroppingSelection() = runTest {
+        schedule = FakeScheduleUseCase(replace = { _, _, _ -> kotlinx.coroutines.awaitCancellation() })
+        viewModel(listOf("saucy"), timeoutMillis = 100).test(this) {
+            containerHost.onNextTapped()
+            assertTrue(awaitState().isSaving)
+            advanceTimeBy(101)
+            runCurrent()
+            assertFalse(containerHost.container.stateFlow.value.isSaving)
+            val failed = awaitState()
+            assertEquals(setOf("saucy"), failed.selectedSetIds)
+            assertTrue(failed.errorMessage != null)
+        }
     }
 
     @Test

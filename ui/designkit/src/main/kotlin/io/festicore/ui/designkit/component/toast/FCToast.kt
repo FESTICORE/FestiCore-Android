@@ -2,6 +2,7 @@ package io.festicore.ui.designkit.component.toast
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,8 +15,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -28,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
@@ -48,7 +53,7 @@ class FCToastItem(
     val message: String,
 )
 
-/** 화면 상단에 표시하는 짧은 알림. [iconColor]는 iOS `iconColor(_:)` 설정이다. */
+/** 화면에 표시하는 짧은 알림. [iconColor]는 iOS `iconColor(_:)` 설정이다. */
 @Composable
 fun FCToast(
     item: FCToastItem,
@@ -58,9 +63,9 @@ fun FCToast(
     Row(
         modifier =
             modifier
+                .semantics(mergeDescendants = true) {}
                 .background(FestiCoreSemanticColor.staticalphaBlack80.color, RoundedCornerShape(FestiCoreRadius.r12))
-                .padding(vertical = FestiCoreSpacing.paddingP12, horizontal = FestiCoreSpacing.paddingP16)
-                .semantics(mergeDescendants = true) {},
+                .padding(vertical = FestiCoreSpacing.paddingP12, horizontal = FestiCoreSpacing.paddingP16),
         horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -78,7 +83,7 @@ fun FCToast(
 }
 
 /**
- * iOS `View.fcToast(item:duration:topPadding:)`. [item]이 있으면 [content] 위쪽에 토스트를 띄우고
+ * [item]이 있으면 [content] 아래 안전 영역에 토스트를 띄우고
  * [duration] 뒤 `onItemChange(null)`로 비운다. 그 사이 다른 아이템으로 바뀌면 새 아이템 기준으로 다시 잰다.
  */
 @Composable
@@ -87,7 +92,6 @@ fun FCToastHost(
     onItemChange: (FCToastItem?) -> Unit,
     modifier: Modifier = Modifier,
     duration: Duration = 2.seconds,
-    topPadding: Dp = 30.dp,
     content: @Composable () -> Unit,
 ) {
     val currentOnItemChange by rememberUpdatedState(onItemChange)
@@ -96,16 +100,16 @@ fun FCToastHost(
         content()
         AnimatedContent(
             targetState = item,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier.align(Alignment.BottomCenter).toastPadding(),
             transitionSpec = {
                 val spec = tween<Float>(ANIMATION_MILLIS, easing = EaseOut)
-                (slideInVertically(tween(ANIMATION_MILLIS, easing = EaseOut)) { -it } + fadeIn(spec)) togetherWith
-                    (slideOutVertically(tween(ANIMATION_MILLIS, easing = EaseOut)) { -it } + fadeOut(spec))
+                (slideInVertically(tween(ANIMATION_MILLIS, easing = EaseOut)) { it } + fadeIn(spec)) togetherWith
+                    (slideOutVertically(tween(ANIMATION_MILLIS, easing = EaseOut)) { it } + fadeOut(spec))
             },
-            contentAlignment = Alignment.TopCenter,
+            contentAlignment = Alignment.BottomCenter,
             label = "FCToast",
         ) { shown ->
-            if (shown != null) FCToast(shown, modifier = Modifier.padding(top = topPadding))
+            if (shown != null) FCToast(shown)
         }
     }
     if (item != null) {
@@ -115,3 +119,25 @@ fun FCToastHost(
         }
     }
 }
+
+/** 만료를 화면 상태가 관리하는 토스트. 호출자는 하단에 배치하고 퇴장 중 마지막 내용을 유지한다. */
+@Composable
+fun FCToastOverlay(
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier.toastPadding(),
+        enter = slideInVertically(tween(ANIMATION_MILLIS, easing = EaseOut)) { it } + fadeIn(tween(ANIMATION_MILLIS, easing = EaseOut)),
+        exit = slideOutVertically(tween(ANIMATION_MILLIS, easing = EaseOut)) { it } + fadeOut(tween(ANIMATION_MILLIS, easing = EaseOut)),
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun Modifier.toastPadding(): Modifier = windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
+    .padding(horizontal = FestiCoreSpacing.paddingP16)
+    .padding(bottom = FestiCoreSpacing.paddingP16)

@@ -9,6 +9,7 @@ import io.festicore.core.storage.onboarding.FirstInstallOnboardingStore
 import io.festicore.core.storage.secure.DataStoreSecureStorage
 import io.festicore.core.storage.secure.KeystoreValueCipher
 import io.festicore.core.storage.secure.SecureStorage
+import io.festicore.core.storage.shared.AnalyticsConsentStore
 import io.festicore.core.storage.shared.AppearanceModeStore
 import io.festicore.core.storage.shared.DataStoreAppearanceModeStore
 import io.festicore.core.storage.shared.DataStoreFestivalPackLocalStore
@@ -16,11 +17,14 @@ import io.festicore.core.storage.shared.DataStoreLiveBoardPreferenceStore
 import io.festicore.core.storage.shared.DataStoreLocationPermissionStore
 import io.festicore.core.storage.shared.DataStorePendingDeeplinkStore
 import io.festicore.core.storage.shared.DataStoreRecentSearchStore
+import io.festicore.core.storage.shared.DataStoreWidgetSnapshotStore
 import io.festicore.core.storage.shared.FestivalPackLocalStore
 import io.festicore.core.storage.shared.LiveBoardPreferenceStore
 import io.festicore.core.storage.shared.LocationPermissionStore
 import io.festicore.core.storage.shared.PendingDeeplinkStore
 import io.festicore.core.storage.shared.RecentSearchStore
+import io.festicore.core.storage.shared.SharedPreferencesAnalyticsConsentStore
+import io.festicore.core.storage.shared.WidgetSnapshotStore
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -33,7 +37,11 @@ private val Context.festivalPackDataStore: DataStore<Preferences> by preferences
 private val Context.appearanceDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_appearance")
 private val Context.locationPermissionDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_location_permission")
 
+private val Context.widgetDataStore: DataStore<Preferences> by preferencesDataStore(name = "festicore_widget")
+
 val coreStorageModule = module {
+    single<AnalyticsConsentStore> { SharedPreferencesAnalyticsConsentStore(androidContext()) }
+    single<WidgetSnapshotStore> { DataStoreWidgetSnapshotStore(androidContext().widgetDataStore, KeystoreValueCipher()) }
     single<FirstInstallOnboardingStore> { DataStoreFirstInstallOnboardingStore(androidContext().onboardingDataStore) }
     single<SecureStorage> { DataStoreSecureStorage(androidContext().secureDataStore, KeystoreValueCipher()) }
     single<RecentSearchStore> { DataStoreRecentSearchStore(androidContext().recentSearchDataStore) }

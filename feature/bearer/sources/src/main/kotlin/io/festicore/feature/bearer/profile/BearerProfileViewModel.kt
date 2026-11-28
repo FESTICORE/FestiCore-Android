@@ -18,7 +18,7 @@ import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 /**
- * iOS `BearerProfileFeature`(Figma S10 A~E 깃발 프로필). 프로필을 고치고 사진을 올리고 공동 기수를 초대한다.
+ * iOS `BearerProfileFeature`(Figma S10 A~F 깃발 프로필). 프로필을 고치고 사진을 올리고 공동 기수를 초대한다.
  * 읽기 · 사진 업로드 · 저장 · 초대는 각각 하나만 돈다(iOS `cancelInFlight`). 뒤로 가면 업로드를 취소한다.
  *
  * @param profile 코드 등록 응답의 프로필. 없으면 서버에서 읽는다.
@@ -29,11 +29,18 @@ class BearerProfileViewModel(
     profile: BearerFlagProfile?,
     isNewBearer: Boolean,
     private val bearerUseCase: BearerUseCase,
+    isEditMode: Boolean = false,
 ) : ViewModel(),
     OrbitContainerHost<BearerProfileState, BearerProfileState, BearerProfileSideEffect> {
     override val container =
         orbitContainer<BearerProfileState, BearerProfileSideEffect>(
-            BearerProfileState.initial(festivalId = festivalId, flagId = flagId, profile = profile, isNewBearer = isNewBearer),
+            BearerProfileState.initial(
+                festivalId = festivalId,
+                flagId = flagId,
+                profile = profile,
+                isNewBearer = isNewBearer,
+                isEditMode = isEditMode,
+            ),
         )
 
     private val loadJob = AtomicReference<Job?>(null)
@@ -75,6 +82,7 @@ class BearerProfileViewModel(
     }
 
     fun onPlanTapped() = intent {
+        if (state.isSaving) return@intent
         postSideEffect(BearerProfileSideEffect.PlanRequested(festivalId = state.festivalId))
     }
 
@@ -103,7 +111,7 @@ class BearerProfileViewModel(
     }
 
     fun onInviteTapped() = intent {
-        if (state.isInviting) return@intent
+        if (state.isInviting || state.isSaving) return@intent
         reduce { state.copy(isInviting = true) }
         invite()
     }
@@ -204,7 +212,13 @@ class BearerProfileViewModel(
                         saveFailed(BearerError.Unavailable())
                         return@intent
                     }
-                reduce { state.copy(isSaving = false, isPlanEdited = false, savedProfile = profile) }
+                if (state.isEditMode) {
+                    // 닫힘 효과를 처리하기 전에도 재저장과 새 계획 선택을 막는다.
+                    reduce { state.copy(isPlanEdited = false) }
+                    postSideEffect(BearerProfileSideEffect.CloseRequested)
+                } else {
+                    reduce { state.copy(isSaving = false, isPlanEdited = false, savedProfile = profile) }
+                }
             }
         saveJob.getAndSet(job)?.cancel()
     }

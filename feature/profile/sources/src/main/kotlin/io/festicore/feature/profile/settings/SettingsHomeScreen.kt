@@ -41,6 +41,8 @@ fun SettingsHomeScreen(
     account: AccountState,
     onBackRequested: () -> Unit,
     onAppearanceRequested: () -> Unit,
+    onHomeWidgetRequested: () -> Unit,
+    onNotificationsRequested: () -> Unit = {},
     onAccountRequested: () -> Unit,
     onNoticeListRequested: () -> Unit,
     onLegalDocumentRequested: (WebPage) -> Unit,
@@ -52,6 +54,8 @@ fun SettingsHomeScreen(
         when (sideEffect) {
             SettingsHomeSideEffect.BackRequested -> onBackRequested()
             SettingsHomeSideEffect.AppearanceRequested -> onAppearanceRequested()
+            SettingsHomeSideEffect.NotificationsRequested -> onNotificationsRequested()
+            SettingsHomeSideEffect.HomeWidgetRequested -> onHomeWidgetRequested()
             SettingsHomeSideEffect.AccountRequested -> onAccountRequested()
             SettingsHomeSideEffect.NoticeListRequested -> onNoticeListRequested()
             is SettingsHomeSideEffect.LegalDocumentRequested -> onLegalDocumentRequested(sideEffect.page)
@@ -74,6 +78,9 @@ fun SettingsHomeScreen(
         modifier = modifier,
         onBackTapped = viewModel::onBackTapped,
         onAppearanceTapped = viewModel::onAppearanceTapped,
+        onAnalyticsTapped = viewModel::onAnalyticsTapped,
+        onHomeWidgetTapped = viewModel::onHomeWidgetTapped,
+        onNotificationsTapped = viewModel::onNotificationsTapped,
         onAccountTapped = viewModel::onAccountTapped,
         onNoticeTapped = viewModel::onNoticeTapped,
         onLegalDocumentTapped = viewModel::onLegalDocumentTapped,
@@ -88,8 +95,8 @@ fun SettingsHomeScreen(
 }
 
 /**
- * 설정 홈(순수 UI). 앱(화면 모드) · 계정(로그인했을 때만) · 정보 그룹과 버전.
- * '알림'(설계 쟁점 M4, P0 전) · '잠금화면'(쟁점 M5, 라이브 액티비티 단계 전) 줄은 숨긴다.
+ * 설정 홈(순수 UI). 앱(화면 모드 · 홈 화면 위젯) · 계정(로그인했을 때만) · 정보 그룹과 버전.
+ * 알림은 서버 설정 편집을 제공한다. Android에 대응하지 않는 잠금화면 줄은 숨긴다.
  *
  * @param appVersion 앱 버전 이름. 없으면 버전 줄을 숨긴다.
  */
@@ -100,6 +107,9 @@ fun SettingsHomeContent(
     modifier: Modifier = Modifier,
     onBackTapped: () -> Unit = {},
     onAppearanceTapped: () -> Unit = {},
+    onAnalyticsTapped: () -> Unit = {},
+    onHomeWidgetTapped: () -> Unit = {},
+    onNotificationsTapped: () -> Unit = {},
     onAccountTapped: () -> Unit = {},
     onNoticeTapped: () -> Unit = {},
     onLegalDocumentTapped: (SettingsLegalDocument) -> Unit = {},
@@ -117,7 +127,21 @@ fun SettingsHomeContent(
             verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP24),
         ) {
             SettingsSection(title = "앱") {
+                FCListRow(label = "알림", onClick = onNotificationsTapped)
+                SettingsRowDivider()
                 FCListRow(label = "화면 모드", value = state.appearanceMode.summary, onClick = onAppearanceTapped)
+                SettingsRowDivider()
+                FCListRow(label = "홈 화면 위젯", onClick = onHomeWidgetTapped)
+            }
+            SettingsSection(title = "선택적 분석·진단") {
+                FCListRow(label = "분석·진단 공유", value = if (state.analyticsEnabled) "켜짐" else "꺼짐", onClick = onAnalyticsTapped)
+                Text(
+                    text = "앱 개선을 위해 Firebase·Mixpanel에 사용 정보, Sentry에 오류·성능 정보를 보내요. " +
+                        "로그인 시 내부 사용자 ID가 연결돼요. 켜지 않아도 앱을 사용할 수 있고 언제든 끌 수 있어요.",
+                    style = FestiCoreTextStyle.baseCaption1Regular.textStyleWithoutLineBox,
+                    color = FestiCoreSemanticColor.labelAssistive.color,
+                    modifier = Modifier.padding(FestiCoreSpacing.paddingP16),
+                )
             }
             if (state.showsAccount) {
                 SettingsSection(title = "계정") {

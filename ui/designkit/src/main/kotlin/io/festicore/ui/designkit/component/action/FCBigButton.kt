@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.festicore.ui.designkit.R
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
@@ -136,8 +135,6 @@ fun FCBigButton(
                 BasicText(
                     text = label,
                     style = FestiCoreTextStyle.baseFootnoteBold.textStyle.copy(color = foreground, textAlign = TextAlign.Center),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

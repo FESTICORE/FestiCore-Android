@@ -117,6 +117,7 @@ fun rememberFlagFlowEntries(
                     FlagDetailScreen(
                         viewModel = detailViewModel,
                         onBack = coordinator::goBack,
+                        onPinChanged = { flagViewModel.refresh() },
                         onLoginRequested = { onLoginRequested(FlagLoginContext.Follow) },
                         onReportLoginRequested = { onLoginRequested(FlagLoginContext.Report) },
                         onTermsAcceptanceRequested = onTermsAcceptanceRequested,

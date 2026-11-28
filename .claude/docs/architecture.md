@@ -4,7 +4,7 @@
 
 ## 앱
 
-- 앱 ID: `io.festiCore.co`(prod), `io.festiCore.co.stage`(stage). iOS 번들 ID와 같은 값을 쓴다.
+- 앱 ID: `io.festiCore.co`(prod), `io.festiCore.co.stage`(stage). 기존 develop 값을 유지하며 Firebase Android 등록과의 일치는 별도로 확인한다.
 - `stage` · `prod` product flavor 두 개만 둔다. iOS `Config/` Stage · Prod와 대응한다.
 
 ## 모듈 배치
@@ -21,7 +21,7 @@ service/{이름}                    API 경로 · 인증 세션 · 분석 등 �
 service/{pack,device,auth}/interface  계약 · 공개 타입 (iOS `Service/*/Interface`)
 service/{pack,device,auth}/sources    구현 · di/ (iOS `Service/*/Sources`)
 service/serviceassembly           service Koin 목록 (iOS `Service/ServiceAssembly`)
-service/analytics/{interface,sources}  event/ · usecase/(AnalyticsUseCase) 계약 / configuration/ · usecase/ · di/ Mixpanel 구현 (iOS `Service/FestiCoreAnalytics`, Sentry 제외)
+service/analytics/{interface,sources}  event/ · usecase/(AnalyticsUseCase) 계약 / configuration/ · usecase/ · di/ Mixpanel 구현 (iOS `Service/FestiCoreAnalytics`, Sentry 초기화 포함)
 service/config                    Firebase 초기화 `FirebaseConfiguration` (iOS `Service/FestiCoreConfig`, Koin 등록 없음)
 core/{이름}                       network · storage · logger · utility
 core/network/{interface,sources}  요청 함수 · 오류 · JSON · WebSocket 계약 / HttpClient · WebSocket 구현 · di/
@@ -49,12 +49,12 @@ app → service/auth/interface · core/storage/interface · core/*  (루트 Coor
 app → feature/onboarding  (interface 없는 단일 feature, iOS처럼 app이 직접 의존)
 app → service/config  (`FestiCoreApplication.onCreate`가 `FirebaseConfiguration.configure`를 부른다)
 app → service/analytics/{interface,sources}  (`FestiCoreAnalyticsConfiguration.configure` · 계정 reset)
-service/analytics/sources → service/analytics/interface · core/logger · mixpanel-android
+service/analytics/sources → service/analytics/interface · core/logger · mixpanel-android · sentry-android
 *assembly → service/*/sources · core/{network,storage}/sources
 service/auth/sources · service/pack/sources → core/network/sources (createFestiCoreHttpClient · createFestiCoreWebSocketClient)
 ```
 
-- `service/{pack,device,auth,analytics}` · `core/{network,storage}`의 `sources`는 main(`implementation`/`api`)으로 `*assembly` · app · `service/auth/sources` · `service/pack/sources`만 의존한다. 테스트는 `testImplementation(...:sources)` 허용(`check-boundaries`). 패키지는 interface · sources가 같은 `io.festicore.service.pack` 등을 같이 쓴다. `core/storage`는 iOS 폴더처럼 `io.festicore.core.storage.{secure,shared,onboarding}`로 나누고, 구현 파일 이름은 `DataStore<X>.kt`다.
+- `service/{pack,device,auth,analytics}` · `core/{network,storage}`의 `sources`는 main(`implementation`/`api`)으로 `*assembly` · app · `service/auth/sources` · `service/pack/sources`만 의존한다. 테스트는 `testImplementation(...:sources)` 허용(`check-boundaries`). 패키지는 interface · sources가 같은 `io.festicore.service.pack` 등을 같이 쓴다. `core/storage`는 iOS 폴더처럼 `io.festiCore.core.storage.{secure,shared,onboarding}`로 나누고, 구현 파일 이름은 `DataStore<X>.kt`다.
 - feature는 service · core 중 `:service:analytics:interface` · `:core:location:interface` · `:core:storage:interface`만 의존한다(iOS feature가 `FestiCoreAnalyticsInterface` · `FestiCoreLocationInterface` · `FestiCoreStorageInterface`를 직접 import하는 것과 같다, 설계 R6 쟁점 F2, `check-boundaries`). 위치 API(`android.location` · `androidx.core.location`)는 `core/location/sources`에서만 쓴다.
 - interface 없는 단일 feature 모듈(`feature/onboarding`)은 app · `feature/featureassembly`만 의존한다(`check-boundaries`).
 
@@ -88,8 +88,8 @@ service/auth/sources · service/pack/sources → core/network/sources (createFes
 | `Service/API` | `service/api` | 기능 폴더(`auth` · `crew` · `festival` · `flag` · `notice` · `usernotification`)마다 경로 `<X>Api`(iOS `<X>API`, 예: `crew/CrewApi`), `base/ApiAuthorization.kt`(`bearerAuthorization` · `AuthSessionError`). 응답 DTO는 `domain/*/sources/model/dto`로 옮겼고, 인증 응답 `AuthDto.kt`만 `service/auth`가 쓰므로 루트 패키지 `io.festicore.service.api`에 남는다 |
 | `Service/APIEndpoint` | `service/apiendpoint` | 같은 기능 폴더에 Ktor 요청 `<X>Request`(iOS `<X>Request`, 예: `crew/CrewRequest`)와 요청 본문 `<X>RequestBody.kt`(한 클래스면 클래스 이름 파일, 예: `festival/FestivalScheduleReplaceBody.kt`), 쓰기 요청 멱등 키 `common/IdempotencyKey.kt`. 축제 요청은 iOS처럼 팩 요청 `festival/FestivalPackRequest`만 두고, 목록 · 상세 · 라이브 · 깃발 목록 · 공식 소식 · 내 일정 요청은 `service/festivalcatalog`의 `endpoint/`에 둔다. Koin은 `serviceApiEndpointModule`. `service/api`를 `api`로 노출한다 |
 | `Service/FestiCoreAuth` | `service/auth/{interface,sources}` | 세션 · 토큰 갱신. interface: `AuthSession` · `SessionExpiry` · `SessionExpiryEvents`(iOS `AuthSessionExpiryClient`). sources: `AuthSessionImpl` · `SessionExpiryEventsImpl` · `CredentialStore` · `TokenRefresher` · 인증 플러그인 · `serviceAuthModule` |
-| `Service/FestiCoreAnalytics` | `service/analytics/{interface,sources}` | 이벤트 · `AnalyticsUseCase` 계약은 iOS와 같다. 구현은 Mixpanel만(사용자 결정: Sentry 제외 — `SentryConfiguration` · `SentryLogSink` · `FestiCoreTracedView` 없음). 토큰 `BuildConfig.MIXPANEL_TOKEN`(`FESTICORE_MIXPANEL_TOKEN`, 없으면 Mixpanel을 만들지 않는다). 규칙 `service/analytics/.spec/analytics.md` |
-| `Service/FestiCoreConfig` | `service/config` | `FirebaseConfiguration.configure(context, FirebaseValues)`. iOS는 `GoogleService-Info.plist`가 없으면 건너뛰고, Android는 `google-services` 플러그인 · `google-services.json` 없이 `BuildConfig.FIREBASE_{API_KEY,APP_ID,PROJECT_ID,SENDER_ID}`(flavor별 `FESTICORE_FIREBASE_{STAGE,PROD}_*`, `local.properties` · 환경 변수, 없으면 빈 값)가 모두 있을 때만 `FirebaseApp.initializeApp`, 하나라도 비면 로그 한 줄만 남긴다. 의존은 `firebase-bom` · `firebase-common`(Apache-2.0). 초기화는 이 모듈에서만(`check-boundaries`) |
+| `Service/FestiCoreAnalytics` | `service/analytics/{interface,sources}` | 이벤트 · `AnalyticsUseCase` 계약은 iOS와 같다. Mixpanel과 `SentryConfiguration` 초기화를 포함한다. Sentry 사용자 식별·초기화, `user.action` breadcrumb/count 및 NETWORK를 제외한 Logs sink를 연결한다. 화면 추적 래퍼와 R8 매핑 업로드는 아직 없다. 토큰 `BuildConfig.MIXPANEL_TOKEN`(`FESTICORE_MIXPANEL_TOKEN`, 없으면 Mixpanel을 만들지 않는다). 규칙 `service/analytics/.spec/analytics.md` |
+| `Service/FestiCoreConfig` | `service/config` | `FirebaseConfiguration.configure(context, FirebaseValues)`. iOS는 `GoogleService-Info.plist`가 없으면 건너뛰고, Android는 `google-services` 플러그인 · `google-services.json` 없이 `BuildConfig.FIREBASE_{API_KEY,APP_ID,PROJECT_ID,SENDER_ID}`(flavor별 `FESTICORE_FIREBASE_{STAGE,PROD}_*`, `local.properties` · 환경 변수, 없으면 빈 값)가 모두 있을 때만 `FirebaseApp.initializeApp`, 하나라도 비면 로그 한 줄만 남긴다. 의존은 `firebase-bom` · `firebase-common`(Apache-2.0). 초기화는 이 모듈에서만(`check-boundaries`). Analytics SDK 호출은 `service/analytics/sources`이며 완전한 flavor 값이 있을 때 빌드에서 기본 앱 리소스도 생성 |
 | `Service/FestiCoreDevice` · `FestiCorePack` | `service/{device,pack}/{interface,sources}` | `service/device`: 설치 기기 ID(interface `DeviceInstallationService`, sources `DeviceInstallationServiceImpl`, `SecureStorage` 키 `deviceID`)만 옮겼다. 서버 기기 등록은 아직. `service/pack`: 팩 WebSocket 동기화(interface `PackSyncService.kt` 계약 · 결과, `PackSyncError.kt` 오류, sources `NetworkPackSyncService` · `PackWire` · `ReconnectBackoff`)와 축제별 JSON 파일 저장(`PackCache`, `AtomicFile`, `filesDir/festicore/packs/{id}.json`). `servicePackModule(baseUrl)`. 규칙은 `service/pack/.spec/pack-sync.md` |
 | `Service/FestiCoreFestivalCatalog` | `service/festivalcatalog` | `domain/festival/sources/service`의 계약 구현 `NetworkFestivalCatalogService`(목록 조회 · 전체 갱신 · 상세 `festivalDetail`) · `NetworkFestivalLiveBoardService`(세션별 ETag · 429 대기 · 마지막 조회 결과(`cachedFetch`) 메모리 캐시) · `NetworkFestivalOfficialNewsService` · `NetworkFestivalScheduleService`(내 일정 읽기 · 바꾸기) · `NetworkFestivalFlagFollowService`, JSON 파일 캐시 `storage/FestivalCatalogCache`(`AtomicFile`, `filesDir/festicore/festival-catalog.json`) · 썸네일 주소 결합 `url/FestivalImageUrlResolver` · 요청 `endpoint/`(`FestivalListRequest` · `FestivalDetailRequest` · `FestivalLiveBoardRequest`(라이브 · 깃발 목록) · `FestivalOfficialNewsRequest` · `FestivalScheduleRequest`, iOS `Sources/Endpoint`). `domain/festival/sources`(계약 · DTO) · `service/auth` · `service/device` 의존. 크루 · 깃발 상세 · 신고 · 대표 깃발 요청은 iOS처럼 `FestivalCrewRepositoryImpl` · `FestivalFlagDetailRepositoryImpl`이 `CrewRequest` · `FlagRequest`를 직접 부른다. 캐시 규칙은 `service/festivalcatalog/.spec/catalog-cache.md`, 라이브 규칙은 `domain/festival/.spec/live-board.md` |
 | `Core/FestiCoreNetwork` | `core/network/{interface,sources}` | Ktor. interface: `response/BaseResponse` · `error/NetworkError` · `endpoint/`(`festiCoreRequest` · `festiCoreExchange`) · `websocket/`(`FestiCoreWebSocket` · `FestiCoreWebSocketClient` · `WebSocketError`) · 루트 `FestiCoreJson`. sources: `client/createFestiCoreHttpClient` · `websocket/createFestiCoreWebSocketClient`(Ktor `WebSockets` 플러그인 + OkHttp 엔진) · `di/coreNetworkModule`. 폴더 이름은 iOS `Interface` · `Sources` 하위 폴더와 같다 |

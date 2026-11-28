@@ -6,6 +6,8 @@ import io.festicore.feature.profile.appearance.AppearanceMode
 import io.festicore.feature.profile.appearance.AppearanceModeSettings
 import io.festicore.feature.web.LegalDocumentUrls
 import io.festicore.feature.web.WebPage
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
+import io.festicore.service.analytics.usecase.PreviewAnalyticsUseCase
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
 
@@ -19,10 +21,13 @@ class SettingsHomeViewModel(
     initialAccount: AccountState,
     private val legalDocumentUrls: LegalDocumentUrls,
     private val appearanceModeSettings: AppearanceModeSettings,
+    private val analytics: AnalyticsUseCase = PreviewAnalyticsUseCase,
 ) : ViewModel(),
     OrbitContainerHost<SettingsHomeState, SettingsHomeState, SettingsHomeSideEffect> {
     override val container =
-        orbitContainer<SettingsHomeState, SettingsHomeSideEffect>(SettingsHomeState(account = initialAccount)) {
+        orbitContainer<SettingsHomeState, SettingsHomeSideEffect>(
+            SettingsHomeState(account = initialAccount, analyticsEnabled = analytics.isCollectionEnabled),
+        ) {
             appearanceModeSettings.appearanceMode.collect { onAppearanceModeChanged(it) }
         }
 
@@ -35,7 +40,18 @@ class SettingsHomeViewModel(
         if (lostSession) postSideEffect(SettingsHomeSideEffect.SessionLost)
     }
 
+    fun onAnalyticsTapped() = intent {
+        val saved = analytics.setCollectionEnabled(!state.analyticsEnabled)
+        reduce {
+            state.copy(analyticsEnabled = analytics.isCollectionEnabled, alert = if (saved) null else SettingsHomeAlert.AnalyticsSaveFailed)
+        }
+    }
+
     fun onBackTapped() = intent { postSideEffect(SettingsHomeSideEffect.BackRequested) }
+
+    fun onNotificationsTapped() = intent { postSideEffect(SettingsHomeSideEffect.NotificationsRequested) }
+
+    fun onHomeWidgetTapped() = intent { postSideEffect(SettingsHomeSideEffect.HomeWidgetRequested) }
 
     fun onAppearanceTapped() = intent { postSideEffect(SettingsHomeSideEffect.AppearanceRequested) }
 

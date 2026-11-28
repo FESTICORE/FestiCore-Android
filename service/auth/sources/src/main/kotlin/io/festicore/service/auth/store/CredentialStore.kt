@@ -2,6 +2,10 @@ package io.festicore.service.auth.store
 
 import io.festicore.core.storage.secure.SecureStorage
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
@@ -30,6 +34,13 @@ internal class CredentialStore(private val storage: SecureStorage) {
     private val mutex = Mutex()
     private var loaded = false
     private var cached: Session? = null
+    private val identities = MutableStateFlow<String?>(null)
+
+    /** No initial emission until disk access succeeds. */
+    fun sessionIdentities(): Flow<String?> = flow {
+        current()
+        emitAll(identities)
+    }
 
     suspend fun current(): Session? = mutex.withLock { load() }
 
@@ -82,6 +93,7 @@ internal class CredentialStore(private val storage: SecureStorage) {
         if (raw != null && session == null) storage.remove(KEY)
         cached = session
         loaded = true
+        identities.value = session?.sessionId
         return session
     }
 
@@ -89,12 +101,14 @@ internal class CredentialStore(private val storage: SecureStorage) {
         storage.write(KEY, json.encodeToString(session))
         cached = session
         loaded = true
+        identities.value = session.sessionId
     }
 
     private suspend fun remove() {
         storage.remove(KEY)
         cached = null
         loaded = true
+        identities.value = null
     }
 
     private companion object {

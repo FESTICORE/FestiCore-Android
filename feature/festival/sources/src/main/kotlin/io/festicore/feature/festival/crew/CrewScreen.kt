@@ -1,21 +1,16 @@
 package io.festicore.feature.festival.crew
 
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -37,7 +33,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -75,6 +73,7 @@ import io.festicore.ui.designkit.component.skeleton.FCSkeletonShape
 import io.festicore.ui.designkit.component.skeleton.FCSkeletonView
 import io.festicore.ui.designkit.component.toast.FCToast
 import io.festicore.ui.designkit.component.toast.FCToastItem
+import io.festicore.ui.designkit.component.toast.FCToastOverlay
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
@@ -92,8 +91,6 @@ private val EmptyIconSize = 24.dp
 private val SkeletonHeight = 322.dp
 private val BorderWidth = 1.dp
 private const val INACTIVE_OPACITY = 0.6f
-private val ToastTop = 30.dp
-private const val TOAST_MILLIS = 250
 private val GatherIconSize = 20.dp
 
 /** Figma S07 F 응답 버튼 모서리 10. 같은 값의 Radius 토큰이 없어 화면 값으로 둔다(iOS와 같음). */
@@ -198,6 +195,8 @@ fun CrewContent(
     onShareTapped: (String) -> Unit = {},
 ) {
     val presentation = CrewPresentation.of(state, state.now)
+    var statusPanelHeight by remember { mutableIntStateOf(0) }
+    val occupiedBottom = PaddingValues(bottom = with(LocalDensity.current) { statusPanelHeight.toDp() })
     Box(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
         Column(modifier = Modifier.fillMaxSize()) {
             FCTopBar(
@@ -210,36 +209,46 @@ fun CrewContent(
                 onBack = onBackTapped,
                 onTrailingAction = if (state.isLeader) onMenuTapped else null,
             )
-            Column(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(FestiCoreSpacing.paddingP16),
-                verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP16),
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth()
+                    .then(if (!presentation.isArchived) Modifier.consumeWindowInsets(occupiedBottom) else Modifier),
             ) {
-                if (presentation.isArchived) {
-                    // Figma S07 I: 끝난 크루는 안내 띠와 기록만 둔다.
-                    val festival = state.festivalName?.let { "${it.withIGa()} " } ?: "페스티벌이 "
-                    FCBanner(text = "${festival}끝났어요 · 기록만 볼 수 있어요", icon = R.drawable.ic_circle_info_16, showsChevron = false, onClick = {
-                    })
-                    SummaryText(presentation.summary, Modifier.fillMaxWidth())
-                } else {
-                    presentation.gather?.let { GatherBanner(it, onGatherResponseTapped) }
-                    SummaryRow(presentation.summary, state.inviteUrl, onShareTapped)
-                    FCButton(
-                        title = presentation.gatherTitle,
-                        isEnabled = presentation.canGather,
-                        isFullWidth = true,
-                        onClick = onGatherTapped,
-                    )
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(FestiCoreSpacing.paddingP16),
+                    verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP16),
+                ) {
+                    if (presentation.isArchived) {
+                        // Figma S07 I: 끝난 크루는 안내 띠와 기록만 둔다.
+                        val festival = state.festivalName?.let { "${it.withIGa()} " } ?: "페스티벌이 "
+                        FCBanner(
+                            text = "${festival}끝났어요 · 기록만 볼 수 있어요",
+                            icon = R.drawable.ic_circle_info_16,
+                            showsChevron = false,
+                            onClick = {},
+                        )
+                        SummaryText(presentation.summary, Modifier.fillMaxWidth())
+                    } else {
+                        presentation.gather?.let { GatherBanner(it, onGatherResponseTapped) }
+                        SummaryRow(presentation.summary, state.inviteUrl, onShareTapped)
+                        FCButton(
+                            title = presentation.gatherTitle,
+                            isEnabled = presentation.canGather,
+                            isFullWidth = true,
+                            onClick = onGatherTapped,
+                        )
+                    }
+                    Members(state, presentation, onRetryTapped, onShareTapped)
                 }
-                Members(state, presentation, onRetryTapped, onShareTapped)
+                CrewToastView(state.toast, Modifier.align(Alignment.BottomCenter))
             }
-            if (!presentation.isArchived) StatusPanel(state, onStateTapped)
+            if (!presentation.isArchived) {
+                StatusPanel(state, onStateTapped, Modifier.onSizeChanged { statusPanelHeight = it.height })
+            }
         }
-        CrewToastView(state.toast, Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -533,8 +542,12 @@ private fun MemberRow(member: CrewPresentation.Member) {
 
 /** Figma S07 My Status: 위 12 · 아래 8 · 좌우 16, 간격 10, 안내 Caption1/Medium. */
 @Composable
-private fun StatusPanel(state: CrewState, onStateTapped: (FestivalCrewState) -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth().background(FestiCoreSemanticColor.backgroundElevated.color)) {
+private fun StatusPanel(
+    state: CrewState,
+    onStateTapped: (FestivalCrewState) -> Unit,
+    modifier: Modifier,
+) {
+    Box(modifier = modifier.fillMaxWidth().background(FestiCoreSemanticColor.backgroundElevated.color)) {
         Column(
             modifier =
                 Modifier
@@ -580,17 +593,12 @@ private fun stateIcon(crewState: FestivalCrewState): Int = when (crewState) {
     FestivalCrewState.LEAVING -> R.drawable.ic_route_24
 }
 
-/** 위에서 내려오는 토스트(위 30). 만료(2초)는 ViewModel이 맡는다. 사라지는 동안 마지막 문구를 둔다. */
+/** 아래에서 올라오는 토스트. 만료(2초)는 ViewModel이 맡는다. 사라지는 동안 마지막 문구를 둔다. */
 @Composable
 private fun CrewToastView(toast: CrewToast?, modifier: Modifier) {
     var last by remember { mutableStateOf(toast) }
     if (toast != null) last = toast
-    AnimatedVisibility(
-        visible = toast != null,
-        modifier = modifier.padding(top = ToastTop),
-        enter = slideInVertically(tween(TOAST_MILLIS, easing = EaseOut)) { -it } + fadeIn(tween(TOAST_MILLIS, easing = EaseOut)),
-        exit = slideOutVertically(tween(TOAST_MILLIS, easing = EaseOut)) { -it } + fadeOut(tween(TOAST_MILLIS, easing = EaseOut)),
-    ) {
+    FCToastOverlay(visible = toast != null, modifier = modifier) {
         last?.let { FCToast(toastItem(it)) }
     }
 }

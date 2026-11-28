@@ -235,6 +235,7 @@ private fun TimeRow(time: String, state: FCSetBlockState) {
                 ),
                 maxLines = 1,
                 softWrap = false,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     } else {

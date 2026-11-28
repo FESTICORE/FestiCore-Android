@@ -1,5 +1,6 @@
 package io.festicore.feature.timetable.schedulepick
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,9 +61,16 @@ fun SchedulePickScreen(
     route: TimetableRoute.SchedulePick,
     onResult: (SchedulePickResult) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SchedulePickViewModel = koinViewModel { parametersOf(route) },
+    saveTimeoutMillis: Long? = null,
+    viewModel: SchedulePickViewModel = koinViewModel { parametersOf(route, saveTimeoutMillis) },
+    onNavigationBlocked: (Boolean) -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val state by viewModel.collectAsState()
+    if (onBack != null) {
+        BackHandler { if (!viewModel.container.stateFlow.value.isSaving) onBack() }
+    }
+    LaunchedEffect(state.isSaving) { onNavigationBlocked(state.isSaving) }
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
             is SchedulePickSideEffect.Finished -> onResult(sideEffect.result)
@@ -96,7 +105,11 @@ fun SchedulePickContent(
                 .background(FestiCoreSemanticColor.backgroundElevated.color)
                 .windowInsetsPadding(WindowInsets.statusBars),
     ) {
-        FCStepHeader(step = 1, onLater = onLaterTapped)
+        FCStepHeader(
+            step = 1,
+            laterTitle = if (state.isSaving) "저장하는 중" else "나중에 할게요",
+            onLater = { if (!state.isSaving) onLaterTapped() },
+        )
         Column(
             modifier =
                 Modifier
@@ -206,7 +219,7 @@ private fun BottomBar(
                 ),
             horizontalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8),
         ) {
-            FCButton(title = "건너뛰기", style = FCButtonStyle.Ghost, onClick = onSkipTapped)
+            FCButton(title = "건너뛰기", style = FCButtonStyle.Ghost, isEnabled = !state.isSaving, onClick = onSkipTapped)
             FCButton(
                 title = if (state.isSaving) "저장하는 중" else "다음 · ${state.selectedSetIds.size}개 선택",
                 modifier = Modifier.weight(1f),

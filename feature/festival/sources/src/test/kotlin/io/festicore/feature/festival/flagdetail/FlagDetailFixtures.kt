@@ -12,6 +12,7 @@ import java.time.ZoneOffset
 internal class FakeFlagDetailUseCase(
     var detail: suspend (String) -> FestivalFlagDetail = { FlagDetailFixtures.detail() },
     var report: suspend (String, FestivalFlagReportReason) -> Unit = { _, _ -> },
+    var pin: suspend (String?) -> String? = { it },
 ) : FestivalFlagDetailUseCase {
     val reports = mutableListOf<FestivalFlagReportReason>()
 
@@ -22,7 +23,12 @@ internal class FakeFlagDetailUseCase(
         report.invoke(flagId, reason)
     }
 
-    override suspend fun setPinnedFlag(flagId: String?): String? = error("상세 화면은 대표 깃발을 바꾸지 않는다")
+    val pins = mutableListOf<String?>()
+
+    override suspend fun setPinnedFlag(flagId: String?): String? {
+        pins += flagId
+        return pin(flagId)
+    }
 }
 
 /** 테스트가 시각을 옮기는 시계. */

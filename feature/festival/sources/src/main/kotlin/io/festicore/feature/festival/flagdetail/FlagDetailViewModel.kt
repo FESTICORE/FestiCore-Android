@@ -6,6 +6,7 @@ import io.festicore.domain.festival.entity.FestivalFlagDetail
 import io.festicore.domain.festival.entity.FestivalFlagDetailError
 import io.festicore.domain.festival.entity.FestivalFlagFollowError
 import io.festicore.domain.festival.entity.FestivalFlagFollowResult
+import io.festicore.domain.festival.entity.FestivalFlagPinError
 import io.festicore.domain.festival.entity.FestivalFlagReportError
 import io.festicore.domain.festival.entity.FestivalFlagReportReason
 import io.festicore.domain.festival.flagdetail.FestivalFlagDetailUseCase
@@ -26,7 +27,7 @@ import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 /**
  * S05 깃발 상세(iOS `FestivalFlagDetailFeature`). 함수 이름은 iOS `Action.View`와 같고, 순서는 view → async → inner를 따른다.
- * 조회 · 시계 · 팔로우 · 신고 · 토스트 만료는 각각 하나만 돈다(iOS `cancelInFlight`). 잠금화면 대표 깃발(pin)은 라이브 액티비티 단계로 뺐다.
+ * 조회 · 시계 · 팔로우 · 대표 깃발 · 신고 · 토스트 만료는 각각 하나만 돈다(iOS `cancelInFlight`).
  * [clock] · [sleep]은 테스트에서 시각과 기다림을 조절하려고 주입한다.
  */
 class FlagDetailViewModel(
@@ -47,6 +48,8 @@ class FlagDetailViewModel(
     private val clockJob = AtomicReference<Job?>(null)
     private val followJob = AtomicReference<Job?>(null)
     private val reportJob = AtomicReference<Job?>(null)
+    private val pinJob = AtomicReference<Job?>(null)
+    private var pinGeneration = 0
     private val toastJob = AtomicReference<Job?>(null)
 
     // MARK: - View
@@ -66,8 +69,11 @@ class FlagDetailViewModel(
 
     /** 닫은 화면에 늦은 조회 · 팔로우 · 신고 결과나 로그인 요청이 오지 않게 모두 멈춘다. */
     fun onDisappeared() = intent {
-        listOf(loadJob, clockJob, followJob, reportJob).forEach { it.getAndSet(null)?.cancel() }
-        reduce { state.copy(loadGeneration = state.loadGeneration + 1, isFollowPending = false, isReportPending = false) }
+        listOf(loadJob, clockJob, followJob, reportJob, pinJob).forEach { it.getAndSet(null)?.cancel() }
+        pinGeneration++
+        reduce {
+            state.copy(loadGeneration = state.loadGeneration + 1, isFollowPending = false, isReportPending = false, isPinPending = false)
+        }
     }
 
     fun onRetryTapped() = intent {
@@ -86,8 +92,18 @@ class FlagDetailViewModel(
             postSideEffect(FlagDetailSideEffect.LoginRequested)
             return@intent
         }
-        reduce { state.copy(isFollowPending = true) }
+        pinJob.getAndSet(null)?.cancel()
+        pinGeneration++
+        reduce { state.copy(isFollowPending = true, isPinPending = false) }
         follow(!state.isFollowing)
+    }
+
+    fun onWidgetPinChanged(isOn: Boolean) = intent {
+        if (!state.showsWidgetPin || state.isPinPending || state.isFollowPending || state.isOffline || isOn == state.isPinned) return@intent
+        val generation = ++pinGeneration
+        loadJob.getAndSet(null)?.cancel()
+        reduce { state.copy(isPinPending = true, loadGeneration = state.loadGeneration + 1) }
+        setPinned(isOn, generation)
     }
 
     /** 상세를 받은 뒤에만 공유한다. */
@@ -115,12 +131,17 @@ class FlagDetailViewModel(
         // 다른 계정의 팔로우 값이 남지 않게 비우고 새 계정으로 다시 불러온다.
         followJob.getAndSet(null)?.cancel()
         reportJob.getAndSet(null)?.cancel()
+        pinJob.getAndSet(null)?.cancel()
+        pinGeneration++
         reduce {
             state.copy(
                 context = context,
                 followOverride = null,
                 isFollowPending = false,
                 isReportPending = false,
+                isPinPending = false,
+                pinOverride = null,
+                toast = null,
                 reportSheet = null,
                 canTransferFestival = false,
                 isMenuPresented = false,
@@ -222,6 +243,37 @@ class FlagDetailViewModel(
         followJob.getAndSet(job)?.cancel()
     }
 
+    private suspend fun setPinned(isOn: Boolean, generation: Int) = subIntent {
+        val requestedId = if (isOn) state.flagId else null
+        val job = intent {
+            val result = try {
+                Result.success(detailUseCase.setPinnedFlag(requestedId))
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Exception) {
+                Result.failure(error)
+            }
+            onPinFinished(generation, result)
+        }
+        pinJob.getAndSet(job)?.cancel()
+    }
+
+    internal fun onPinFinished(generation: Int, result: Result<String?>) = intent {
+        if (generation != pinGeneration || !state.isPinPending || !state.showsWidgetPin) return@intent
+        if (result.isSuccess) {
+            reduce { state.copy(isPinPending = false, pinOverride = result.getOrNull() == state.flagId) }
+            postSideEffect(FlagDetailSideEffect.PinChanged)
+        } else {
+            reduce { state.copy(isPinPending = false) }
+            showToast(FlagDetailToast.PinFailed)
+            when (result.exceptionOrNull()) {
+                is FestivalFlagPinError.LoginRequired -> postSideEffect(FlagDetailSideEffect.LoginRequested)
+                is FestivalFlagPinError.TermsRequired -> postSideEffect(FlagDetailSideEffect.TermsAcceptanceRequested)
+                else -> Unit
+            }
+        }
+    }
+
     private suspend fun report(reason: FestivalFlagReportReason) = subIntent {
         val flagId = state.flagId
         val job =
@@ -284,7 +336,14 @@ class FlagDetailViewModel(
     ) = intent {
         reduce {
             if (generation != state.loadGeneration) return@reduce state
-            state.copy(content = FlagDetailContent.Loaded(detail), lastLoadedAt = at, now = at, isOffline = false, followOverride = null)
+            state.copy(
+                content = FlagDetailContent.Loaded(detail),
+                lastLoadedAt = at,
+                now = at,
+                isOffline = false,
+                followOverride = null,
+                pinOverride = if (!state.isPinPending && detail.isPinned != null) null else state.pinOverride,
+            )
         }
     }
 
@@ -325,6 +384,7 @@ class FlagDetailViewModel(
         reduce {
             state.copy(
                 isFollowPending = false,
+                pinOverride = null,
                 followOverride = FlagDetailFollowOverride(isFollowing = response.isFollowing, followerCount = response.followerCount),
                 loadGeneration = state.loadGeneration + 1,
             )

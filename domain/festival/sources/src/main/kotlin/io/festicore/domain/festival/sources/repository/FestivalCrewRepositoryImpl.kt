@@ -20,6 +20,8 @@ import io.festicore.domain.festival.sources.model.mapper.toFestivalCrewError
 import io.festicore.domain.festival.sources.model.mapper.toFestivalCrewGatherError
 import io.festicore.domain.festival.sources.model.mapper.toFestivalCrewGatherReplyError
 import io.festicore.domain.festival.sources.model.mapper.toFestivalCrewLeaveError
+import io.festicore.domain.festival.sources.widget.FestivalWidgetRepository
+import io.festicore.domain.festival.sources.widget.widgetAttempt
 import io.festicore.service.api.base.AuthSessionError
 import io.festicore.service.apiendpoint.crew.CrewCreateBody
 import io.festicore.service.apiendpoint.crew.CrewGatherBody
@@ -40,6 +42,7 @@ internal class FestivalCrewRepositoryImpl(
     private val api: CrewRequest,
     private val currentSessionId: suspend () -> String? = { null },
     private val now: () -> Instant = Instant::now,
+    private val widget: FestivalWidgetRepository? = null,
     private val currentUserId: () -> String?,
 ) : FestivalCrewRepository {
     override suspend fun gather(crewId: String, zoneId: String) = request(Throwable::toFestivalCrewGatherError) {
@@ -53,7 +56,7 @@ internal class FestivalCrewRepositoryImpl(
         }
     }
 
-    override suspend fun detail(crewId: String): FestivalCrew = request {
+    override suspend fun detail(crewId: String): FestivalCrew = request(updatesWidget = false) {
         api.detail<CrewDto>(crewId, sessionId()).toDomain().also { if (it.id != crewId) throw FestivalCrewError.InvalidResponse() }
     }
 
@@ -92,7 +95,9 @@ internal class FestivalCrewRepositoryImpl(
 
     override suspend fun dissolve(crewId: String) = request { api.dissolve(crewId, sessionId()) }
 
-    override suspend fun invite(code: String): FestivalCrewInvite = request { api.invite<CrewInviteDto>(code).toDomain(code) }
+    override suspend fun invite(code: String): FestivalCrewInvite = request(updatesWidget = false) {
+        api.invite<CrewInviteDto>(code).toDomain(code)
+    }
 
     override suspend fun join(inviteCode: String): FestivalCrew = request {
         api.join<CrewDto>(CrewJoinBody(inviteCode), sessionId()).toDomain()
@@ -114,8 +119,13 @@ internal class FestivalCrewRepositoryImpl(
 
     private suspend fun sessionId(): String = currentSessionId() ?: throw AuthSessionError.NotAuthenticated()
 
-    private inline fun <T> request(map: (Throwable) -> Throwable = Throwable::toFestivalCrewError, block: () -> T): T = try {
-        block()
+    private suspend inline fun <T> request(
+        map: (Throwable) -> Throwable = Throwable::toFestivalCrewError,
+        updatesWidget: Boolean = true,
+        block: () -> T,
+    ): T = try {
+        val request = if (updatesWidget) widgetAttempt { widget?.capture() }.value else null
+        block().also { if (request != null) widgetAttempt { widget?.crewChanged(request) } }
     } catch (e: Exception) {
         throw map(e)
     }

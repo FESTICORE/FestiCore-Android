@@ -14,6 +14,7 @@ import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateState
 import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateStep
 import io.festicore.feature.festival.liveboard.crewgather.CrewGatherContent
 import io.festicore.feature.festival.liveboard.crewgather.CrewGatherState
+import io.festicore.ui.designkit.component.modal.FCSheet
 import java.time.Instant
 
 // 프리뷰 전용 가짜 값.
@@ -88,7 +89,13 @@ private fun CrewLoadingPreview() {
 @Preview(name = "Crew · 크루장 메뉴")
 @Composable
 private fun CrewMenuPreview() {
-    CrewMenuContent(menu = CrewMenuState(crewName = "락린이들", members = listOf(CrewMenuState.Member("user_b", "준호"))))
+    CrewContent(state = PreviewState)
+    FCSheet(
+        item = CrewMenuState(crewName = "락린이들", members = listOf(CrewMenuState.Member("user_b", "준호"))),
+        onDismissRequest = {},
+    ) { menu ->
+        CrewMenuContent(menu = menu)
+    }
 }
 
 @Preview(name = "CrewCreate · 이름")

@@ -43,6 +43,8 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.bearer.entity.BearerFlagProfile
@@ -203,7 +205,7 @@ fun BearerProfileContent(
 
 @Composable
 private fun ColumnScope.FormContent(state: BearerProfileState, callbacks: BearerProfileCallbacks) {
-    FCTopBar(style = FCTopBarStyle.Back, title = "깃발 프로필", onBack = callbacks.onBackTapped)
+    FCTopBar(style = FCTopBarStyle.Back, title = if (state.isEditMode) "프로필 수정" else "깃발 프로필", onBack = callbacks.onBackTapped)
     if (state.isLoading) {
         LoadingContent(loadFailed = state.loadFailed, onRetryTapped = callbacks.onRetryTapped)
         return
@@ -220,6 +222,7 @@ private fun ColumnScope.FormContent(state: BearerProfileState, callbacks: Bearer
         verticalArrangement = Arrangement.spacedBy(SectionSpacing),
     ) {
         Header(state)
+        if (state.isEditMode) FestivalSection(state)
         PhotoSection(state, callbacks)
         FCTextField(
             text = state.name,
@@ -291,9 +294,28 @@ private fun Header(state: BearerProfileState) {
             style = FestiCoreTextStyle.baseTitle2Bold.textStyle.copy(color = FestiCoreSemanticColor.labelNormal.color),
         )
         BasicText(
-            text = "팔로워에게 보일 깃발 프로필이에요.\n언제든 고칠 수 있어요.",
+            text = if (state.isEditMode) {
+                "팔로워에게 보이는 내 깃발이에요.\n고친 내용은 저장하면 바로 반영돼요."
+            } else {
+                "팔로워에게 보일 깃발 프로필이에요.\n언제든 고칠 수 있어요."
+            },
             style = FestiCoreTextStyle.baseCalloutRegular.textStyle.copy(color = FestiCoreSemanticColor.labelNeutral.color),
         )
+    }
+}
+
+@Composable
+private fun FestivalSection(state: BearerProfileState) {
+    Column(verticalArrangement = Arrangement.spacedBy(GroupSpacing)) {
+        SectionLabel(title = "참여 페스티벌", count = null)
+        BearerZoneButton(
+            name = state.festivalName ?: "참여 페스티벌",
+            isSelected = true,
+            isEnabled = false,
+            modifier = Modifier.semantics { stateDescription = "참여 페스티벌은 바꿀 수 없어요" },
+            onClick = {},
+        )
+        Helper("참여 페스티벌은 바꿀 수 없어요. 다른 페스티벌 깃발은 마이 > '다른 페스티벌 깃발 만들기'에서 새로 만들어요.")
     }
 }
 
@@ -578,12 +600,16 @@ internal fun sampleSize(
 private fun hasRemotePhotoOnly(state: BearerProfileState): Boolean =
     state.uploadedPhotoData == null && state.photoUrl != null && !state.isUploadingPhoto
 
-private fun headerTitle(state: BearerProfileState): String =
-    if (state.isNewBearer) "${state.festivalName ?: "페스티벌"} 기수가 됐어요" else "깃발 프로필을 고쳐요"
+private fun headerTitle(state: BearerProfileState): String = when {
+    state.isEditMode -> "깃발 프로필 수정"
+    state.isNewBearer -> "${state.festivalName ?: "페스티벌"} 기수가 됐어요"
+    else -> "깃발 프로필을 고쳐요"
+}
 
 private fun saveTitle(state: BearerProfileState): String = when {
     state.isUploadingPhoto -> "사진 올리는 중이에요"
     state.isSaving -> "저장하는 중이에요"
+    state.isEditMode -> "저장"
     state.isNewBearer -> "등록하고 기수 시작하기"
     else -> "저장하기"
 }

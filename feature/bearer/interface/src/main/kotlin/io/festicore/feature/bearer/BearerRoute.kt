@@ -22,14 +22,15 @@ sealed interface BearerRoute : NavKey {
     data class Claim(val festivalId: String) : BearerRoute
 
     /**
-     * 깃발 프로필(iOS `profile`, Figma S10 A~E). 코드 등록 응답의 프로필은 경로에 싣지 않고 Coordinator가 ViewModel 인자로 넘긴다(없으면 서버에서 읽는다).
-     * [isNewBearer]는 코드로 막 기수가 된 경우다.
+     * 깃발 프로필(iOS `profile`, Figma S10 A~F). 코드 등록 응답의 프로필은 경로에 싣지 않고 Coordinator가 ViewModel 인자로 넘긴다(없으면 서버에서 읽는다).
+     * [isNewBearer]는 코드로 막 기수가 된 경우다. [isEditMode]는 마이에서 수정 후 바로 닫는 경우다.
      */
     @Serializable
     data class Profile(
         val festivalId: String,
         val flagId: String,
         val isNewBearer: Boolean = false,
+        val isEditMode: Boolean = false,
     ) : BearerRoute
 
     /** 오늘 계획 고르기(iOS `planPick`). 팩 공연 · 고른 계획은 Coordinator가 프로필 State에서 ViewModel 인자로 넘긴다. */

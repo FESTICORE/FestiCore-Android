@@ -3,16 +3,22 @@ package io.festicore.app.navigation.maintab
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import io.festicore.ui.designkit.component.navigation.FCTabBar
 import io.festicore.ui.designkit.component.navigation.FCTabBarTab
@@ -47,8 +53,20 @@ fun MainTabScreen(
     var hidesTimetableTabBar by rememberSaveable { mutableStateOf(false) }
     var reservesMyTabBarSpace by rememberSaveable { mutableStateOf(true) }
     val tabStates = rememberSaveableStateHolder()
+    var tabBarHeight by remember { mutableIntStateOf(0) }
+    val occupiedBottom = PaddingValues(bottom = with(LocalDensity.current) { tabBarHeight.toDp() })
+    val tabBarModifier = Modifier.onSizeChanged { tabBarHeight = it.height }
+    val hidesTabBar =
+        isLoginSheetPresented ||
+            (selection == FCTabBarTab.Live && hidesLiveTabBar) ||
+            (selection == FCTabBarTab.My && hidesMyTabBar) ||
+            (selection == FCTabBarTab.Timetable && hidesTimetableTabBar)
+    val reservesTabBarSpace = selection == FCTabBarTab.My && reservesMyTabBarSpace && !isLoginSheetPresented
     Column(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth()
+                .then(if (!hidesTabBar || reservesTabBarSpace) Modifier.consumeWindowInsets(occupiedBottom) else Modifier),
+        ) {
             tabStates.SaveableStateProvider(selection.name) {
                 when (selection) {
                     FCTabBarTab.Live -> liveContent({ hidesLiveTabBar = it }, onFlagTabRequested)
@@ -65,19 +83,14 @@ fun MainTabScreen(
                 }
             }
         }
-        val hidesTabBar =
-            isLoginSheetPresented ||
-                (selection == FCTabBarTab.Live && hidesLiveTabBar) ||
-                (selection == FCTabBarTab.My && hidesMyTabBar) ||
-                (selection == FCTabBarTab.Timetable && hidesTimetableTabBar)
         if (!hidesTabBar) {
-            FCTabBar(selection = selection, onSelectionChange = onSelectionChange)
-        } else if (selection == FCTabBarTab.My && reservesMyTabBarSpace && !isLoginSheetPresented) {
+            FCTabBar(selection = selection, onSelectionChange = onSelectionChange, modifier = tabBarModifier)
+        } else if (reservesTabBarSpace) {
             // 자리만 남긴다. 보이지 않고 읽기 도구 · 누르기도 받지 않는다.
             FCTabBar(
                 selection = selection,
                 onSelectionChange = {},
-                modifier = Modifier.alpha(0f).clearAndSetSemantics {},
+                modifier = tabBarModifier.alpha(0f).clearAndSetSemantics {},
             )
         }
     }

@@ -2,9 +2,11 @@ package io.festicore.service.analytics.di
 
 import android.content.Context
 import android.os.Build
+import io.festicore.service.analytics.configuration.FestiCoreAnalyticsConfiguration
 import io.festicore.service.analytics.configuration.MixpanelConfiguration
 import io.festicore.service.analytics.usecase.AnalyticsUseCase
 import io.festicore.service.analytics.usecase.AnalyticsUseCaseImpl
+import io.festicore.service.analytics.usecase.SentryApiClient
 import io.festicore.service.analytics.usecase.baseSuperProperties
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
@@ -16,6 +18,10 @@ val serviceAnalyticsModule: Module = module {
         AnalyticsUseCaseImpl(
             mixpanel = { MixpanelConfiguration.mainInstance },
             baseSuperProperties = androidContext().appBaseSuperProperties(),
+            sentry = SentryApiClient(),
+            firebase = { FestiCoreAnalyticsConfiguration.firebase },
+            collectionEnabled = { FestiCoreAnalyticsConfiguration.collectionEnabled },
+            updateCollection = FestiCoreAnalyticsConfiguration::setCollectionEnabled,
         )
     }
 }

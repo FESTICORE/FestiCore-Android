@@ -1,13 +1,9 @@
 package io.festicore.feature.timetable.setdetail
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import io.festicore.domain.timetable.entity.TimetableSetDetail
 import io.festicore.feature.timetable.TimetablePushGate
 import io.festicore.feature.timetable.main.TimetableState
@@ -17,9 +13,6 @@ import io.festicore.ui.sharedui.sheet.FCSetSheet
 import io.festicore.ui.sharedui.sheet.FCSetSheetState
 import io.festicore.ui.sharedui.toast.FCToastItems
 import java.time.Instant
-
-/** `fcToast`와 같은 등장 · 퇴장 시간(iOS `TimetableScheduleToast.Metric.toastDuration`). */
-private const val TOAST_ANIMATION_MILLIS = 250
 
 /**
  * 공연 상세 시트(iOS `TimetableSetDetailView`). [state]가 있으면 탭 바까지 덮는 `FCSheet`로 띄운다.
@@ -35,10 +28,10 @@ internal fun TimetableSetDetailSheet(
     FCSheet(
         item = state,
         onDismissRequest = onDismissRequest,
-        accessory = { sheet -> TimetableScheduleToast(isVisible = sheet.isScheduleToastVisible) },
     ) { sheet ->
         val detail = now?.let(sheet::detail) ?: sheet.content.detail
         FCSetSheet(
+            modifier = Modifier.verticalScroll(rememberScrollState()),
             artist = detail.artist,
             stage = detail.stage,
             time = detail.time,
@@ -52,23 +45,9 @@ internal fun TimetableSetDetailSheet(
             scheduleTitle = SCHEDULE_TITLE,
             scheduleHelper = scheduleHelper(sheet.content),
             isScheduleDisabled = sheet.content.isScheduleLoading,
+            bottomStatus = { FCToast(FCToastItems.scheduleAdded()) },
+            isBottomStatusVisible = sheet.isScheduleToastVisible,
         )
-    }
-}
-
-/** 내 일정에 넣은 직후 시트 위에 잠시 보인다(iOS `TimetableScheduleToast`). 아래에서 올라오며 나타난다. */
-@Composable
-internal fun TimetableScheduleToast(isVisible: Boolean) {
-    AnimatedVisibility(
-        visible = isVisible,
-        enter =
-            slideInVertically(tween(TOAST_ANIMATION_MILLIS, easing = EaseOut)) { it } +
-                fadeIn(tween(TOAST_ANIMATION_MILLIS, easing = EaseOut)),
-        exit =
-            slideOutVertically(tween(TOAST_ANIMATION_MILLIS, easing = EaseOut)) { it } +
-                fadeOut(tween(TOAST_ANIMATION_MILLIS, easing = EaseOut)),
-    ) {
-        FCToast(FCToastItems.scheduleAdded())
     }
 }
 

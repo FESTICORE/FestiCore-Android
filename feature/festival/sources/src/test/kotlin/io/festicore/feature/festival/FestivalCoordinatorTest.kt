@@ -1,9 +1,22 @@
 package io.festicore.feature.festival
+
+import io.festicore.domain.festival.entity.CachedFestivalPack
+import io.festicore.domain.festival.entity.FestivalPackDocument
+import io.festicore.domain.festival.entity.FestivalPackState
+import io.festicore.domain.festival.entity.FestivalSchedule
+import io.festicore.domain.festival.entity.FestivalScheduleSaved
+import io.festicore.domain.festival.schedule.FestivalScheduleUseCase
 import io.festicore.feature.festival.festivallist.FakeCurrentUserProvider
+import io.festicore.feature.festival.festivallist.FakePackUseCase
 import io.festicore.feature.festival.flag.FlagBoard
 import io.festicore.feature.festival.flagdetail.FlagDetailContext
 import io.festicore.feature.festival.liveboard.LiveBoardBoundary
+import java.time.Instant
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,6 +25,241 @@ import org.orbitmvi.orbit.test.test
 
 class FestivalCoordinatorTest {
     private val board = FestivalRoute.LiveBoard("fst_1")
+
+    private class PrepScheduleUseCase(val read: suspend () -> FestivalSchedule = { FestivalSchedule(emptyList()) }) :
+        FestivalScheduleUseCase {
+        val saved = mutableListOf<List<String>>()
+        val notified = mutableListOf<FestivalScheduleSaved>()
+        override val savedSchedules = emptyFlow<FestivalScheduleSaved>()
+        override suspend fun mySchedule(festivalId: String) = read()
+        override suspend fun saveMySchedule(
+            festivalId: String,
+            setIds: List<String>,
+            clientAt: Instant,
+        ): FestivalSchedule {
+            saved += setIds
+            return FestivalSchedule(setIds)
+        }
+        override suspend fun notifyMyScheduleSaved(saved: FestivalScheduleSaved) {
+            notified += saved
+        }
+    }
+
+    @Test
+    fun prepEntryThenBackInvalidatesOtherDownloadsFromSameListVisit() = runTest {
+        val vm = FestivalCoordinator(FakeCurrentUserProvider("user"))
+        val originalToken = vm.listVisitToken
+        vm.test(this) {
+            containerHost.onPrepRequested("festival-a", originalToken) { true }
+            expectState { copy(routes = routes + FestivalRoute.PrepFlags("festival-a")) }
+            containerHost.goBack()
+            expectState { copy(routes = listOf(FestivalRoute.List)) }
+            containerHost.onPrepRequested("festival-b", originalToken) { true }
+            testScheduler.runCurrent()
+            expectNoItems()
+        }
+    }
+
+    @Test
+    fun successfulCachedLookupOpensScheduleAndDuplicateRequestIsIgnored() = runTest {
+        val release = CompletableDeferred<Unit>()
+        val readStarted = CompletableDeferred<Unit>()
+        var reads = 0
+        val schedule = PrepScheduleUseCase {
+            reads++
+            readStarted.complete(Unit)
+            release.await()
+            FestivalSchedule(listOf("set-a"))
+        }
+        val document = FestivalPackDocument(id = "festival", name = "축제")
+        val pack = CachedFestivalPack("festival", 1, "v1", null, document)
+        val packs = FakePackUseCase().apply { state.value = FestivalPackState(packs = mapOf("festival" to pack)) }
+        FestivalCoordinator(FakeCurrentUserProvider("user"), packUseCase = packs, scheduleUseCase = schedule).test(this) {
+            containerHost.onPrepRequested("festival", 0) { it == document }
+            readStarted.await()
+            containerHost.onPrepRequested("festival", 0) { it == document }.join()
+            assertEquals(1, reads)
+            release.complete(Unit)
+            expectState { copy(routes = routes + FestivalRoute.PrepSchedule("festival", listOf("set-a"))) }
+            containerHost.onPrepRequested("festival", 0) { true }.join()
+            expectNoItems()
+        }
+        assertTrue(schedule.saved.isEmpty())
+    }
+
+    @Test
+    fun accountChangeRejectsOldAccountLookup() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val user = FakeCurrentUserProvider("old-user")
+        val schedule = PrepScheduleUseCase {
+            withContext(NonCancellable) {
+                started.complete(Unit)
+                release.await()
+                FestivalSchedule(emptyList())
+            }
+        }
+        FestivalCoordinator(user, scheduleUseCase = schedule).test(this) {
+            val subscription = runOnCreate()
+            containerHost.onPrepRequested("festival", 0) { true }
+            started.await()
+            user.currentUserId.value = "new-user"
+            testScheduler.runCurrent()
+            release.complete(Unit)
+            testScheduler.runCurrent()
+            expectNoItems()
+            subscription.cancel()
+        }
+        assertTrue(schedule.saved.isEmpty())
+    }
+
+    @Test
+    fun lookupCannotReopenAfterBoardVisitAndReturnToList() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val schedule = PrepScheduleUseCase {
+            withContext(NonCancellable) {
+                started.complete(Unit)
+                release.await()
+                FestivalSchedule(emptyList())
+            }
+        }
+        FestivalCoordinator(FakeCurrentUserProvider("user"), scheduleUseCase = schedule).test(this) {
+            containerHost.onPrepRequested("festival", 0) { true }
+            started.await()
+            containerHost.onFestivalSelected("other")
+            awaitState()
+            containerHost.goBack()
+            awaitState()
+            release.complete(Unit)
+            testScheduler.runCurrent()
+            expectNoItems()
+        }
+    }
+
+    @Test
+    fun completedScheduleNotifiesOnceAndRejectsDuplicateCallback() = runTest {
+        val useCase = PrepScheduleUseCase()
+        val route = FestivalRoute.PrepSchedule("festival", emptyList())
+        FestivalCoordinator(FakeCurrentUserProvider("user"), scheduleUseCase = useCase)
+            .test(this, initialState = FestivalCoordinatorState(routes = listOf(FestivalRoute.List, route))) {
+                containerHost.onPrepScheduleFinished(route, setOf("set"))
+                expectState { copy(routes = routes + FestivalRoute.PrepFlags("festival")) }
+                containerHost.onPrepScheduleFinished(route, setOf("set")).join()
+                expectNoItems()
+            }
+        assertEquals(listOf(FestivalScheduleSaved("festival", setOf("set"))), useCase.notified)
+        assertTrue(useCase.saved.isEmpty())
+    }
+
+    @Test
+    fun asynchronousLookupCannotReopenPrepAfterExternalNavigation() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val useCase = PrepScheduleUseCase {
+            withContext(NonCancellable) {
+                started.complete(Unit)
+                release.await()
+                FestivalSchedule(emptyList())
+            }
+        }
+        FestivalCoordinator(FakeCurrentUserProvider("user"), scheduleUseCase = useCase).test(this) {
+            containerHost.onPrepRequested("festival", 0) { true }
+            started.await()
+            containerHost.onExternalNavigation().join()
+            release.complete(Unit)
+            testScheduler.runCurrent()
+            expectNoItems()
+        }
+        assertTrue(useCase.saved.isEmpty())
+        assertTrue(useCase.notified.isEmpty())
+    }
+
+    @Test
+    fun prepStepsKeepBackStackAndLaterRemovesEveryStep() = runTest {
+        val schedule = FestivalRoute.PrepSchedule("festival", emptyList())
+        val flags = FestivalRoute.PrepFlags("festival")
+        val checklist = FestivalRoute.PrepChecklist("festival", "")
+        FestivalCoordinator(
+            FakeCurrentUserProvider("user"),
+        ).test(this, initialState = FestivalCoordinatorState(routes = listOf(FestivalRoute.List, schedule))) {
+            containerHost.onPrepScheduleFinished(schedule)
+            expectState { copy(routes = routes + flags) }
+            containerHost.onPrepFlagsFinished(flags)
+            expectState { copy(routes = routes + checklist) }
+            containerHost.goBack()
+            expectState { copy(routes = routes.dropLast(1)) }
+            containerHost.onPrepDismissed()
+            expectState { copy(routes = listOf(FestivalRoute.List)) }
+        }
+    }
+
+    @Test
+    fun pendingPrepBlocksUserNavigationButExternalInviteClearsIt() = runTest {
+        val flags = FestivalRoute.PrepFlags("festival")
+        FestivalCoordinator(
+            FakeCurrentUserProvider("user"),
+        ).test(this, initialState = FestivalCoordinatorState(routes = listOf(FestivalRoute.List, flags))) {
+            containerHost.onPrepNavigationBlocked(flags, true)
+            expectState { copy(prepNavigationBlocked = true) }
+            containerHost.goBack()
+            containerHost.onPrepFlagsFinished(flags)
+            containerHost.onPrepDismissed()
+            expectNoItems()
+            containerHost.onCrewInviteOpened("invite")
+            expectState { copy(routes = listOf(FestivalRoute.List), prepNavigationBlocked = false) }
+            expectState { copy(routes = routes + FestivalRoute.CrewJoin("invite")) }
+        }
+    }
+
+    @Test
+    fun bufferedDownloadTokenFromPreviousListVisitIsIgnored() = runTest {
+        val vm = FestivalCoordinator(FakeCurrentUserProvider("user"))
+        val token = vm.listVisitToken
+        vm.test(this) {
+            containerHost.onFestivalSelected("other")
+            awaitState()
+            containerHost.goBack()
+            awaitState()
+            containerHost.onPrepRequested("festival", token) { true }
+            expectNoItems()
+        }
+    }
+
+    @Test
+    fun lookupExceptionMissingCacheAndEmptyDaysSkipScheduleWithoutWriting() = runTest {
+        for (scenario in listOf("exception", "missing-cache", "empty-days")) {
+            val schedule = PrepScheduleUseCase {
+                if (scenario == "exception") throw IllegalStateException("offline")
+                FestivalSchedule(emptyList())
+            }
+            val document = FestivalPackDocument(id = "festival", name = "축제")
+            val packs = FakePackUseCase().apply {
+                if (scenario !=
+                    "missing-cache"
+                ) {
+                    state.value =
+                        FestivalPackState(packs = mapOf("festival" to CachedFestivalPack("festival", 1, "v1", null, document)))
+                }
+            }
+            FestivalCoordinator(FakeCurrentUserProvider("user"), packUseCase = packs, scheduleUseCase = schedule).test(this) {
+                containerHost.onPrepRequested("festival", 0) { scenario != "empty-days" }
+                expectState { copy(routes = routes + FestivalRoute.PrepFlags("festival")) }
+            }
+            assertTrue("$scenario must not save a schedule", schedule.saved.isEmpty())
+            assertTrue("$scenario must not publish a schedule", schedule.notified.isEmpty())
+        }
+    }
+
+    @Test
+    fun scheduleLookupFailureSkipsWithoutSavingAndTermsGoToParent() = runTest {
+        FestivalCoordinator(FakeCurrentUserProvider("user")).test(this) {
+            containerHost.onPrepRequested("festival", 0) { true }
+            expectState { copy(routes = routes + FestivalRoute.PrepFlags("festival")) }
+            containerHost.onPrepTermsRequested()
+            expectSideEffect(FestivalCoordinatorSideEffect.TermsAcceptanceRequested)
+        }
+    }
 
     @Test
     fun `목록에서 축제를 고르면 라이브 보드를 쌓고 같은 보드는 다시 쌓지 않는다`() = runTest {

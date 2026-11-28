@@ -7,6 +7,7 @@ import io.festicore.domain.festival.entity.FestivalChecklist
 import io.festicore.domain.festival.entity.FestivalPackChanges
 import io.festicore.domain.festival.entity.FestivalPackDetail
 import io.festicore.domain.festival.entity.FestivalReceivedPack
+import io.festicore.feature.profile.prepchecklist.PrepChecklistContent
 import io.festicore.ui.designkit.theme.FestiCoreTheme
 import java.time.Instant
 
@@ -81,4 +82,17 @@ private fun PackDetailMissingPreview() {
     FestiCoreTheme {
         PackDetailContent(state = PackDetailState(festivalId = "fst_preview", title = "프리뷰 페스티벌", load = PackDetailLoad.Missing))
     }
+}
+
+@Preview(name = "S15 · 준비물")
+@Composable
+private fun PrepChecklistPreview() {
+    PrepChecklistContent(
+        state = previewLoaded,
+        onToggle = {},
+        onTextChanged = {},
+        onAdd = {},
+        onDone = {},
+        onLater = {},
+    )
 }

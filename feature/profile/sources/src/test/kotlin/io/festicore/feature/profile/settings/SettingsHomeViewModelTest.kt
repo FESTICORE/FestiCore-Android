@@ -5,6 +5,8 @@ import io.festicore.feature.profile.appearance.AppearanceMode
 import io.festicore.feature.profile.appearance.AppearanceModeSettings
 import io.festicore.feature.web.LegalDocumentUrls
 import io.festicore.feature.web.WebPage
+import io.festicore.service.analytics.usecase.AnalyticsUseCase
+import io.festicore.service.analytics.usecase.PreviewAnalyticsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertFalse
@@ -34,6 +36,25 @@ class SettingsHomeViewModelTest {
         urls: LegalDocumentUrls = validUrls,
         appearance: AppearanceModeSettings = FakeAppearanceModeSettings(),
     ) = SettingsHomeViewModel(initialAccount = account, legalDocumentUrls = urls, appearanceModeSettings = appearance)
+
+    @Test
+    fun analyticsTogglePersistsSelectionWithoutAccountRequest() = runTest {
+        var enabled = false
+        val analytics = object : AnalyticsUseCase by PreviewAnalyticsUseCase {
+            override val isCollectionEnabled: Boolean get() = enabled
+            override fun setCollectionEnabled(value: Boolean): Boolean {
+                enabled = value
+                return true
+            }
+        }
+        SettingsHomeViewModel(AccountState(), validUrls, FakeAppearanceModeSettings(), analytics).test(this) {
+            containerHost.onAnalyticsTapped()
+            expectState { copy(analyticsEnabled = true) }
+            containerHost.onAnalyticsTapped()
+            expectState { copy(analyticsEnabled = false) }
+        }
+        assertFalse(enabled)
+    }
 
     @Test
     fun guestHidesAccountGroup() = runTest {

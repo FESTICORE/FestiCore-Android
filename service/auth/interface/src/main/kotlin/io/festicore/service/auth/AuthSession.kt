@@ -2,6 +2,9 @@ package io.festicore.service.auth
 
 /** 로그인 세션 공개 API. 토큰 값은 밖으로 내보내지 않는다. 구현은 `AuthSessionImpl`. */
 interface AuthSession {
+    /** Emits only after a successful local read; never exposes tokens. */
+    fun sessionIdentities(): kotlinx.coroutines.flow.Flow<String?>
+
     suspend fun isLoggedIn(): Boolean
 
     /** 세션에 묶인 요청(`expectedSessionId`)에 넘길 현재 세션 ID. */

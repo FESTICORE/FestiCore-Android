@@ -28,7 +28,7 @@ android {
     compileSdk = AndroidConfig.COMPILE_SDK
 
     defaultConfig {
-        // iOS 번들 ID와 같은 값
+        // 기존 Firebase Android 등록의 패키지 이름
         applicationId = AndroidConfig.APPLICATION_ID
         minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
@@ -37,6 +37,7 @@ android {
         versionName = AndroidConfig.VERSION_NAME
         // Mixpanel 토큰(FESTICORE_MIXPANEL_TOKEN, iOS xcconfig와 같은 이름). 비면 service/analytics가 Mixpanel을 시작하지 않는다.
         buildConfigField("String", "MIXPANEL_TOKEN", buildConfigString(secretValue("FESTICORE_MIXPANEL_TOKEN")))
+        buildConfigField("String", "SENTRY_DSN", buildConfigString(secretValue("FESTICORE_SENTRY_DSN")))
         // Google Routes API 키(FESTICORE_GOOGLE_ROUTES_API_KEY). 비면 귀가 카드는 도보만 직선거리로 어림한다(설계 R6 쟁점 F4).
         buildConfigField("String", "GOOGLE_ROUTES_API_KEY", buildConfigString(secretValue("FESTICORE_GOOGLE_ROUTES_API_KEY")))
     }
@@ -58,6 +59,19 @@ android {
                 listOf("API_KEY", "APP_ID", "PROJECT_ID", "SENDER_ID").forEach { field ->
                     val value = secretValue("FESTICORE_FIREBASE_${name.uppercase()}_$field")
                     buildConfigField("String", "FIREBASE_$field", buildConfigString(value))
+                }
+                // Analytics는 기본 앱의 google_app_id 리소스를 읽는다. 완전한 기존 설정만 생성한다.
+                val firebaseResources = mapOf(
+                    "API_KEY" to "google_api_key",
+                    "APP_ID" to "google_app_id",
+                    "PROJECT_ID" to "project_id",
+                    "SENDER_ID" to "gcm_defaultSenderId",
+                )
+                val firebaseValues = firebaseResources.mapValues { (field, _) ->
+                    secretValue("FESTICORE_FIREBASE_${name.uppercase()}_$field").trim()
+                }
+                if (firebaseValues.values.all { it.isNotEmpty() }) {
+                    firebaseResources.forEach { (field, resource) -> resValue("string", resource, firebaseValues.getValue(field)) }
                 }
             }
         }

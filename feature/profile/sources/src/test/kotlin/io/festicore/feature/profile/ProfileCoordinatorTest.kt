@@ -26,6 +26,33 @@ class ProfileCoordinatorTest {
     private val privacy = WebPage(url = "https://festicore.app/api/v1/legal/privacy", title = "개인정보 처리방침")
     private val sources = WebPage(url = "https://festicore.app/api/v1/legal/sources", title = "정보 출처")
 
+    @Test
+    fun `홈 위젯 안내는 설정 위에 쌓이고 뒤로 가면 설정으로 돌아간다`() = runTest {
+        ProfileCoordinator(FakeCurrentUserProvider()).test(this, initialState = onSettings) {
+            containerHost.onHomeWidgetRequested()
+            expectState { copy(routes = listOf(profile, settings, ProfileRoute.HomeWidget)) }
+            assertTrue(containerHost.container.stateFlow.value.hidesTabBar)
+            containerHost.goBack()
+            expectState { copy(routes = listOf(profile, settings)) }
+        }
+    }
+
+    @Test
+    fun notificationSettingsReturnsToSettingsAndHidesTabs() = runTest {
+        ProfileCoordinator(FakeCurrentUserProvider()).test(this, initialState = onSettings) {
+            containerHost.onNotificationsRequested().join()
+            testScheduler.advanceUntilIdle()
+            org.junit.Assert.assertEquals(
+                listOf(profile, settings, ProfileRoute.Notifications),
+                containerHost.container.stateFlow.value.routes,
+            )
+            assertTrue(containerHost.container.stateFlow.value.hidesTabBar)
+            containerHost.goBack().join()
+            org.junit.Assert.assertEquals(listOf(profile, settings), containerHost.container.stateFlow.value.routes)
+            cancelAndIgnoreRemainingItems()
+        }
+    }
+
     /** iOS `coordinatorReducesSettingsRoutes`. */
     @Test
     fun `설정 버튼은 설정 홈을 쌓고 문서는 그 위에 쌓으며 뒤로 가면 한 단계씩 돌아온다`() = runTest {

@@ -24,6 +24,8 @@ data class ProfileCoordinatorState(
             ProfileRoute.BearerEntry,
             ProfileRoute.Account,
             ProfileRoute.Appearance,
+            ProfileRoute.HomeWidget,
+            ProfileRoute.Notifications,
             ProfileRoute.NoticeList,
             is ProfileRoute.NoticeDetail,
             is ProfileRoute.LegalDocument,
@@ -120,6 +122,10 @@ class ProfileCoordinator(currentUserProvider: CurrentUserProvider) :
     // 설정 홈
 
     fun onAccountRequested() = openOnSettings(ProfileRoute.Account)
+
+    fun onNotificationsRequested() = openOnSettings(ProfileRoute.Notifications)
+
+    fun onHomeWidgetRequested() = openOnSettings(ProfileRoute.HomeWidget)
 
     fun onAppearanceRequested() = openOnSettings(ProfileRoute.Appearance)
 

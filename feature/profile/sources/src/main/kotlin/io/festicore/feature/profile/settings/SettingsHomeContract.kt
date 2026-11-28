@@ -15,6 +15,7 @@ data class SettingsHomeState(
     val account: AccountState = AccountState(),
     val appearanceMode: AppearanceMode = AppearanceMode.Dark,
     val alert: SettingsHomeAlert? = null,
+    val analyticsEnabled: Boolean = false,
 ) {
     /** 로그인하지 않았으면 계정 그룹을 숨긴다. 로그인은 마이의 로그인 카드에서 한다. */
     val showsAccount: Boolean
@@ -27,6 +28,7 @@ enum class SettingsHomeAlert(
     val message: String,
 ) {
     /** 문서 기준 주소를 쓸 수 없다. iOS `legalLinkUnavailable()`. */
+    AnalyticsSaveFailed("설정을 저장하지 못했어요", "잠시 후 다시 시도해 주세요. 수집 끄기는 즉시 적용돼요."),
     LegalLinkUnavailable("문서를 열 수 없어요", "잠시 후 다시 시도해 주세요."),
 }
 
@@ -41,13 +43,18 @@ enum class SettingsLegalDocument(
     LocationTerms("location", "위치기반서비스 이용약관"),
 }
 
-/** iOS `SettingsHomeDelegate`와 `destination` 이동. 알림 · 잠금화면은 설계 쟁점 M4 · M5로 줄을 숨겨 요청이 없다. */
+/** iOS `SettingsHomeDelegate`와 `destination` 이동. Android 알림 설정은 서버 값만 편집하고 잠금화면 행은 표시하지 않는다. */
 sealed interface SettingsHomeSideEffect {
+    data object NotificationsRequested : SettingsHomeSideEffect
+
     /** 마이로 돌아간다. */
     data object BackRequested : SettingsHomeSideEffect
 
     /** 화면 모드를 연다. */
     data object AppearanceRequested : SettingsHomeSideEffect
+
+    /** Android 홈 위젯 추가 안내를 연다. */
+    data object HomeWidgetRequested : SettingsHomeSideEffect
 
     /** 계정 화면을 연다(S3). */
     data object AccountRequested : SettingsHomeSideEffect

@@ -248,9 +248,11 @@ internal class FakeMapper(
     var lineup: Map<String, List<TimetableLineupDay>> = emptyMap(),
 ) : FestivalPackTimetableMapper {
     val previousDays = mutableListOf<List<TimetableDay>>()
+    val mappedPacks = mutableListOf<FestivalPackDocument>()
 
     override fun days(pack: FestivalPackDocument, previousDays: List<TimetableDay>): List<TimetableDay> {
         this.previousDays += previousDays
+        mappedPacks += pack
         return days[pack.id].orEmpty()
     }
 

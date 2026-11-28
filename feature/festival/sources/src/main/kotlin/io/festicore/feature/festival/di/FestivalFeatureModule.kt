@@ -12,19 +12,39 @@ import io.festicore.feature.festival.liveboard.LiveBoardViewModel
 import io.festicore.feature.festival.liveboard.crewcreate.CrewCreateViewModel
 import io.festicore.feature.festival.liveboard.crewgather.CrewGatherViewModel
 import io.festicore.feature.festival.notificationinbox.NotificationInboxViewModel
+import io.festicore.feature.festival.widget.createFestivalWidgetUpdater
 import io.festicore.feature.festival.zonemap.ZoneMapViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val festivalFeatureModule = module {
+    single { createFestivalWidgetUpdater(androidContext(), get()) }
     // 보드가 스택에서 빠지면 보드 공유 선택을 비운다(설계 T1 `clear`).
-    viewModel { FestivalCoordinator(currentUserProvider = get(), clearBoardSelection = get<FestivalBoardSelectionUseCase>()::clear) }
+    viewModel {
+        FestivalCoordinator(
+            currentUserProvider = get(),
+            clearBoardSelection = get<FestivalBoardSelectionUseCase>()::clear,
+            packUseCase = get(),
+            scheduleUseCase = get(),
+        )
+    }
     viewModelOf(::FestivalListViewModel)
     viewModelOf(::NotificationInboxViewModel)
     viewModelOf(::FlagCoordinator)
     // 선택 축제는 부모가 onFestivalChanged로 알린다(iOS `festivalChanged`).
     viewModel { FlagViewModel(liveBoardUseCase = get(), flagUseCase = get(), analyticsUseCase = get()) }
+    viewModel(qualifier = org.koin.core.qualifier.named("prepFlags")) { params ->
+        FlagViewModel(
+            liveBoardUseCase = get(),
+            flagUseCase = get(),
+            analyticsUseCase = get(),
+            festivalId = params.get(),
+            tracksScreenView = false,
+            followTimeoutMillis = 15_000L,
+        )
+    }
     // 인자: 깃발 ID, 처음 표시 문맥(FlagDetailContext). 이후 문맥은 부모가 onContextChanged로 알린다(iOS `contextChanged`).
     viewModel { params ->
         FlagDetailViewModel(

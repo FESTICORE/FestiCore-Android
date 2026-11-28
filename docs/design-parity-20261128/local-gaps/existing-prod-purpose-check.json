@@ -1,0 +1,14 @@
+{
+  "source": "original Android local.properties",
+  "firebase_prod_android_app_format": true,
+  "sender_matches_app_id": true,
+  "project_name_matches_product": true,
+  "stage_values_absent": true,
+  "firebase_console_package_registration": "not verified",
+  "mixpanel_project_environment": "not encoded in token; original Android setting only",
+  "sentry_platform": "original Android setting; console not verified",
+  "source_android_package": "io.festicore.co",
+  "target_android_package": "io.festiCore.co",
+  "firebase_registered_package": "not verifiable from app ID alone",
+  "injection_performed": false
+}

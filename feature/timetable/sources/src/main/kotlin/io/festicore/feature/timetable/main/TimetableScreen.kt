@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +66,7 @@ import org.orbitmvi.orbit.compose.collectSideEffect
 /** `FCSegmented`가 잘리지 않고 담는 날짜 수(2~3칸용). 넘으면 가로로 넘기는 칩 줄이다(iOS `segmentedDayLimit`). */
 private const val SEGMENTED_DAY_LIMIT = 3
 private val SkeletonHeight = 120.dp
+private val CompactHeight = 480.dp
 private const val SKELETON_COUNT = 3
 
 /**
@@ -135,53 +140,62 @@ fun TimetableContent(
     onSetDetailDismissed: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
-        FCTopBar(
-            style = FCTopBarStyle.Large,
-            title = "타임테이블",
-            trailingIcon = R.drawable.ic_magnifying_glass,
-            trailingAccessibilityLabel = "검색",
-            onTrailingAction = onSearchClicked,
-        )
-        if (state.days.isNotEmpty()) DaySelector(state.days, state.selectedDayIndex, onDaySelected)
-        state.offlineMessage?.let { FCOfflineBadge(it) }
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            when (state.contentStatus) {
-                TimetableContentStatus.Loading -> Skeleton()
+    BoxWithConstraints(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
+        val compactHeight = maxHeight < CompactHeight
+        // 낮은 창에서는 고정 헤더가 공연 영역을 밀어내지 않도록 전체를 스크롤한다.
+        val scroll = rememberScrollState()
+        Column(
+            modifier = Modifier.fillMaxSize().then(
+                if (compactHeight) Modifier.safeDrawingPadding().verticalScroll(scroll) else Modifier,
+            ),
+        ) {
+            FCTopBar(
+                style = FCTopBarStyle.Large,
+                title = "타임테이블",
+                trailingIcon = R.drawable.ic_magnifying_glass,
+                trailingAccessibilityLabel = "검색",
+                onTrailingAction = onSearchClicked,
+            )
+            if (state.days.isNotEmpty()) DaySelector(state.days, state.selectedDayIndex, onDaySelected)
+            state.offlineMessage?.let { FCOfflineBadge(it) }
+            Box(modifier = (if (compactHeight) Modifier.height(CompactHeight) else Modifier.weight(1f)).fillMaxWidth()) {
+                when (state.contentStatus) {
+                    TimetableContentStatus.Loading -> Skeleton()
 
-                TimetableContentStatus.Failed ->
-                    FCEmptyCard(
-                        title = "시간표를 불러오지 못했어요",
-                        message = "연결 상태를 확인하고 다시 시도해 주세요.",
-                        modifier = Modifier.padding(FestiCoreSpacing.paddingP16),
-                        icon = R.drawable.ic_bell,
-                        action = FCCardAction("다시 시도", FCButtonStyle.Primary, onRetryClicked),
-                    )
+                    TimetableContentStatus.Failed ->
+                        FCEmptyCard(
+                            title = "시간표를 불러오지 못했어요",
+                            message = "연결 상태를 확인하고 다시 시도해 주세요.",
+                            modifier = Modifier.padding(FestiCoreSpacing.paddingP16),
+                            icon = R.drawable.ic_bell,
+                            action = FCCardAction("다시 시도", FCButtonStyle.Primary, onRetryClicked),
+                        )
 
-                TimetableContentStatus.NoFestival ->
-                    FCEmptyCard(
-                        title = "축제를 선택해 주세요",
-                        message = "참여할 축제를 선택하면 시간표를 볼 수 있어요.",
-                        modifier = Modifier.padding(FestiCoreSpacing.paddingP16),
-                        icon = R.drawable.ic_magnifying_glass,
-                    )
+                    TimetableContentStatus.NoFestival ->
+                        FCEmptyCard(
+                            title = "축제를 선택해 주세요",
+                            message = "참여할 축제를 선택하면 시간표를 볼 수 있어요.",
+                            modifier = Modifier.padding(FestiCoreSpacing.paddingP16),
+                            icon = R.drawable.ic_magnifying_glass,
+                        )
 
-                TimetableContentStatus.Unpublished -> TimetableUnpublished(state.lineup, state.notificationStatus, onNotifyClicked)
+                    TimetableContentStatus.Unpublished -> TimetableUnpublished(state.lineup, state.notificationStatus, onNotifyClicked)
 
-                TimetableContentStatus.Published ->
-                    Published(
-                        state,
-                        onMineOnlyToggled,
-                        onSchedulePickClicked,
-                        onChangeBannerClicked,
-                        onSetClicked,
-                        onZoomChanged,
-                        onDaySelected,
-                    )
+                    TimetableContentStatus.Published ->
+                        Published(
+                            state,
+                            onMineOnlyToggled,
+                            onSchedulePickClicked,
+                            onChangeBannerClicked,
+                            onSetClicked,
+                            onZoomChanged,
+                            onDaySelected,
+                        )
+                }
             }
+            // 일반 높이는 Figma처럼 출처를 하단에 고정하고 낮은 창은 본문과 함께 스크롤한다.
+            if (state.source.isNotEmpty()) FCSourceLine(state.source)
         }
-        // Figma S02: 출처 줄은 내용 길이와 상관없이 탭 바 바로 위에 붙는다.
-        if (state.source.isNotEmpty()) FCSourceLine(state.source)
     }
     TimetableSetDetailSheet(
         state = state.setDetail,

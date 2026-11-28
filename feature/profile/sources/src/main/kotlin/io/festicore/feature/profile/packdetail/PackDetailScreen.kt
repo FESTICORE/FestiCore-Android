@@ -398,8 +398,7 @@ private fun Checklist(
     actions: PackDetailActions,
 ) {
     val rows = state.checklistRows
-    // iOS처럼 진행도(자체 배경 · 여백)를 카드로 한 번 더 감싼다.
-    Card { FCChecklistProgress(checked = state.checkedCount, total = rows.size, modifier = Modifier.fillMaxWidth()) }
+    FCChecklistProgress(checked = state.checkedCount, total = rows.size, modifier = Modifier.fillMaxWidth())
     Column(verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP8)) {
         FCSectionHeader(
             title = "챙길 것",

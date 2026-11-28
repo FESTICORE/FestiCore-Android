@@ -15,7 +15,7 @@ object FestiCoreLogger {
     private val sinks = CopyOnWriteArrayList<FestiCoreLogSink>()
 
     fun addSink(sink: FestiCoreLogSink) {
-        sinks += sink
+        sinks.addIfAbsent(sink)
     }
 
     internal fun removeAllSinks() {
@@ -41,6 +41,6 @@ object FestiCoreLogger {
         Log.println(level.priority, "FestiCore/${category.name.lowercase()}", message)
         if (level < sinkMinimumLevel) return
         val entry = FestiCoreLogEntry(level, category, message)
-        sinks.forEach { it.send(entry) }
+        sinks.forEach { runCatching { it.send(entry) } }
     }
 }

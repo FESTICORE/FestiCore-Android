@@ -74,6 +74,15 @@ iOS `FestivalFlagDetailFeature` · `FestivalFlagDetailView`. `FlagDetailViewMode
 - 흐리게: 30분 이상 또는 오프라인. 쉬는 중은 흐리게 하지 않는다.
 - 오늘 계획: 기수 순서 유지, 팩에 없는 공연은 건너뛴다. 시각 `HH:mm`(Asia/Seoul). 끝났거나 깃발이 ended면 지남, 시작했으면 공연 중, 아니면 예정.
 
+#### 고정 헤더와 스크롤 (S05)
+
+- 로드한 본문은 화면 전체를 스크롤 viewport로 쓰고, 헤더의 현재 측정 높이만큼 내부 여백을 둔다. 정지 상태에서는 히어로가 헤더 아래에서 시작하고 스크롤하면 헤더 뒤로 올라간다.
+- 헤더를 같은 측정 패스에서 먼저 재고 본문 → 헤더 → 하단 토스트 순서로 그린다. 로딩·오류는 측정된 헤더 아래에 유지한다. Android 토스트는 하단을 유지한다.
+- 일반·오프라인 헤더는 배경색으로 본문을 가린다. 사진 위 스타일은 기존 틴트를 유지한다. 헤더에서 시작한 터치는 뒤로·공유 버튼 외 본문에 전달하지 않는다.
+- 오프라인 배지는 헤더와 내부 여백의 높이에 포함한다. 끝단에서 떨어진 위치에서는 배지 표시·숨김만큼 본문 위치가 바뀌고 scroll offset은 같다. 끝단에서 배지를 숨기면 줄어든 maxValue로 offset이 clamp될 수 있으며 별도 보정하지 않는다.
+- 키보드 포커스의 bring-into-view는 헤더 아래를 유효 표시 영역으로 사용한다. 헤더는 접근성 순회 그룹을 이루며 본문보다 앞 순서다.
+- **접근성 검증 한계:** 키보드 focus/Compose bring-into-view와 TalkBack accessibility focus는 다르다. 실제 TalkBack의 swipe-back 시 헤더 밑 항목 노출·활성화는 아직 실기기 검증하지 않았다. 헤더 뒤 팔로우 항목 활성화 가능성을 해결했다고 주장하지 않으며 별도 확인이 필요하다.
+
 #### 팔로우 · 신고 갈래
 
 - 팔로우는 상세가 있고 요청 중 · 오프라인이 아닐 때만. 비로그인 → `LoginRequested`.
@@ -82,9 +91,14 @@ iOS `FestivalFlagDetailFeature` · `FestivalFlagDetailView`. `FlagDetailViewMode
 - 신고 성공 → "신고를 접수했어요". 실패: alreadyReported → "이미 신고한 깃발이에요", loginRequired → `ReportLoginRequested`, termsRequired → `TermsAcceptanceRequested`, 그 외 → "신고하지 못했어요. 잠시 후 다시 시도해 주세요".
 - 토스트는 2초 뒤 사라진다. 공유는 상세를 받은 뒤에만 `festicore://flag/<id>`를 `ACTION_SEND` 공유 시트로 보낸다.
 
-#### 잠금화면 표시 (이번 범위 아님)
+#### 홈 위젯 대표 깃발 (Android)
 
-- iOS의 "잠금화면에 표시" 행 · 대표 깃발(pin) 상태 · 동작 · "잠금화면 표시를 바꾸지 못했어요" 토스트는 라이브 액티비티(진행 중 알림) 단계에서 넣는다(설계 결정 F4-1~3). 상세 화면은 `setPinnedFlag`를 부르지 않는다. 문맥의 `pinnedFlagId`는 그 단계에서 쓴다.
+- 로그인 상태로 팔로우 중인 상세에 “홈 위젯 대표 깃발” 행을 표시한다. Android 홈 위젯의 대표 선택이며 iOS 잠금화면 표시를 보장하지 않는다.
+- 선택은 성공 응답에만 반영한다. pending·팔로우 변경 중·오프라인·이미 같은 값이면 요청하지 않는다. 기존 `setPinnedFlag(flagId/null)` 계약만 호출한다.
+- pin 시작 시 진행 중 상세 조회를 취소하고 조회 세대를 올려 이전 isPinned 응답이 성공값을 덮지 못하게 한다. pin 요청도 별도 세대로 계정 변경·화면 이탈 후 늦은 완료를 무시한다.
+- 성공한 서버 선택 → 화면 override → `PinChanged` → 기존 `FlagViewModel.refresh()`로 라이브 보드 snapshot과 상세 문맥을 갱신한다. domain repository의 성공 hook이 widget snapshot을 갱신하며 feature가 별도 저장소를 쓰지 않는다.
+- 실패하면 이전 선택을 유지하고 “홈 위젯 대표 깃발을 바꾸지 못했어요”를 하단 토스트로 표시한다. 로그인/약관 오류는 기존 경계 콜백도 전달한다.
+- 언팔로우를 시작하면 pin 요청을 취소한다. 성공 후 대표 override를 비우고 상세를 재조회한다. 언팔로우·로그아웃 상태에서는 행과 선택을 숨긴다. 로그아웃 때 개인 override와 진행 상태·기존 토스트를 비우며 이전 계정 요청 결과를 표시하지 않는다.
 
 ### 전환 (FlagFlow · FlagCoordinator)
 

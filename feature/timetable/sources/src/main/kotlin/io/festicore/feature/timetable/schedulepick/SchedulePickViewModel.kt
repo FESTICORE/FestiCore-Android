@@ -15,6 +15,8 @@ import java.time.Instant
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import org.orbitmvi.orbit.OrbitContainer
 import org.orbitmvi.orbit.OrbitContainerHost
 import org.orbitmvi.orbit.viewmodel.orbitContainer
@@ -30,6 +32,8 @@ class SchedulePickViewModel(
     private val overlapCalculator: TimetableOverlapCalculator,
     private val scheduleUseCase: FestivalScheduleUseCase,
     private val clock: Clock = Clock.systemUTC(),
+    private val packUseCase: io.festicore.domain.festival.pack.FestivalPackUseCase? = null,
+    private val saveTimeoutMillis: Long? = null,
 ) : ViewModel(),
     OrbitContainerHost<SchedulePickState, SchedulePickState, SchedulePickSideEffect> {
     override val container: OrbitContainer<SchedulePickState, SchedulePickState, SchedulePickSideEffect> =
@@ -37,9 +41,12 @@ class SchedulePickViewModel(
             SchedulePickState(
                 festivalId = route.festivalId,
                 days =
-                    boardSelectionUseCase.selection.value
-                        ?.document
-                        ?.takeIf { it.id == route.festivalId }
+                    (
+                        boardSelectionUseCase.selection.value
+                            ?.document
+                            ?.takeIf { it.id == route.festivalId }
+                            ?: packUseCase?.state?.value?.packs?.get(route.festivalId)?.document
+                        )
                         ?.let { mapper.days(it, emptyList()) }
                         .orEmpty(),
                 selectedSetIds = route.selectedSetIds.toSet(),
@@ -104,7 +111,15 @@ class SchedulePickViewModel(
             intent {
                 val result =
                     try {
-                        Result.success(scheduleUseCase.saveMySchedule(festivalId, setIds, clientAt))
+                        Result.success(
+                            if (saveTimeoutMillis == null) {
+                                scheduleUseCase.saveMySchedule(festivalId, setIds, clientAt)
+                            } else {
+                                withTimeout(saveTimeoutMillis) { scheduleUseCase.saveMySchedule(festivalId, setIds, clientAt) }
+                            },
+                        )
+                    } catch (_: TimeoutCancellationException) {
+                        Result.failure(FestivalScheduleError.Unavailable())
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (error: FestivalScheduleError) {

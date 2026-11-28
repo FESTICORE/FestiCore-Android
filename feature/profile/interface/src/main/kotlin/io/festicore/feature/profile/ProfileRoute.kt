@@ -38,6 +38,13 @@ sealed interface ProfileRoute : NavKey {
     @Serializable
     data object Appearance : ProfileRoute
 
+    @Serializable
+    data object Notifications : ProfileRoute
+
+    /** Android 홈 화면 위젯 추가와 실제 설치 상태. iOS 잠금화면과 구분한다. */
+    @Serializable
+    data object HomeWidget : ProfileRoute
+
     /** 공지 목록(iOS `noticeList`). */
     @Serializable
     data object NoticeList : ProfileRoute

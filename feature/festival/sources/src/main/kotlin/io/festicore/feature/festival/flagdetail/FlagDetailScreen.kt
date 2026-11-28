@@ -1,17 +1,16 @@
 package io.festicore.feature.festival.flagdetail
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseOut
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -29,10 +30,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.festicore.domain.festival.entity.FestivalFlagDetail
@@ -54,6 +68,7 @@ import io.festicore.ui.designkit.component.card.FCPlanPrivate
 import io.festicore.ui.designkit.component.label.FCOfflineBadge
 import io.festicore.ui.designkit.component.label.FCStatusChipStatus
 import io.festicore.ui.designkit.component.layout.fcScrollBottomInset
+import io.festicore.ui.designkit.component.list.FCListRow
 import io.festicore.ui.designkit.component.list.FCPlanRow
 import io.festicore.ui.designkit.component.list.FCPlanRowState
 import io.festicore.ui.designkit.component.list.FCSectionHeader
@@ -64,6 +79,7 @@ import io.festicore.ui.designkit.component.skeleton.FCSkeletonShape
 import io.festicore.ui.designkit.component.skeleton.FCSkeletonView
 import io.festicore.ui.designkit.component.toast.FCToast
 import io.festicore.ui.designkit.component.toast.FCToastItem
+import io.festicore.ui.designkit.component.toast.FCToastOverlay
 import io.festicore.ui.designkit.tokens.FestiCoreRadius
 import io.festicore.ui.designkit.tokens.FestiCoreSemanticColor
 import io.festicore.ui.designkit.tokens.FestiCoreSpacing
@@ -81,7 +97,6 @@ private val PlaceholderIconSize = 36.dp
 private val SkeletonHeroHeight = 360.dp
 private val SkeletonNowCardHeight = 106.dp
 private val SkeletonPlanListHeight = 286.dp
-private const val TOAST_MILLIS = 250
 
 /** 신고 사유 순서(iOS `FestivalFlagReportReason.allCases`). */
 private val ReportReasons = FestivalFlagReportReason.entries
@@ -98,6 +113,7 @@ fun FlagDetailScreen(
     onReportLoginRequested: () -> Unit,
     onTermsAcceptanceRequested: () -> Unit,
     onFollowChanged: (FlagDetailSideEffect.FollowChanged) -> Unit,
+    onPinChanged: () -> Unit = {},
     modifier: Modifier = Modifier,
     onFestivalTransferRequested: (flagId: String) -> Unit = {},
 ) {
@@ -105,6 +121,8 @@ fun FlagDetailScreen(
     val context = LocalContext.current
     viewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
+            FlagDetailSideEffect.PinChanged -> onPinChanged()
+
             FlagDetailSideEffect.LoginRequested -> onLoginRequested()
 
             FlagDetailSideEffect.ReportLoginRequested -> onReportLoginRequested()
@@ -136,6 +154,7 @@ fun FlagDetailScreen(
         onShareTapped = viewModel::onShareTapped,
         onRetryTapped = viewModel::onRetryTapped,
         onFollowTapped = viewModel::onFollowTapped,
+        onWidgetPinChanged = viewModel::onWidgetPinChanged,
         onReportTapped = viewModel::onReportTapped,
         onReportReasonSelected = viewModel::onReportReasonSelected,
         onReportSubmitTapped = viewModel::onReportSubmitTapped,
@@ -148,6 +167,7 @@ fun FlagDetailScreen(
 }
 
 /** State만 받는 깃발 상세 UI. Preview가 쓴다. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FlagDetailContent(
     state: FlagDetailState,
@@ -164,54 +184,93 @@ fun FlagDetailContent(
     onMenuDismissed: () -> Unit = {},
     onMenuShareTapped: () -> Unit = {},
     onMenuTransferTapped: () -> Unit = {},
+    onWidgetPinChanged: (Boolean) -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     var topBarHeight by remember { mutableIntStateOf(0) }
     var heroHeight by remember { mutableIntStateOf(0) }
     val offlineText = FlagDetailPresentation.offlineText(state)
     // 스크롤이 상단 바 높이 이상 · 히어로 높이 이하일 때만 사진 위 스타일. 오프라인 배지가 보이면 기본 스타일로 둔다.
-    val offset = scrollState.value
-    val isOnImage = state.detail != null && topBarHeight > 0 && offset >= topBarHeight && offset <= heroHeight && offlineText == null
+    val isOnImage by remember(state.detail, offlineText) {
+        derivedStateOf {
+            state.detail != null && topBarHeight > 0 &&
+                scrollState.value >= topBarHeight && scrollState.value <= heroHeight && offlineText == null
+        }
+    }
     Box(modifier = modifier.fillMaxSize().background(FestiCoreSemanticColor.backgroundNormal.color)) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.onSizeChanged { topBarHeight = it.height }) {
-                val detail = state.detail
-                // 옮길 수 있는 내 깃발이면 크루장 메뉴(Figma S07 A)와 같은 gear 24로 깃발 관리 메뉴를 열고, 공유는 그 안에 둔다.
-                val hasMenu = state.canTransferFestival
-                FCTopBar(
-                    style = if (isOnImage) FCTopBarStyle.BackOnImage else FCTopBarStyle.Back,
-                    title = detail?.name.orEmpty(),
-                    trailingIcon = if (hasMenu) R.drawable.ic_gear_24 else R.drawable.ic_share_nodes,
-                    trailingAccessibilityLabel = if (hasMenu) "깃발 관리" else "공유",
-                    onBack = onBack,
-                    onTrailingAction =
-                        when {
+        HeaderOverlay(
+            header = {
+                Column(
+                    modifier =
+                        Modifier
+                            .testTag(FestivalAccessibilityId.FLAG_DETAIL_HEADER)
+                            .onSizeChanged { topBarHeight = it.height }
+                            .then(if (isOnImage) Modifier else Modifier.background(FestiCoreSemanticColor.backgroundNormal.color))
+                            .semantics {
+                                isTraversalGroup = true
+                                traversalIndex = -1f
+                            }
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        // Main pass reaches children first, so Back/Share retain their click handling.
+                                        awaitPointerEvent().changes.forEach { it.consume() }
+                                    }
+                                }
+                            },
+                ) {
+                    val detail = state.detail
+                    val hasMenu = state.canTransferFestival
+                    FCTopBar(
+                        style = if (isOnImage) FCTopBarStyle.BackOnImage else FCTopBarStyle.Back,
+                        title = detail?.name.orEmpty(),
+                        trailingIcon = if (hasMenu) R.drawable.ic_gear_24 else R.drawable.ic_share_nodes,
+                        trailingAccessibilityLabel = if (hasMenu) "깃발 관리" else "공유",
+                        onBack = onBack,
+                        onTrailingAction = when {
                             detail == null -> null
                             hasMenu -> onMenuTapped
                             else -> onShareTapped
                         },
-                )
-                if (offlineText != null) FCOfflineBadge(offlineText)
-            }
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                when (val content = state.content) {
-                    FlagDetailContent.Loading -> Skeleton()
+                    )
+                    if (offlineText != null) FCOfflineBadge(offlineText)
+                }
+            },
+        ) { headerHeight ->
+            val headerPadding = with(LocalDensity.current) { headerHeight.toDp() }
+            when (val content = state.content) {
+                FlagDetailContent.Loading -> Box(Modifier.fillMaxSize().padding(top = headerPadding)) { Skeleton() }
 
-                    is FlagDetailContent.Failed ->
-                        when (content.failure) {
-                            FlagDetailFailure.NotFound -> NotFound()
-                            FlagDetailFailure.Unavailable -> Retry(onRetryTapped)
+                is FlagDetailContent.Failed -> Box(Modifier.fillMaxSize().padding(top = headerPadding)) {
+                    when (content.failure) {
+                        FlagDetailFailure.NotFound -> NotFound()
+                        FlagDetailFailure.Unavailable -> Retry(onRetryTapped)
+                    }
+                }
+
+                is FlagDetailContent.Loaded -> {
+                    val focusScroll = remember(headerHeight) {
+                        object : BringIntoViewSpec {
+                            override fun calculateScrollDistance(
+                                offset: Float,
+                                size: Float,
+                                containerSize: Float,
+                            ): Float =
+                                super.calculateScrollDistance(offset - headerHeight, size, (containerSize - headerHeight).coerceAtLeast(0f))
                         }
-
-                    is FlagDetailContent.Loaded ->
+                    }
+                    CompositionLocalProvider(LocalBringIntoViewSpec provides focusScroll) {
                         Loaded(
                             state = state,
                             detail = content.detail,
                             scrollState = scrollState,
+                            headerHeight = headerHeight,
                             onHeroHeightChanged = { heroHeight = it },
+                            onWidgetPinChanged = onWidgetPinChanged,
                             onFollowTapped = onFollowTapped,
                             onReportTapped = onReportTapped,
                         )
+                    }
                 }
             }
         }
@@ -248,16 +307,36 @@ internal fun FlagMenuContent(onShareTapped: () -> Unit, onTransferTapped: () -> 
     }
 }
 
+/** 헤더를 먼저 측정하되, 본문 아래가 아니라 본문 위에 그린다. */
+@Composable
+private fun HeaderOverlay(header: @Composable () -> Unit, content: @Composable (Int) -> Unit) {
+    SubcomposeLayout(Modifier.fillMaxSize()) { constraints ->
+        val headerPlaceable = subcompose("header", header).single().measure(constraints.copy(minHeight = 0))
+        val contentPlaceable = subcompose("content") { content(headerPlaceable.height) }.single().measure(constraints)
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            contentPlaceable.placeRelative(0, 0)
+            headerPlaceable.placeRelative(0, 0)
+        }
+    }
+}
+
 @Composable
 private fun Loaded(
     state: FlagDetailState,
     detail: FestivalFlagDetail,
     scrollState: ScrollState,
+    headerHeight: Int,
+    onWidgetPinChanged: (Boolean) -> Unit,
     onHeroHeightChanged: (Int) -> Unit,
     onFollowTapped: () -> Unit,
     onReportTapped: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState).fcScrollBottomInset()) {
+    Column(
+        modifier = Modifier.fillMaxSize().testTag(
+            FestivalAccessibilityId.FLAG_DETAIL_SCROLL,
+        ).verticalScroll(scrollState).fcScrollBottomInset(),
+    ) {
+        Spacer(Modifier.height(with(LocalDensity.current) { headerHeight.toDp() }))
         FCFlagHero(
             name = detail.name,
             followers = FlagPresentation.followersText(state.followerCount),
@@ -265,7 +344,7 @@ private fun Loaded(
             status = chipStatus(detail.status),
             intro = detail.bio?.let { "“$it”" }.orEmpty(),
             isFollowing = state.isFollowing,
-            modifier = Modifier.onSizeChanged { onHeroHeightChanged(it.height) },
+            modifier = Modifier.testTag(FestivalAccessibilityId.FLAG_DETAIL_HERO).onSizeChanged { onHeroHeightChanged(it.height) },
             isFollowEnabled = !state.isOffline && !state.isFollowPending,
             onFollow = onFollowTapped,
         ) {
@@ -281,8 +360,31 @@ private fun Loaded(
                 ),
             verticalArrangement = Arrangement.spacedBy(FestiCoreSpacing.paddingP20),
         ) {
-            // 잠금화면 행은 라이브 액티비티 단계에서 지금 카드 아래(간격 P20)에 넣는다.
             NowCard(FlagDetailPresentation.nowCard(state))
+            if (state.showsWidgetPin) {
+                val enabled = !state.isPinPending && !state.isFollowPending && !state.isOffline
+                val label = "홈 위젯 대표 깃발"
+                FCListRow(
+                    label = label,
+                    isOn = state.isPinned,
+                    modifier = Modifier.clickable(enabled = enabled, role = Role.Switch) {
+                        onWidgetPinChanged(!state.isPinned)
+                    }.clearAndSetSemantics {
+                        contentDescription = label
+                        role = Role.Switch
+                        toggleableState = ToggleableState(state.isPinned)
+                        if (enabled) {
+                            onClick {
+                                onWidgetPinChanged(!state.isPinned)
+                                true
+                            }
+                        } else {
+                            disabled()
+                        }
+                    },
+                    onIsOnChange = { if (enabled) onWidgetPinChanged(it) },
+                )
+            }
             PlanSection(detail, FlagDetailPresentation.planRows(state))
             Text(
                 text = "신고하기",
@@ -431,12 +533,7 @@ private fun ReportSheet(
 private fun Toast(toast: FlagDetailToast?, modifier: Modifier) {
     var last by remember { mutableStateOf(toast) }
     if (toast != null) last = toast
-    AnimatedVisibility(
-        visible = toast != null,
-        modifier = modifier.padding(FestiCoreSpacing.paddingP16),
-        enter = fadeIn(tween(TOAST_MILLIS, easing = EaseOut)),
-        exit = fadeOut(tween(TOAST_MILLIS, easing = EaseOut)),
-    ) {
+    FCToastOverlay(visible = toast != null, modifier = modifier) {
         last?.let { item ->
             val iconColor = if (item is FlagDetailToast.Followed) FestiCoreSemanticColor.staticLime else FestiCoreSemanticColor.staticWhite
             FCToast(toastItem(item), iconColor = iconColor.color)
@@ -450,6 +547,7 @@ private fun toastItem(toast: FlagDetailToast): FCToastItem = when (toast) {
     FlagDetailToast.FollowFailed -> info("팔로우를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요")
     FlagDetailToast.Reported -> FCToastItem(icon = R.drawable.ic_check, message = "신고를 접수했어요")
     FlagDetailToast.AlreadyReported -> info("이미 신고한 깃발이에요")
+    FlagDetailToast.PinFailed -> info("홈 위젯 대표 깃발을 바꾸지 못했어요")
     FlagDetailToast.ReportFailed -> info("신고하지 못했어요. 잠시 후 다시 시도해 주세요")
     FlagDetailToast.FestivalTransferred -> FCToastItem(icon = R.drawable.ic_check, message = "깃발을 다른 페스티벌로 옮겼어요")
 }
